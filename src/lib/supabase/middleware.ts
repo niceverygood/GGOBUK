@@ -4,9 +4,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  // If Supabase isn't configured (local dev without keys), let the request through.
+  // Pages and routes that actually need auth will fail individually with clearer messages.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return response;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
