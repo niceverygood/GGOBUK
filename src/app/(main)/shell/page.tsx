@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
 import { OhaengChart } from '@/components/shell/OhaengChart';
-import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
+import { CategoryGrid } from '@/components/shell/CategoryGrid';
+import { Badge, Card } from '@/components/ui/primitives';
 import type { Palja, OhaengCount } from '@/lib/saju/types';
 
 export default async function ShellPage() {
@@ -21,53 +21,50 @@ export default async function ShellPage() {
     .maybeSingle();
   if (!profile) redirect('/onboarding/saju');
 
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('is_pro')
-    .eq('id', user.id)
-    .single();
+  const { data: userRow } = await supabase.from('users').select('is_pro').eq('id', user.id).single();
   const isPro = !!userRow?.is_pro;
 
   const palja = profile.palja as Palja;
   const counts = profile.ohaeng_count as OhaengCount;
+  const total = palja.time ? 8 : 6;
+  const firePct = Math.round((counts.화 / total) * 100);
 
   return (
-    <main className="px-5 pt-8 pb-12">
-      <h1 className="text-2xl font-bold">{profile.name}님의 등껍질</h1>
-      <p className="text-xs opacity-60 mt-1">탭하면 그 자리의 뜻이 보여요</p>
-
-      <div className="mt-6">
-        <TortoiseShell palja={palja} />
-      </div>
-
-      <section className="mt-8 rounded-3xl bg-white shadow-sm p-5">
-        <div className="text-sm font-semibold mb-3">오행 분포</div>
-        <OhaengChart counts={counts} total={palja.time ? 8 : 6} />
-      </section>
-
-      <section className="mt-8">
-        <div className="text-sm font-semibold mb-3">12가지 풀이</div>
-        <div className="grid grid-cols-2 gap-3">
-          {INTERPRETATION_CATEGORIES.map((cat, i) => {
-            const locked = !isPro && i >= 3;
-            return (
-              <Link
-                key={cat.key}
-                href={locked ? '/more/pro' : `/shell/${cat.key}`}
-                className={`rounded-2xl bg-white p-4 shadow-sm relative ${locked ? 'opacity-60' : ''}`}
-              >
-                <div className="text-sm font-semibold">{cat.title}</div>
-                <div className="text-xs opacity-60 mt-1 line-clamp-2">{cat.prompt}</div>
-                {locked && (
-                  <div className="absolute top-2 right-2 text-[10px] bg-[var(--color-gold)] text-[var(--color-ink)] px-2 py-0.5 rounded-full font-semibold">
-                    Pro
-                  </div>
-                )}
-              </Link>
-            );
-          })}
+    <main className="px-5 pt-8 pb-32 relative">
+      <div className="hanji-overlay" />
+      <div className="relative">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-extrabold text-muted">나의 만세력</p>
+            <h1 className="text-2xl font-black tracking-tight text-navy">등껍질 사주</h1>
+          </div>
+          <Badge tone="mint">오행 火 {firePct}%</Badge>
         </div>
-      </section>
+
+        <div className="mt-6 flex justify-center">
+          <TortoiseShell palja={palja} activePosition="일간" />
+        </div>
+
+        <Card className="mt-6 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-black text-navy">
+              일간 <span className="font-hanja">{palja.day.ganHanja}</span>
+            </p>
+            <span className="text-xs font-black text-[#F4D03F]">핵심</span>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-[#82786D]">
+            {palja.day.gan}{palja.day.ganOhaeng === '화' ? ' — 작은 촛불 같은 정화. 주변을 밝히되 바람에는 예민한 타입이에요.' : ` — 일간 ${palja.day.gan}이 사주의 중심이에요.`}
+          </p>
+        </Card>
+
+        <section className="mt-7 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-5">
+          <p className="text-sm font-black text-navy mb-3">오행 분포</p>
+          <OhaengChart counts={counts} total={total} />
+        </section>
+
+        <p className="mt-7 mb-3 text-sm font-black text-navy">풀이 카테고리</p>
+        <CategoryGrid isPro={isPro} />
+      </div>
     </main>
   );
 }

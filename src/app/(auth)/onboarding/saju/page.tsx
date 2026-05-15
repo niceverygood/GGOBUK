@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { Badge, Card, SpeechBubble, Toggle, ButtonPrimary } from '@/components/ui/primitives';
 
 export default function SajuOnboardingPage() {
   const router = useRouter();
@@ -54,86 +55,103 @@ export default function SajuOnboardingPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-[var(--color-paper)] text-[var(--color-ink)] px-6 py-8">
-      <div className="flex flex-col items-center">
-        <KkobukAvatar size="md" />
-        <h1 className="mt-4 text-xl font-bold">너를 알려줘</h1>
-        <p className="text-xs opacity-60 mt-1">사주 8자는 이 정보로 계산해</p>
-      </div>
+    <main className="min-h-dvh px-5 pt-10 pb-32 relative">
+      <div className="hanji-overlay" />
+      <div className="relative">
+        <Badge>🐢 첫 등껍질 생성</Badge>
+        <h1 className="mt-3 text-2xl font-black tracking-tight text-navy leading-snug">
+          태어난 순간을 알려주면<br />꼬북이가 등껍질을 펼쳐볼게요
+        </h1>
 
-      <div className="mt-8 space-y-5">
-        <Field label="이름 또는 닉네임">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="꼬북이"
-            className="w-full rounded-2xl bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-shell-dark)]"
-          />
-        </Field>
+        <div className="flex items-end gap-3 mt-6 mb-5">
+          <div className="flex-1">
+            <SpeechBubble>이름은 별명도 괜찮아. 생시를 모르면 &lsquo;시간 모름&rsquo;으로 봐줄게!</SpeechBubble>
+          </div>
+          <div className="shrink-0">
+            <KkobukAvatar size="md" />
+          </div>
+        </div>
 
-        <Field label="생년월일">
-          <input
-            type="date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-2xl bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-shell-dark)]"
-          />
-          <div className="mt-2 flex gap-2 text-sm">
-            <Pill active={!isLunar} onClick={() => setIsLunar(false)}>
-              양력
-            </Pill>
-            <Pill active={isLunar} onClick={() => setIsLunar(true)}>
-              음력
-            </Pill>
-            {isLunar && (
-              <Pill active={isLeapMonth} onClick={() => setIsLeapMonth((v) => !v)}>
-                윤달
-              </Pill>
+        <Card className="p-5 space-y-5">
+          <Field label="이름 또는 닉네임">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="꼬북이"
+              className="w-full h-12 rounded-2xl bg-white px-4 text-sm font-bold text-navy border border-navy/10 focus:outline-none focus:ring-2 focus:ring-mint"
+            />
+          </Field>
+
+          <Field label="생년월일">
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              className="w-full h-12 rounded-2xl bg-white px-4 text-sm font-bold text-navy border border-navy/10 focus:outline-none focus:ring-2 focus:ring-mint"
+            />
+            <div className="mt-3">
+              <Toggle
+                options={[
+                  { value: 'solar' as const, label: '양력' },
+                  { value: 'lunar' as const, label: '음력' },
+                ]}
+                value={isLunar ? 'lunar' : 'solar'}
+                onChange={(v) => setIsLunar(v === 'lunar')}
+              />
+              {isLunar && (
+                <label className="mt-3 flex items-center gap-2 text-xs font-bold text-muted">
+                  <input
+                    type="checkbox"
+                    checked={isLeapMonth}
+                    onChange={(e) => setIsLeapMonth(e.target.checked)}
+                  />
+                  윤달이에요
+                </label>
+              )}
+            </div>
+          </Field>
+
+          <Field label="태어난 시간">
+            {!timeUnknown && (
+              <input
+                type="time"
+                value={birthTime}
+                onChange={(e) => setBirthTime(e.target.value)}
+                className="w-full h-12 rounded-2xl bg-white px-4 text-sm font-bold text-navy border border-navy/10 focus:outline-none focus:ring-2 focus:ring-mint"
+              />
             )}
-          </div>
-        </Field>
+            <label className="mt-3 flex items-center gap-2 text-xs font-bold text-muted">
+              <input
+                type="checkbox"
+                checked={timeUnknown}
+                onChange={(e) => setTimeUnknown(e.target.checked)}
+              />
+              시간을 모르겠어 (시주 없이 봄)
+            </label>
+          </Field>
 
-        <Field label="태어난 시간">
-          {!timeUnknown && (
-            <input
-              type="time"
-              value={birthTime}
-              onChange={(e) => setBirthTime(e.target.value)}
-              className="w-full rounded-2xl bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-shell-dark)]"
+          <Field label="성별">
+            <Toggle
+              options={[
+                { value: 'M' as const, label: '남성' },
+                { value: 'F' as const, label: '여성' },
+              ]}
+              value={gender}
+              onChange={setGender}
             />
-          )}
-          <label className="mt-2 flex items-center gap-2 text-sm opacity-80">
-            <input
-              type="checkbox"
-              checked={timeUnknown}
-              onChange={(e) => setTimeUnknown(e.target.checked)}
-            />
-            시간을 모르겠어 (시주 없이 봄)
-          </label>
-        </Field>
+          </Field>
+        </Card>
 
-        <Field label="성별">
-          <div className="flex gap-2">
-            <Pill active={gender === 'M'} onClick={() => setGender('M')}>
-              남성
-            </Pill>
-            <Pill active={gender === 'F'} onClick={() => setGender('F')}>
-              여성
-            </Pill>
-          </div>
-        </Field>
-
-        {err && <p className="text-sm text-red-500">{err}</p>}
-
-        <button
-          onClick={submit}
-          disabled={loading}
-          className="w-full rounded-2xl bg-[var(--color-shell-dark)] text-white py-4 font-semibold disabled:opacity-60"
-        >
-          {loading ? '꼬북이가 계산하는 중...' : '내 등껍질 만들기'}
-        </button>
+        {err && <p className="mt-4 text-sm text-red">{err}</p>}
       </div>
 
+      <div className="fixed left-0 right-0 bottom-0 px-5 pb-6 pt-3 bg-gradient-to-t from-ivory via-ivory/95 to-transparent">
+        <div className="max-w-md mx-auto">
+          <ButtonPrimary tone="mint" onClick={submit} disabled={loading}>
+            {loading ? '꼬북이가 계산하는 중...' : '내 등껍질 보러가기'}
+          </ButtonPrimary>
+        </div>
+      </div>
     </main>
   );
 }
@@ -141,23 +159,8 @@ export default function SajuOnboardingPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-sm font-semibold mb-2">{label}</div>
+      <p className="text-xs font-extrabold text-muted mb-2 ml-1">{label}</p>
       {children}
     </div>
-  );
-}
-
-function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-full text-sm border transition ${
-        active
-          ? 'bg-[var(--color-ink)] text-white border-[var(--color-ink)]'
-          : 'bg-white text-[var(--color-ink)] border-black/10'
-      }`}
-    >
-      {children}
-    </button>
   );
 }

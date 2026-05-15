@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PersonaSwitcher } from '@/components/kkobuk/PersonaSwitcher';
-import type { PersonaKey } from '@/lib/llm/personas';
-import { PERSONAS } from '@/lib/llm/personas';
+import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { Badge, ButtonPrimary } from '@/components/ui/primitives';
 
 interface SessionRow {
   id: string;
@@ -16,10 +14,7 @@ interface SessionRow {
 }
 
 export default function ChatListPage() {
-  const router = useRouter();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [selected, setSelected] = useState<PersonaKey>('kkobuk');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     void fetch('/api/chat/sessions')
@@ -27,60 +22,48 @@ export default function ChatListPage() {
       .then((d) => setSessions(d.sessions ?? []));
   }, []);
 
-  async function startNew() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/chat/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ persona: selected }),
-      });
-      const d = await res.json();
-      if (d.session) router.push(`/chat/${d.session.id}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
-    <main className="px-5 pt-8 pb-12">
-      <h1 className="text-2xl font-bold">꼬북이와 대화</h1>
-      <p className="mt-1 text-xs opacity-60">페르소나를 골라 새 대화를 시작해</p>
+    <main className="px-5 pt-8 pb-32 relative">
+      <div className="hanji-overlay" />
+      <div className="relative">
+        <Badge>대화</Badge>
+        <h1 className="mt-3 text-2xl font-black tracking-tight text-navy">꼬북이와 대화</h1>
+        <p className="mt-1 text-sm font-semibold text-[#82786D]">페르소나를 골라 새 대화를 시작해</p>
 
-      <div className="mt-5">
-        <PersonaSwitcher selected={selected} onSelect={setSelected} />
+        <Link href="/persona" className="block mt-6">
+          <ButtonPrimary tone="mint">＋ 새 대화 시작하기</ButtonPrimary>
+        </Link>
+
+        <section className="mt-8">
+          <p className="text-sm font-black text-navy mb-3">최근 대화</p>
+          {sessions.length === 0 ? (
+            <p className="text-xs font-bold text-muted">아직 대화가 없어. 위에서 시작해봐.</p>
+          ) : (
+            <ul className="space-y-2">
+              {sessions.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={`/chat/${s.id}`}
+                    className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-3 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-mint/30 border border-navy/10 flex items-center justify-center overflow-hidden">
+                      <KkobukAvatar variant={s.persona} size="sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-black text-navy">
+                        {PERSONAS[s.persona].displayName}
+                      </div>
+                      <div className="text-xs font-bold text-muted truncate">
+                        {new Date(s.updated_at).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-
-      <button
-        onClick={startNew}
-        disabled={loading}
-        className="mt-5 w-full rounded-2xl bg-[var(--color-shell-dark)] text-white py-3 font-semibold disabled:opacity-60"
-      >
-        {PERSONAS[selected].displayName}와 새 대화
-      </button>
-
-      <section className="mt-10">
-        <div className="text-sm font-semibold mb-3">최근 대화</div>
-        {sessions.length === 0 && <p className="text-xs opacity-60">아직 대화가 없어. 위에서 시작해봐.</p>}
-        <ul className="space-y-2">
-          {sessions.map((s) => (
-            <li key={s.id}>
-              <Link
-                href={`/chat/${s.id}`}
-                className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
-              >
-                <KkobukAvatar variant={s.persona} size="sm" />
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">
-                    {PERSONAS[s.persona].displayName}
-                  </div>
-                  <div className="text-xs opacity-60">{new Date(s.updated_at).toLocaleString('ko-KR')}</div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
     </main>
   );
 }
