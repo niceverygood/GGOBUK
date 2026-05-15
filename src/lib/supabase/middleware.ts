@@ -38,6 +38,8 @@ export async function updateSession(request: NextRequest) {
   const isPublic =
     path === '/' ||
     isAuthRoute ||
+    path.startsWith('/preview') ||
+    path.startsWith('/api/preview') ||
     path.startsWith('/_next') ||
     path.startsWith('/icons') ||
     path.startsWith('/manifest.json');

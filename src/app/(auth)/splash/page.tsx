@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 
 export default function SplashPage() {
   const router = useRouter();
   useEffect(() => {
-    const t = setTimeout(() => router.replace('/login'), 1600);
+    const t = setTimeout(() => router.replace('/login'), 1800);
     return () => clearTimeout(t);
   }, [router]);
 
@@ -29,6 +30,13 @@ export default function SplashPage() {
         <span className="w-3 h-3 rounded-full bg-mint/50 animate-pulse [animation-delay:200ms]" />
         <span className="w-3 h-3 rounded-full bg-mint/25 animate-pulse [animation-delay:400ms]" />
       </div>
+
+      <Link
+        href="/preview"
+        className="mt-10 text-xs font-extrabold text-mint-dark underline-offset-4 underline"
+      >
+        로그인 없이 미리 둘러보기 →
+      </Link>
     </main>
   );
 }

@@ -43,6 +43,13 @@ export default function LoginPage() {
         <p className="mt-6 text-[11px] font-bold text-muted text-center max-w-xs">
           가입과 동시에 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
         </p>
+
+        <a
+          href="/preview"
+          className="mt-8 text-xs font-extrabold text-muted underline-offset-4 underline"
+        >
+          로그인 없이 등껍질만 펼쳐보기 →
+        </a>
       </div>
     </main>
   );
