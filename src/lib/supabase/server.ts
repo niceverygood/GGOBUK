@@ -1,13 +1,12 @@
 import { createServerClient as createSsrServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { supabaseUrl, supabasePublicKey, supabaseServiceKey } from './env';
 
 export async function createServerClient(opts?: { admin?: boolean }) {
   const cookieStore = await cookies();
-  const key = opts?.admin
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY!
-    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = opts?.admin ? supabaseServiceKey() : supabasePublicKey();
 
-  return createSsrServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+  return createSsrServerClient(supabaseUrl(), key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

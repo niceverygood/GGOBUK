@@ -3,7 +3,8 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export default async function RootPage() {
   // If Supabase isn't configured, show splash → login flow.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  const { isSupabaseConfigured } = await import('@/lib/supabase/env');
+  if (!isSupabaseConfigured()) {
     redirect('/splash');
   }
   let hasSession = false;
