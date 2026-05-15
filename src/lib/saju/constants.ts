@@ -120,12 +120,17 @@ export const YANGIN: Record<number, number> = {
 // 사유축 → 도화 오, 역마 해, 화개 축
 // 신자진 → 도화 유, 역마 인, 화개 진
 // 해묘미 → 도화 자, 역마 사, 화개 미
-export const SAMHAP_GROUPS = [
+export const SAMHAP_GROUPS: ReadonlyArray<{
+  members: readonly number[];
+  dohwa: number;
+  yeokma: number;
+  hwagae: number;
+}> = [
   { members: [2, 6, 10], dohwa: 3, yeokma: 8, hwagae: 10 }, // 인오술
   { members: [5, 9, 1], dohwa: 6, yeokma: 11, hwagae: 1 }, // 사유축
   { members: [8, 0, 4], dohwa: 9, yeokma: 2, hwagae: 4 }, // 신자진
   { members: [11, 3, 7], dohwa: 0, yeokma: 5, hwagae: 7 }, // 해묘미
-] as const;
+];
 
 // 백호살 (특정 일주)
 export const BAEKHO_PILLARS: Array<[number, number]> = [

@@ -74,11 +74,15 @@ System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
 
 ## Known Limitations / TODO
 
-- Solar term precision: using a Jean Meeus-derived table for `1900-2100`. Births within ~5 minutes of a term boundary may still need verification against KASI ephemeris.
+- Solar term precision: Meeus-derived solar longitude is accurate to ~5-10 min vs KASI ephemeris. Verified against 2024 입춘 (calculated 17:21 vs official 17:27). Births within ~30 min of a term boundary should still be verified manually.
 - 지장간 weighted ohaeng not yet implemented (MVP uses surface ohaeng only).
 - Capacitor wrap for native iOS/Android (post-MVP).
-- Push notifications: web push only for MVP, native push after Capacitor.
-- Kakao Pay subscription requires production CID from Kakao; `TC0SUBSCRIPTION` placeholder is the standard test CID.
+- Push notifications: web push (VAPID) only for MVP. iOS PWA requires 16.4+. Cron infra for daily 7am push not yet scheduled — `/api/daily POST` (with `x-cron-secret`) is the cron-callable endpoint.
+- Kakao Pay subscription requires production CID from Kakao; `TC0SUBSCRIPTION` placeholder is the standard test CID. Webhook signature verification is not yet implemented (Kakao provides HMAC mechanism in prod).
+- Next.js 16 deprecation: `src/middleware.ts` triggers a "use proxy instead" warning. Still functional; should migrate to `proxy.ts` before Next 17.
+- Supabase `gen types` not yet run — `src/types/db.ts` is hand-written. Re-generate with `supabase gen types typescript --linked > src/types/db.ts` once project is linked.
+- `/relations` has no fancy graph viz yet — uses a flat list. reactflow is installed and ready for a future RelationGraph component.
+- Sentry/PostHog wiring is documented in `.env.local.example` but instrumentation code not yet added.
 
 ## Files Hi Should Review First
 
