@@ -8,6 +8,7 @@ import { OhaengChart } from '@/components/shell/OhaengChart';
 import { LifeRoad } from '@/components/timeline/LifeRoad';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge, Card } from '@/components/ui/primitives';
+import { PartnerCompare } from '@/components/preview/PartnerCompare';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { computePreview, loadPreviewInput } from '@/lib/saju/preview';
 import type { DaewoonPeriod, SajuResult } from '@/lib/saju/types';
@@ -82,15 +83,15 @@ export default function PreviewResultPage() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <main className="min-h-dvh max-w-md mx-auto px-5 pt-8 pb-12 relative">
+    <main className="min-h-dvh w-full max-w-md mx-auto px-5 pt-8 pb-12 relative overflow-x-hidden">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
             <p className="text-xs font-extrabold text-muted">미리보기 · 저장 안 됨</p>
-            <h1 className="text-2xl font-black tracking-tight text-navy">{name}의 등껍질</h1>
+            <h1 className="text-2xl font-black tracking-tight text-navy truncate">{name}의 등껍질</h1>
           </div>
-          <Badge tone="mint">오행 火 {firePct}%</Badge>
+          <Badge tone="mint" className="shrink-0 whitespace-nowrap">火 {firePct}%</Badge>
         </div>
 
         {/* 8 pillars dome */}
@@ -179,6 +180,8 @@ export default function PreviewResultPage() {
           </Card>
         )}
 
+        <PartnerCompare selfSaju={saju} selfName={name} />
+
         {/* 12 categories — preview only, no LLM call */}
         <section className="mt-7">
           <div className="flex items-center justify-between mb-3">
@@ -202,13 +205,13 @@ export default function PreviewResultPage() {
         {/* Persona tour link */}
         <section className="mt-7">
           <p className="text-sm font-black text-navy mb-3">꼬북이 페르소나</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {(['kkobuk', 'dosa', 'mudang', 'bosal'] as const).map((p) => (
-              <div key={p} className="rounded-2xl bg-white border border-navy/10 p-2 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden">
+              <div key={p} className="rounded-2xl bg-white border border-navy/10 p-1.5 flex flex-col items-center min-w-0">
+                <div className="w-12 h-12 rounded-xl bg-mint/20 flex items-center justify-center overflow-hidden">
                   <KkobukAvatar variant={p} size="sm" />
                 </div>
-                <span className="text-[10px] font-extrabold text-navy mt-1">
+                <span className="text-[10px] font-extrabold text-navy mt-1 truncate w-full text-center">
                   {p === 'kkobuk' ? '꼬북이' : p === 'dosa' ? '꼬북도사' : p === 'mudang' ? '꼬북무당' : '꼬북보살'}
                 </span>
               </div>

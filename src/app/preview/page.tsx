@@ -33,7 +33,7 @@ export default function PreviewEntryPage() {
   }
 
   return (
-    <main className="min-h-dvh max-w-md mx-auto px-5 pt-10 pb-32 relative">
+    <main className="min-h-dvh w-full max-w-md mx-auto px-5 pt-10 pb-32 relative overflow-x-hidden">
       <div className="hanji-overlay" />
       <div className="relative">
         <Badge>🐢 미리보기 모드 · 로그인 없음</Badge>
