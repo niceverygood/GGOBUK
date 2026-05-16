@@ -8,11 +8,12 @@ const COLORS: Record<keyof OhaengCount, string> = {
   수: '#34495E',
 };
 
+const ORDER: Array<keyof OhaengCount> = ['목', '화', '토', '금', '수'];
+
 export function OhaengChart({ counts, total = 8 }: { counts: OhaengCount; total?: number }) {
-  const entries = (Object.keys(counts) as Array<keyof OhaengCount>).map((k) => ({
-    name: k,
-    count: counts[k],
-  }));
+  // Force the natural 상생 order (목→화→토→금→수). Supabase jsonb returns keys
+  // in binary order which would otherwise show 금·목·수·토·화.
+  const entries = ORDER.map((k) => ({ name: k, count: counts[k] ?? 0 }));
 
   return (
     <div className="grid grid-cols-5 gap-1.5 w-full">

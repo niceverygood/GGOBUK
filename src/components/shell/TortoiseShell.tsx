@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import type { Palja, Pillar, Ohaeng } from '@/lib/saju/types';
 import { cn } from '@/lib/utils/cn';
@@ -90,19 +89,20 @@ export function TortoiseShell({ palja, activePosition, revealCount = 8, classNam
             const ohaeng = seg.pillar ? (seg.isGan ? seg.pillar.ganOhaeng : seg.pillar.jiOhaeng) : null;
             const active = activePosition === seg.position;
             return (
-              <motion.button
+              <button
                 key={seg.position}
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: revealed ? 1 : 0.2, scale: revealed ? 1 : 0.9 }}
-                transition={{ delay: 0.08 + i * 0.1, type: 'spring' }}
                 onClick={() => seg.pillar && setSelected(seg)}
                 className={cn(
-                  'flex flex-col items-center justify-center rounded-2xl border-2 relative transition',
+                  'flex flex-col items-center justify-center rounded-2xl border-2 relative transition-all duration-300',
                   active
                     ? 'bg-gold/70 border-navy shadow-[0_0_0_4px_rgba(244,208,63,0.25),inset_0_0_0_2px_rgba(255,255,255,0.5)] -translate-y-0.5'
                     : 'bg-soft/50 border-navy/40 hover:border-navy/70',
                 )}
-                style={{ cursor: seg.pillar ? 'pointer' : 'default' }}
+                style={{
+                  cursor: seg.pillar ? 'pointer' : 'default',
+                  opacity: revealed ? 1 : 0.25,
+                  transitionDelay: `${i * 80}ms`,
+                }}
                 disabled={!seg.pillar}
                 type="button"
                 aria-label={`${seg.position} ${kor}`}
@@ -111,7 +111,7 @@ export function TortoiseShell({ palja, activePosition, revealCount = 8, classNam
                 <span className="text-[9px] font-extrabold text-navy/70 mt-1">
                   {kor}{ohaeng && ` · ${OHAENG_LABEL[ohaeng]}`}
                 </span>
-              </motion.button>
+              </button>
             );
           })}
         </div>

@@ -19,19 +19,25 @@ export default function TimelinePage() {
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    void fetch('/api/timeline/boot')
-      .then((r) => {
-        if (r.status === 401) router.push('/login');
-        if (r.status === 402) router.push('/more/pro');
-        return r.json();
-      })
-      .then((d) => {
-        setData(d);
-        const curr = d.daewoon?.find(
-          (p: DaewoonPeriod) => currentYear >= p.startYear && currentYear <= p.startYear + 9,
-        );
-        if (curr) setSelected(curr);
-      });
+    void (async () => {
+      const r = await fetch('/api/timeline/boot');
+      if (r.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (r.status === 402) {
+        router.push('/more/pro');
+        return;
+      }
+      if (!r.ok) return;
+      const d = (await r.json()) as BootData;
+      if (!Array.isArray(d.daewoon)) return;
+      setData(d);
+      const curr = d.daewoon.find(
+        (p: DaewoonPeriod) => currentYear >= p.startYear && currentYear <= p.startYear + 9,
+      );
+      if (curr) setSelected(curr);
+    })();
   }, [router, currentYear]);
 
   if (!data) return <main className="p-8 text-center text-sm font-bold opacity-60">대운 불러오는 중...</main>;

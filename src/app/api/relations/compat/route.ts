@@ -51,13 +51,22 @@ export async function POST(req: Request) {
   const sajuA = rowToSajuInput(selfProfile);
   const sajuB = rowToSajuInput(otherProfile);
 
-  const result = await generateCompat({
-    sajuA,
-    sajuB,
-    nameA: selfProfile.name,
-    nameB: otherProfile.name,
-    relationLabel: body.relation_label ?? otherProfile.relation_label ?? undefined,
-  });
+  let result;
+  try {
+    result = await generateCompat({
+      sajuA,
+      sajuB,
+      nameA: selfProfile.name,
+      nameB: otherProfile.name,
+      relationLabel: body.relation_label ?? otherProfile.relation_label ?? undefined,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('ANTHROPIC_API_KEY')) {
+      return NextResponse.json({ error: 'llm_not_configured' }, { status: 503 });
+    }
+    return NextResponse.json({ error: msg || 'compat failed' }, { status: 500 });
+  }
 
   // Upsert the relation edge
   const { data: existing } = await supabase

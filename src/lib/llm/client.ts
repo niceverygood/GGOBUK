@@ -1,7 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
 const anthropic = apiKey ? new Anthropic({ apiKey }) : null;
+
+export class LLMNotConfiguredError extends Error {
+  code = 'LLM_NOT_CONFIGURED';
+  constructor() {
+    super('ANTHROPIC_API_KEY is not configured');
+  }
+}
+
+export function isLLMConfigured(): boolean {
+  return !!anthropic;
+}
 
 export type ModelTier = 'main' | 'cheap';
 
@@ -12,7 +23,7 @@ const MODELS: Record<ModelTier, string> = {
 
 function getClient(): Anthropic {
   if (!anthropic) {
-    throw new Error('ANTHROPIC_API_KEY is not configured');
+    throw new LLMNotConfiguredError();
   }
   return anthropic;
 }

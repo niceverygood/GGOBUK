@@ -44,24 +44,34 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
     .maybeSingle();
 
   let content = cached?.content ?? '';
+  let llmUnavailable = false;
   if (!content) {
-    const admin = await createServerClient({ admin: true });
-    const saju = buildSajuResult({
-      birthDate: profile.birth_date,
-      birthTime: profile.birth_time ?? undefined,
-      isLunar: profile.is_lunar,
-      isLeapMonth: profile.is_leap_month,
-      gender: profile.gender,
-    });
-    const r = await generateInterpretation(saju, category as InterpretationCategory, profile.name);
-    content = r.content;
-    await admin.from('interpretations').insert({
-      saju_id: profile.id,
-      category,
-      content,
-      model: r.model,
-      tokens_used: r.tokensUsed,
-    });
+    try {
+      const admin = await createServerClient({ admin: true });
+      const saju = buildSajuResult({
+        birthDate: profile.birth_date,
+        birthTime: profile.birth_time ?? undefined,
+        isLunar: profile.is_lunar,
+        isLeapMonth: profile.is_leap_month,
+        gender: profile.gender,
+      });
+      const r = await generateInterpretation(saju, category as InterpretationCategory, profile.name);
+      content = r.content;
+      await admin.from('interpretations').insert({
+        saju_id: profile.id,
+        category,
+        content,
+        model: r.model,
+        tokens_used: r.tokensUsed,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('ANTHROPIC_API_KEY')) {
+        llmUnavailable = true;
+      } else {
+        throw e;
+      }
+    }
   }
 
   return (
@@ -81,7 +91,21 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         </div>
 
         <Card className="mt-4 p-5">
-          <InterpretationBody text={content} />
+          {llmUnavailable ? (
+            <div className="text-sm font-bold text-navy leading-relaxed space-y-3">
+              <p>꼬북도사가 잠시 자리를 비웠어요 🐢</p>
+              <p className="text-muted font-semibold text-[13px] leading-7">
+                LLM 풀이는 <code className="bg-ivory px-1.5 py-0.5 rounded">ANTHROPIC_API_KEY</code>가
+                설정돼야 동작합니다. 키를 채우고 새로고침하면 같은 자리에서 풀이가 나와요.
+              </p>
+              <p className="text-muted font-semibold text-[12px] mt-4">
+                참고로 사주 8자와 오행, 십성, 신살, 대운 같은 계산 기반 정보는 LLM 없이도 등껍질
+                메인 화면에서 다 볼 수 있어요.
+              </p>
+            </div>
+          ) : (
+            <InterpretationBody text={content} />
+          )}
         </Card>
       </div>
 

@@ -53,13 +53,22 @@ export async function GET(req: Request) {
     gender: profile.gender,
   });
 
-  const fortune = await generateDaily({
-    saju,
-    date: today,
-    iljiGan: ilji.ganHanja,
-    iljiJi: ilji.jiHanja,
-    name: profile.name,
-  });
+  let fortune;
+  try {
+    fortune = await generateDaily({
+      saju,
+      date: today,
+      iljiGan: ilji.ganHanja,
+      iljiJi: ilji.jiHanja,
+      name: profile.name,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('ANTHROPIC_API_KEY')) {
+      return NextResponse.json({ daily: null, error: 'llm_not_configured' }, { status: 503 });
+    }
+    return NextResponse.json({ error: msg || 'daily failed' }, { status: 500 });
+  }
 
   const admin = await createServerClient({ admin: true });
   const { data: inserted } = await admin

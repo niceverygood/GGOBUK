@@ -1,22 +1,61 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [loading, setLoading] = useState<'kakao' | 'test' | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   async function signInWithKakao() {
-    setLoading(true);
+    setErr(null);
+    setLoading('kakao');
     const supabase = createClient();
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: {
-        redirectTo: `${baseUrl}/callback?next=/onboarding/saju`,
-      },
+      options: { redirectTo: `${baseUrl}/callback?next=/onboarding/saju` },
     });
+  }
+
+  async function testLogin() {
+    setErr(null);
+    setLoading('test');
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInAnonymously({
+        options: { data: { nickname: '테스트 꼬북이', test_account: true } },
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('user not returned');
+
+      // Ensure public.users row exists.
+      await supabase
+        .from('users')
+        .upsert({ id: data.user.id, nickname: '테스트 꼬북이' }, { onConflict: 'id' });
+
+      // Route based on whether the user already has a self saju profile.
+      const { data: profile } = await supabase
+        .from('saju_profiles')
+        .select('id')
+        .eq('owner_id', data.user.id)
+        .eq('relation_type', 'self')
+        .maybeSingle();
+      router.push(profile ? '/home' : '/onboarding/saju');
+      router.refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
+      setErr(
+        msg.toLowerCase().includes('anonymous')
+          ? 'Supabase Dashboard → Authentication → Sign In / Providers 에서 "Allow anonymous sign-ins"를 켜고 Save changes를 눌러줘.'
+          : msg,
+      );
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
@@ -33,12 +72,23 @@ export default function LoginPage() {
 
         <button
           onClick={signInWithKakao}
-          disabled={loading}
+          disabled={!!loading}
           className="mt-12 w-full max-w-xs rounded-2xl bg-[#FEE500] py-4 text-[#191919] font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(0,0,0,0.10)]"
         >
           <span aria-hidden>💬</span>
-          {loading ? '이동 중…' : '카카오로 3초 시작'}
+          {loading === 'kakao' ? '이동 중…' : '카카오로 3초 시작'}
         </button>
+
+        <button
+          onClick={testLogin}
+          disabled={!!loading}
+          className="mt-3 w-full max-w-xs rounded-2xl bg-navy py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
+        >
+          <span aria-hidden>🐢</span>
+          {loading === 'test' ? '꼬북이 깨우는 중…' : '테스트 로그인 (익명)'}
+        </button>
+
+        {err && <p className="mt-4 max-w-xs text-xs font-bold text-red leading-relaxed">{err}</p>}
 
         <p className="mt-6 text-[11px] font-bold text-muted text-center max-w-xs">
           가입과 동시에 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
