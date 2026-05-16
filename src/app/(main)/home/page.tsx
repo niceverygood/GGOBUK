@@ -131,10 +131,10 @@ export default async function HomePage() {
 
       <Link
         href="/chat"
-        className="fixed right-5 bottom-24 w-14 h-14 rounded-2xl bg-navy text-white flex items-center justify-center text-2xl shadow-[0_14px_26px_rgba(44,62,80,0.24)] z-20"
+        className="fixed right-5 bottom-24 w-14 h-14 rounded-2xl bg-navy text-white flex items-center justify-center shadow-[0_14px_26px_rgba(44,62,80,0.24)] z-20 overflow-visible"
         aria-label="꼬북이와 대화"
       >
-        🐢
+        <KkobukSprite variant="persona-kkobuk" size="xs" ariaLabel="꼬북이와 대화" />
       </Link>
     </main>
   );

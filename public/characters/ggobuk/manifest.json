@@ -1,0 +1,257 @@
+{
+  "baseUrl": "/characters/ggobuk",
+  "assets": [
+    {
+      "group": "cards",
+      "name": "card_basic_friend",
+      "src": "/characters/ggobuk/cards/card_basic_friend.png",
+      "size": [
+        231,
+        347
+      ]
+    },
+    {
+      "group": "cards",
+      "name": "card_comfort_bodhisattva",
+      "src": "/characters/ggobuk/cards/card_comfort_bodhisattva.png",
+      "size": [
+        290,
+        347
+      ]
+    },
+    {
+      "group": "cards",
+      "name": "card_direct_shaman",
+      "src": "/characters/ggobuk/cards/card_direct_shaman.png",
+      "size": [
+        276,
+        347
+      ]
+    },
+    {
+      "group": "cards",
+      "name": "card_saju_master",
+      "src": "/characters/ggobuk/cards/card_saju_master.png",
+      "size": [
+        260,
+        347
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "basic_friend_waving",
+      "src": "/characters/ggobuk/characters/basic_friend_waving.png",
+      "size": [
+        138,
+        190
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "comfort_bodhisattva_beads",
+      "src": "/characters/ggobuk/characters/comfort_bodhisattva_beads.png",
+      "size": [
+        170,
+        205
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "direct_shaman_bell",
+      "src": "/characters/ggobuk/characters/direct_shaman_bell.png",
+      "size": [
+        182,
+        206
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "main_waving",
+      "src": "/characters/ggobuk/characters/main_waving.png",
+      "size": [
+        320,
+        372
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "saju_master_staff",
+      "src": "/characters/ggobuk/characters/saju_master_staff.png",
+      "size": [
+        165,
+        225
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_back",
+      "src": "/characters/ggobuk/characters/turnaround_back.png",
+      "size": [
+        177,
+        242
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_front",
+      "src": "/characters/ggobuk/characters/turnaround_front.png",
+      "size": [
+        176,
+        243
+      ]
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_side",
+      "src": "/characters/ggobuk/characters/turnaround_side.png",
+      "size": [
+        158,
+        242
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_excited",
+      "src": "/characters/ggobuk/expressions/expr_excited.png",
+      "size": [
+        101,
+        93
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_happy",
+      "src": "/characters/ggobuk/expressions/expr_happy.png",
+      "size": [
+        98,
+        93
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_relaxed",
+      "src": "/characters/ggobuk/expressions/expr_relaxed.png",
+      "size": [
+        101,
+        93
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_surprised",
+      "src": "/characters/ggobuk/expressions/expr_surprised.png",
+      "size": [
+        98,
+        93
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_thinking",
+      "src": "/characters/ggobuk/expressions/expr_thinking.png",
+      "size": [
+        101,
+        93
+      ]
+    },
+    {
+      "group": "expressions",
+      "name": "expr_worried",
+      "src": "/characters/ggobuk/expressions/expr_worried.png",
+      "size": [
+        100,
+        93
+      ]
+    },
+    {
+      "group": "poses",
+      "name": "pose_fortune_board",
+      "src": "/characters/ggobuk/poses/pose_fortune_board.png",
+      "size": [
+        128,
+        114
+      ]
+    },
+    {
+      "group": "poses",
+      "name": "pose_holding_tea",
+      "src": "/characters/ggobuk/poses/pose_holding_tea.png",
+      "size": [
+        116,
+        114
+      ]
+    },
+    {
+      "group": "poses",
+      "name": "pose_reading_book",
+      "src": "/characters/ggobuk/poses/pose_reading_book.png",
+      "size": [
+        104,
+        106
+      ]
+    },
+    {
+      "group": "poses",
+      "name": "pose_singing",
+      "src": "/characters/ggobuk/poses/pose_singing.png",
+      "size": [
+        134,
+        115
+      ]
+    },
+    {
+      "group": "poses",
+      "name": "pose_walking_bag",
+      "src": "/characters/ggobuk/poses/pose_walking_bag.png",
+      "size": [
+        101,
+        114
+      ]
+    },
+    {
+      "group": "icons",
+      "name": "icon_beads",
+      "src": "/characters/ggobuk/icons/icon_beads.png",
+      "size": [
+        59,
+        69
+      ]
+    },
+    {
+      "group": "icons",
+      "name": "icon_bell",
+      "src": "/characters/ggobuk/icons/icon_bell.png",
+      "size": [
+        58,
+        72
+      ]
+    },
+    {
+      "group": "icons",
+      "name": "icon_cloud",
+      "src": "/characters/ggobuk/icons/icon_cloud.png",
+      "size": [
+        65,
+        52
+      ]
+    },
+    {
+      "group": "icons",
+      "name": "icon_scroll",
+      "src": "/characters/ggobuk/icons/icon_scroll.png",
+      "size": [
+        65,
+        66
+      ]
+    },
+    {
+      "group": "icons",
+      "name": "icon_wave",
+      "src": "/characters/ggobuk/icons/icon_wave.png",
+      "size": [
+        69,
+        62
+      ]
+    }
+  ]
+}

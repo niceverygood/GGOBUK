@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
 
 export default async function MorePage() {
@@ -40,7 +42,12 @@ export default async function MorePage() {
           <MoreLink href="/timeline" title="대운 타임라인" subtitle="10년 단위 큰 흐름 (Pro)" icon="🗺" />
           <MoreLink href="/more/auspicious" title="길일 찾기" subtitle="중요 일정에 좋은 날짜 (Pro)" icon="☯" />
           <MoreLink href="/more/settings" title="알림 설정" subtitle="매일 아침 한 줄 운세" icon="🔔" />
-          <MoreLink href="/persona" title="페르소나 전환" subtitle="꼬북이의 4가지 모드" icon="🐢" />
+          <MoreLink
+            href="/persona"
+            title="페르소나 전환"
+            subtitle="꼬북이의 4가지 모드"
+            icon={<KkobukSprite variant="persona-kkobuk" size="xs" ariaLabel="페르소나 전환" />}
+          />
         </div>
       </div>
     </main>
@@ -56,14 +63,14 @@ function MoreLink({
   href: string;
   title: string;
   subtitle: string;
-  icon: string;
+  icon: ReactNode;
 }) {
   return (
     <Link
       href={href}
       className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
     >
-      <span className="text-xl">{icon}</span>
+      <span className="flex h-8 w-8 items-center justify-center text-xl">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-black text-navy">{title}</div>
         <div className="text-xs font-bold text-muted mt-0.5">{subtitle}</div>

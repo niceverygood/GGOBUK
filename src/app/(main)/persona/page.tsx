@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
@@ -11,6 +12,13 @@ const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
   dosa: 'persona-dosa',
   mudang: 'persona-mudang',
   bosal: 'persona-bosal',
+};
+
+const PERSONA_CARD: Record<PersonaKey, { src: string; width: number; height: number }> = {
+  kkobuk: { src: '/characters/ggobuk/cards/card_basic_friend.png', width: 231, height: 347 },
+  dosa: { src: '/characters/ggobuk/cards/card_saju_master.png', width: 260, height: 347 },
+  mudang: { src: '/characters/ggobuk/cards/card_direct_shaman.png', width: 276, height: 347 },
+  bosal: { src: '/characters/ggobuk/cards/card_comfort_bodhisattva.png', width: 290, height: 347 },
 };
 import { cn } from '@/lib/utils/cn';
 
@@ -79,8 +87,19 @@ export default function PersonaSelectionPage() {
         </div>
 
         <Card className="mt-5 p-4">
-          <p className="text-sm font-black text-navy">현재 선택: {PERSONAS[selected].displayName}</p>
-          <p className="mt-1 text-sm font-semibold text-[#82786D]">{SUBTITLES[selected]}</p>
+          <div className="flex items-center gap-4">
+            <Image
+              src={PERSONA_CARD[selected].src}
+              alt={PERSONAS[selected].displayName}
+              width={PERSONA_CARD[selected].width}
+              height={PERSONA_CARD[selected].height}
+              className="h-32 w-auto shrink-0 rounded-xl object-contain"
+            />
+            <div>
+              <p className="text-sm font-black text-navy">현재 선택: {PERSONAS[selected].displayName}</p>
+              <p className="mt-1 text-sm font-semibold text-[#82786D]">{SUBTITLES[selected]}</p>
+            </div>
+          </div>
         </Card>
       </div>
 

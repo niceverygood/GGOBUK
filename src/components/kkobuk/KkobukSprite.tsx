@@ -1,26 +1,15 @@
-// Sprite-based renderer for the kkobuk character sheet.
-// Uses CSS background-position to clip a single 1536x1024 illustration sheet
-// (public/characters/sheet.png) into individual variants. background-size
-// scales the whole sheet so each region can be rendered at any target size.
-
+import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 
-const SHEET_W = 1536;
-const SHEET_H = 1024;
-
 export type SpriteKey =
-  // hero pose (left side of sheet)
   | 'hero'
-  // 3-view base
   | 'front'
   | 'side'
   | 'back'
-  // 4 personas (middle row)
   | 'persona-kkobuk'
   | 'persona-dosa'
   | 'persona-mudang'
   | 'persona-bosal'
-  // 6 moods (bottom-left row)
   | 'mood-기쁨'
   | 'mood-신남'
   | 'mood-고민'
@@ -34,47 +23,45 @@ export type SpriteKey =
   | 'pose-bag'
   | 'pose-sing';
 
-interface Region {
-  x: number;
-  y: number;
+interface SpriteAsset {
+  src: string;
   w: number;
   h: number;
 }
 
-// First-pass coordinates derived from a visual scan of the 1536x1024 sheet.
-// Tuned in browser; re-tune any region by editing the entry below.
-export const SPRITE_MAP: Record<SpriteKey, Region> = {
-  hero: { x: 30, y: 230, w: 320, h: 400 },
+const BASE = '/characters/ggobuk';
 
-  front: { x: 425, y: 110, w: 165, h: 200 },
-  side: { x: 595, y: 110, w: 175, h: 200 },
-  back: { x: 770, y: 110, w: 200, h: 200 },
+export const SPRITE_MAP: Record<SpriteKey, SpriteAsset> = {
+  hero: { src: `${BASE}/characters/main_waving.png`, w: 320, h: 372 },
 
-  // Persona character only (each card has a different speech-bubble layout)
-  'persona-kkobuk': { x: 425, y: 555, w: 120, h: 135 },
-  'persona-dosa': { x: 605, y: 535, w: 200, h: 160 },
-  'persona-mudang': { x: 870, y: 555, w: 170, h: 140 },
-  'persona-bosal': { x: 1180, y: 540, w: 135, h: 155 },
+  front: { src: `${BASE}/characters/turnaround_front.png`, w: 176, h: 243 },
+  side: { src: `${BASE}/characters/turnaround_side.png`, w: 158, h: 242 },
+  back: { src: `${BASE}/characters/turnaround_back.png`, w: 177, h: 242 },
 
-  'mood-기쁨': { x: 40, y: 820, w: 110, h: 130 },
-  'mood-신남': { x: 150, y: 820, w: 110, h: 130 },
-  'mood-고민': { x: 260, y: 820, w: 110, h: 130 },
-  'mood-놀람': { x: 370, y: 820, w: 110, h: 130 },
-  'mood-걱정': { x: 480, y: 820, w: 110, h: 130 },
-  'mood-편안': { x: 590, y: 820, w: 110, h: 130 },
+  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 138, h: 190 },
+  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 165, h: 225 },
+  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 182, h: 206 },
+  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 170, h: 205 },
 
-  'pose-book': { x: 760, y: 780, w: 150, h: 170 },
-  'pose-meditate': { x: 910, y: 780, w: 145, h: 170 },
-  'pose-drink': { x: 1060, y: 780, w: 145, h: 170 },
-  'pose-bag': { x: 1205, y: 780, w: 145, h: 170 },
-  'pose-sing': { x: 1355, y: 780, w: 150, h: 170 },
+  'mood-기쁨': { src: `${BASE}/expressions/expr_happy.png`, w: 98, h: 93 },
+  'mood-신남': { src: `${BASE}/expressions/expr_excited.png`, w: 101, h: 93 },
+  'mood-고민': { src: `${BASE}/expressions/expr_thinking.png`, w: 101, h: 93 },
+  'mood-놀람': { src: `${BASE}/expressions/expr_surprised.png`, w: 98, h: 93 },
+  'mood-걱정': { src: `${BASE}/expressions/expr_worried.png`, w: 100, h: 93 },
+  'mood-편안': { src: `${BASE}/expressions/expr_relaxed.png`, w: 101, h: 93 },
+
+  'pose-book': { src: `${BASE}/poses/pose_reading_book.png`, w: 104, h: 106 },
+  'pose-meditate': { src: `${BASE}/poses/pose_fortune_board.png`, w: 128, h: 114 },
+  'pose-drink': { src: `${BASE}/poses/pose_holding_tea.png`, w: 116, h: 114 },
+  'pose-bag': { src: `${BASE}/poses/pose_walking_bag.png`, w: 101, h: 114 },
+  'pose-sing': { src: `${BASE}/poses/pose_singing.png`, w: 134, h: 115 },
 };
 
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
 const SIZE_HEIGHT: Record<Size, number> = {
   xs: 32,
-  sm: 56,
-  md: 96,
+  sm: 48,
+  md: 88,
   lg: 144,
   xl: 200,
   hero: 280,
@@ -92,23 +79,20 @@ export function KkobukSprite({
   ariaLabel?: string;
 }) {
   const region = SPRITE_MAP[variant];
-  // Scale so the source region's height fits the requested display height.
   const targetH = SIZE_HEIGHT[size];
-  const scale = targetH / region.h;
-  const targetW = region.w * scale;
+  const targetW = Math.round((region.w / region.h) * targetH);
 
   return (
-    <div
-      role="img"
-      aria-label={ariaLabel ?? variant}
-      className={cn('inline-block shrink-0', className)}
+    <Image
+      src={region.src}
+      alt={ariaLabel ?? variant}
+      width={region.w}
+      height={region.h}
+      draggable={false}
+      className={cn('inline-block shrink-0 object-contain select-none', className)}
       style={{
         width: `${targetW}px`,
         height: `${targetH}px`,
-        backgroundImage: 'url(/characters/sheet.png)',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: `${-region.x * scale}px ${-region.y * scale}px`,
-        backgroundSize: `${SHEET_W * scale}px ${SHEET_H * scale}px`,
       }}
     />
   );

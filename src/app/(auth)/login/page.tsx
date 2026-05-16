@@ -84,7 +84,7 @@ export default function LoginPage() {
           disabled={!!loading}
           className="mt-3 w-full max-w-xs rounded-2xl bg-navy py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
         >
-          <span aria-hidden>🐢</span>
+          <KkobukSprite variant="persona-kkobuk" size="xs" ariaLabel="테스트 꼬북이" />
           {loading === 'test' ? '꼬북이 깨우는 중…' : '테스트 로그인 (익명)'}
         </button>
 
