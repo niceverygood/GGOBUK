@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
-import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { KkobukSprite, moodToSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -86,7 +86,7 @@ export default async function HomePage() {
 
         <Card className="mt-5 p-5 text-center">
           <div className="flex justify-center">
-            <KkobukAvatar size="lg" mood={mood as 'happy' | 'calm' | 'focused' | 'cautious'} />
+            <KkobukSprite variant={moodToSprite(mood)} size="lg" ariaLabel={`꼬북이 ${mood}`} />
           </div>
           <p className="mt-2 text-xs font-extrabold text-muted">오늘의 꼬북이 표정</p>
           <h2 className="mt-1 text-xl font-black text-navy">{moodPhrase(daily?.mood ?? null)}</h2>

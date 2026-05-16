@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 
 export default function SplashPage() {
   const router = useRouter();
@@ -14,8 +14,8 @@ export default function SplashPage() {
 
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
-      <div className="relative mb-8 w-[220px] h-[200px] flex items-center justify-center">
-        <KkobukAvatar size="xl" />
+      <div className="relative mb-8 flex items-center justify-center">
+        <KkobukSprite variant="hero" size="hero" ariaLabel="꼬북이" />
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/80 border border-navy/10 text-xs font-black text-navy whitespace-nowrap">
           등껍질 로딩 중...
         </div>

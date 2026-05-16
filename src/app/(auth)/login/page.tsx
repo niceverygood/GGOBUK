@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,7 +62,7 @@ export default function LoginPage() {
     <main className="min-h-dvh flex flex-col items-center justify-center px-6 text-center relative">
       <div className="hanji-overlay" />
       <div className="relative flex flex-col items-center">
-        <KkobukAvatar size="xl" mood="happy" />
+        <KkobukSprite variant="hero" size="hero" ariaLabel="꼬북이" />
         <h1 className="logo-brush text-5xl mt-2">
           꼬북점 <span className="text-base align-top">占</span>
         </h1>

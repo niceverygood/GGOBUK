@@ -3,8 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
-import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
+import { KkobukSprite, type SpriteKey } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, ButtonPrimary } from '@/components/ui/primitives';
+
+const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
+  kkobuk: 'persona-kkobuk',
+  dosa: 'persona-dosa',
+  mudang: 'persona-mudang',
+  bosal: 'persona-bosal',
+};
 import { cn } from '@/lib/utils/cn';
 
 const SUBTITLES: Record<PersonaKey, string> = {
@@ -59,8 +66,8 @@ export default function PersonaSelectionPage() {
                   active ? 'border-2 border-mint bg-gradient-to-r from-mint/15 to-white' : 'border border-navy/10',
                 )}
               >
-                <div className="w-14 h-14 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden shrink-0">
-                  <KkobukAvatar variant={k} size="md" />
+                <div className="w-16 h-16 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden shrink-0">
+                  <KkobukSprite variant={PERSONA_SPRITE[k]} size="md" ariaLabel={p.displayName} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-black text-navy">{p.displayName}</h3>

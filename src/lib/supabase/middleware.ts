@@ -40,8 +40,10 @@ export async function updateSession(request: NextRequest) {
     isAuthRoute ||
     path.startsWith('/preview') ||
     path.startsWith('/api/preview') ||
+    path.startsWith('/sprite-test') ||
     path.startsWith('/_next') ||
     path.startsWith('/icons') ||
+    path.startsWith('/characters') ||
     path.startsWith('/manifest.json');
 
   if (!user && !isPublic) {
