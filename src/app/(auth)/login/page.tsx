@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
+import { loadPreviewInput, clearPreviewInput } from '@/lib/saju/preview';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,19 +33,29 @@ export default function LoginPage() {
       if (error) throw error;
       if (!data.user) throw new Error('user not returned');
 
-      // Ensure public.users row exists.
-      await supabase
-        .from('users')
-        .upsert({ id: data.user.id, nickname: '테스트 꼬북이' }, { onConflict: 'id' });
-
-      // Route based on whether the user already has a self saju profile.
-      const { data: profile } = await supabase
-        .from('saju_profiles')
-        .select('id')
-        .eq('owner_id', data.user.id)
-        .eq('relation_type', 'self')
-        .maybeSingle();
-      router.push(profile ? '/home' : '/onboarding/saju');
+      const preview = loadPreviewInput();
+      const bootstrap = await fetch('/api/test/bootstrap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: preview
+            ? {
+                name: preview.name,
+                birthDate: preview.input.birthDate,
+                birthTime: preview.input.birthTime,
+                isLunar: preview.input.isLunar,
+                isLeapMonth: preview.input.isLeapMonth,
+                gender: preview.input.gender,
+              }
+            : undefined,
+        }),
+      });
+      if (!bootstrap.ok) {
+        const detail = await bootstrap.json().catch(() => null);
+        throw new Error(detail?.error ?? '테스트 계정 준비에 실패했어');
+      }
+      clearPreviewInput();
+      router.push('/home');
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
