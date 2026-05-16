@@ -46,6 +46,7 @@ export async function generateDaily(params: {
     system: SYSTEM,
     messages: [{ role: 'user', content: userMsg }],
     maxTokens: 512,
+    responseFormat: 'json_object',
   });
   // Strip code fences if any
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();

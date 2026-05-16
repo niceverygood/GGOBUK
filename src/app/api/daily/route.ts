@@ -64,7 +64,7 @@ export async function GET(req: Request) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
-    if (msg.includes('ANTHROPIC_API_KEY')) {
+    if (msg.includes('OPENROUTER_API_KEY') || msg.includes('ANTHROPIC_API_KEY')) {
       return NextResponse.json({ daily: null, error: 'llm_not_configured' }, { status: 503 });
     }
     return NextResponse.json({ error: msg || 'daily failed' }, { status: 500 });

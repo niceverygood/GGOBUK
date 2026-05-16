@@ -41,6 +41,7 @@ export async function generateCompat(params: {
     system: SYSTEM,
     messages: [{ role: 'user', content: userMsg }],
     maxTokens: 800,
+    responseFormat: 'json_object',
   });
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   return JSON.parse(cleaned) as CompatibilityResult;
