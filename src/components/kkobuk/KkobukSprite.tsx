@@ -38,10 +38,10 @@ export const SPRITE_MAP: Record<SpriteKey, SpriteAsset> = {
   side: { src: `${BASE}/characters/turnaround_side.png`, w: 158, h: 242 },
   back: { src: `${BASE}/characters/turnaround_back.png`, w: 177, h: 242 },
 
-  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 138, h: 190 },
-  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 165, h: 225 },
-  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 182, h: 206 },
-  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 170, h: 205 },
+  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 180, h: 216 },
+  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 211, h: 251 },
+  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 216, h: 232 },
+  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 183, h: 232 },
 
   'mood-기쁨': { src: `${BASE}/expressions/expr_happy.png`, w: 98, h: 93 },
   'mood-신남': { src: `${BASE}/expressions/expr_excited.png`, w: 101, h: 93 },

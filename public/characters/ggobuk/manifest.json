@@ -42,8 +42,8 @@
       "name": "basic_friend_waving",
       "src": "/characters/ggobuk/characters/basic_friend_waving.png",
       "size": [
-        138,
-        190
+        180,
+        216
       ]
     },
     {
@@ -51,8 +51,8 @@
       "name": "comfort_bodhisattva_beads",
       "src": "/characters/ggobuk/characters/comfort_bodhisattva_beads.png",
       "size": [
-        170,
-        205
+        183,
+        232
       ]
     },
     {
@@ -60,8 +60,8 @@
       "name": "direct_shaman_bell",
       "src": "/characters/ggobuk/characters/direct_shaman_bell.png",
       "size": [
-        182,
-        206
+        216,
+        232
       ]
     },
     {
@@ -78,8 +78,8 @@
       "name": "saju_master_staff",
       "src": "/characters/ggobuk/characters/saju_master_staff.png",
       "size": [
-        165,
-        225
+        211,
+        251
       ]
     },
     {
