@@ -40,7 +40,7 @@ export default function AuspiciousPage() {
   }
 
   return (
-    <main className="px-5 pt-8 pb-12">
+    <main className="px-5 pt-8 pb-32">
       <h1 className="text-2xl font-bold">길일 찾기</h1>
       <p className="text-xs opacity-60 mt-1">중요한 날, 사주에 맞는 좋은 날짜를 골라줄게</p>
 

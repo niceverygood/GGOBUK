@@ -53,7 +53,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="px-5 pt-8 pb-12">
+    <main className="px-5 pt-8 pb-32">
       <h1 className="text-2xl font-bold">알림 설정</h1>
 
       <section className="mt-6 rounded-3xl bg-white shadow-sm p-5 space-y-4">

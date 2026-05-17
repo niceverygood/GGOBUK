@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card, ButtonPrimary, Badge } from '@/components/ui/primitives';
+import { BottomActionBar } from '@/components/nav/BottomActionBar';
 
 export default function ProPage() {
   return (
@@ -53,7 +54,7 @@ function ProPageInner() {
   }
 
   return (
-    <main className="px-5 pt-8 pb-32 relative">
+    <main className="px-5 pt-8 pb-[15rem] relative">
       <div className="hanji-overlay" />
       <div className="relative">
         <Card className="p-5 text-center">
@@ -140,7 +141,7 @@ function ProPageInner() {
         </Card>
       </div>
 
-      <div className="fixed left-0 right-0 bottom-0 px-5 pb-6 pt-3 bg-gradient-to-t from-ivory via-ivory/95 to-transparent max-w-md mx-auto">
+      <BottomActionBar>
         {isPro ? (
           <ButtonPrimary onClick={cancel}>구독 해지</ButtonPrimary>
         ) : (
@@ -149,7 +150,7 @@ function ProPageInner() {
           </ButtonPrimary>
         )}
         <p className="mt-2 text-[11px] font-bold text-muted text-center">언제든 해지 가능. 결제 기간 종료까지 Pro 유지.</p>
-      </div>
+      </BottomActionBar>
     </main>
   );
 }

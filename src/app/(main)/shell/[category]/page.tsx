@@ -5,6 +5,7 @@ import { INTERPRETATION_CATEGORIES, generateInterpretation } from '@/lib/llm/int
 import { buildSajuResult } from '@/lib/saju';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card } from '@/components/ui/primitives';
+import { BottomActionBar } from '@/components/nav/BottomActionBar';
 import { InterpretationBody } from '@/components/shell/InterpretationBody';
 import type { InterpretationCategory } from '@/types/db';
 
@@ -75,7 +76,7 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
   }
 
   return (
-    <main className="px-5 pt-8 pb-28 relative min-h-dvh">
+    <main className="px-5 pt-8 pb-[14rem] relative min-h-dvh">
       <div className="hanji-overlay" />
       <div className="relative">
         <Link href="/shell" className="text-xs font-bold text-muted">
@@ -110,14 +111,14 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         </Card>
       </div>
 
-      <div className="fixed left-0 right-0 bottom-0 px-5 pb-6 pt-3 bg-gradient-to-t from-ivory via-ivory/95 to-transparent max-w-md mx-auto">
+      <BottomActionBar>
         <Link
           href="/chat"
           className="block w-full rounded-2xl bg-navy text-white text-center py-4 font-black shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
         >
           꼬북도사에게 더 물어보기
         </Link>
-      </div>
+      </BottomActionBar>
     </main>
   );
 }

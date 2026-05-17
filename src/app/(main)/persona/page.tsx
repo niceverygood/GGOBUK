@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { KkobukSprite, type SpriteKey } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, ButtonPrimary } from '@/components/ui/primitives';
+import { BottomActionBar } from '@/components/nav/BottomActionBar';
 
 const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
   kkobuk: 'persona-kkobuk',
@@ -50,7 +51,7 @@ export default function PersonaSelectionPage() {
   }
 
   return (
-    <main className="px-5 pt-8 pb-32 relative">
+    <main className="px-5 pt-8 pb-[15rem] relative">
       <div className="hanji-overlay" />
       <div className="relative">
         <Badge>페르소나 전환</Badge>
@@ -103,13 +104,11 @@ export default function PersonaSelectionPage() {
         </Card>
       </div>
 
-      <div className="fixed left-0 right-0 bottom-0 px-5 pb-6 pt-3 bg-gradient-to-t from-ivory via-ivory/95 to-transparent">
-        <div className="max-w-md mx-auto">
-          <ButtonPrimary tone="mint" onClick={start} disabled={loading}>
-            {loading ? '대화를 여는 중...' : '이 모드로 대화하기'}
-          </ButtonPrimary>
-        </div>
-      </div>
+      <BottomActionBar>
+        <ButtonPrimary tone="mint" onClick={start} disabled={loading}>
+          {loading ? '대화를 여는 중...' : '이 모드로 대화하기'}
+        </ButtonPrimary>
+      </BottomActionBar>
     </main>
   );
 }

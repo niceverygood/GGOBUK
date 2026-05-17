@@ -26,7 +26,7 @@ export default async function CompatPage({ params }: PageProps) {
   const compat = rel.compatibility;
 
   return (
-    <main className="px-5 pt-8 pb-12">
+    <main className="px-5 pt-8 pb-32">
       <Link href="/relations" className="text-xs opacity-60">
         ← 인연
       </Link>
