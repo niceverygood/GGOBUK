@@ -1,25 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { loadPreviewInput, clearPreviewInput } from '@/lib/saju/preview';
+
+function loginErrorMessage(error: string): string {
+  if (error === 'kakao_oauth_failed') return '카카오 로그인 연결에 실패했어. 잠시 후 다시 시도해줘.';
+  if (error === 'kakao_callback_failed') return '카카오 인증은 됐지만 세션 생성에 실패했어. 설정을 다시 확인해줘.';
+  if (error === 'missing_oauth_code') return '카카오 로그인 응답이 올바르지 않았어. 다시 시도해줘.';
+  return error;
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<'kakao' | 'test' | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error) setErr(loginErrorMessage(error));
+  }, []);
+
   async function signInWithKakao() {
     setErr(null);
     setLoading('kakao');
-    const supabase = createClient();
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? window.location.origin;
-    await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: { redirectTo: `${baseUrl}/callback?next=/onboarding/saju` },
-    });
+    try {
+      const supabase = createClient();
+      const baseUrl = window.location.origin;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: { redirectTo: `${baseUrl}/callback?next=/home` },
+      });
+      if (error) throw error;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '카카오 로그인 실패';
+      setErr(msg);
+      setLoading(null);
+    }
   }
 
   async function testLogin() {
