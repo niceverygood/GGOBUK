@@ -88,19 +88,27 @@ export async function POST(req: Request) {
     .eq('saju_a_id', selfProfile.id)
     .eq('saju_b_id', otherProfile.id)
     .maybeSingle();
+  let relationId = existing?.id;
   if (existing) {
     await supabase
       .from('relations')
       .update({ compatibility: result })
       .eq('id', existing.id);
   } else {
-    await supabase.from('relations').insert({
-      user_id: user.id,
-      saju_a_id: selfProfile.id,
-      saju_b_id: otherProfile.id,
-      compatibility: result,
-    });
+    const { data: inserted, error } = await supabase
+      .from('relations')
+      .insert({
+        user_id: user.id,
+        saju_a_id: selfProfile.id,
+        saju_b_id: otherProfile.id,
+        compatibility: result,
+      })
+      .select('id')
+      .single();
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    relationId = inserted.id;
   }
 
-  return NextResponse.json({ result });
+  return NextResponse.json({ result, relationId });
 }
