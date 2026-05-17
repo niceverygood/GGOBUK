@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
+import { serverAppOrigin } from '@/lib/app-url';
 import { payReady } from '@/lib/kakao/pay';
 
 const Body = z.object({ plan: z.enum(['monthly', 'yearly']) });
@@ -12,12 +13,13 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { plan } = Body.parse(await req.json());
   const amount = plan === 'monthly' ? 7900 : 79000;
   const partnerOrderId = `kkobuk_${user.id.slice(0, 8)}_${Date.now()}`;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+  const baseUrl = serverAppOrigin();
 
   const data = await payReady({
     partnerOrderId,

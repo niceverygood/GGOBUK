@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { normalizeOrigin, isLocalOrigin, serverAppOrigin } from '@/lib/app-url';
 
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY?.trim();
 const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -173,13 +174,14 @@ function openRouterMessages(params: CompleteParams): OpenRouterMessage[] {
 }
 
 function appReferer(): string | undefined {
-  const explicit =
-    process.env.OPENROUTER_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  if (explicit) return explicit;
+  const explicit = normalizeOrigin(process.env.OPENROUTER_SITE_URL);
+  if (explicit && !isLocalOrigin(explicit)) return explicit;
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
-  return vercelUrl ? `https://${vercelUrl}` : undefined;
+  if (vercelUrl) return `https://${vercelUrl}`;
+
+  const appOrigin = serverAppOrigin();
+  return isLocalOrigin(appOrigin) ? undefined : appOrigin;
 }
 
 function headerSafe(value: string | undefined, fallback: string): string {
