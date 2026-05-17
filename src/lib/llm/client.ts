@@ -19,14 +19,24 @@ export function isLLMConfigured(): boolean {
   return !!openRouterApiKey || !!anthropic;
 }
 
-export type ModelTier = 'main' | 'cheap' | 'compat';
+export type ModelTier = 'main' | 'cheap' | 'compat' | 'saju';
 type LLMProvider = 'openrouter' | 'anthropic';
+
+const anthropicSajuModel =
+  process.env.ANTHROPIC_MODEL_SAJU?.trim() ||
+  process.env.ANTHROPIC_MODEL_COMPAT?.trim() ||
+  'claude-sonnet-4-20250514';
+
+const openRouterSajuModel =
+  process.env.OPENROUTER_MODEL_SAJU?.trim() ||
+  process.env.OPENROUTER_MODEL_COMPAT?.trim() ||
+  'openai/gpt-5.1';
 
 const ANTHROPIC_MODELS: Record<ModelTier, string> = {
   main: 'claude-sonnet-4-20250514',
   cheap: 'claude-haiku-4-5-20251001',
-  compat:
-    process.env.ANTHROPIC_MODEL_COMPAT?.trim() || 'claude-sonnet-4-20250514',
+  compat: anthropicSajuModel,
+  saju: anthropicSajuModel,
 };
 
 const OPENROUTER_MODELS: Record<ModelTier, string> = {
@@ -34,7 +44,8 @@ const OPENROUTER_MODELS: Record<ModelTier, string> = {
     process.env.OPENROUTER_MODEL_MAIN?.trim() || 'anthropic/claude-opus-4.7',
   cheap:
     process.env.OPENROUTER_MODEL_CHEAP?.trim() || 'anthropic/claude-haiku-4.5',
-  compat: process.env.OPENROUTER_MODEL_COMPAT?.trim() || 'openai/gpt-5.1',
+  compat: openRouterSajuModel,
+  saju: openRouterSajuModel,
 };
 
 const MODELS: Record<ModelTier, string> = openRouterApiKey

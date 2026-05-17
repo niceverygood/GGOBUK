@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { calculatePalja } from '@/lib/saju/palja';
+import { buildSajuResult } from '@/lib/saju';
+import { enrichAuspiciousSuggestions } from '@/lib/llm/auspicious';
 import { CHEONGAN_OHAENG_IDX, JIJI_OHAENG_IDX } from '@/lib/saju/constants';
 import type { Palja } from '@/lib/saju/types';
+import type { SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
   purpose: z.string().min(1),
@@ -12,6 +15,7 @@ const Body = z.object({
 });
 
 export const runtime = 'nodejs';
+export const maxDuration = 90;
 
 const PURPOSE_PREFERRED_OHAENG: Record<string, number[]> = {
   이사: [2, 3], // 토, 금
@@ -26,33 +30,55 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const { data: userRow } = await supabase.from('users').select('is_pro').eq('id', user.id).single();
-  if (!userRow?.is_pro) return NextResponse.json({ error: 'pro_only' }, { status: 402 });
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('is_pro')
+    .eq('id', user.id)
+    .single();
+  if (!userRow?.is_pro)
+    return NextResponse.json({ error: 'pro_only' }, { status: 402 });
 
   const { purpose, start, end } = Body.parse(await req.json());
 
   const { data: profile } = await supabase
     .from('saju_profiles')
-    .select('palja, ilgan')
+    .select('*')
     .eq('owner_id', user.id)
     .eq('relation_type', 'self')
-    .maybeSingle();
-  if (!profile?.palja) return NextResponse.json({ error: 'no profile' }, { status: 404 });
+    .maybeSingle<SajuProfileRow>();
+  if (!profile?.palja)
+    return NextResponse.json({ error: 'no profile' }, { status: 404 });
 
   const palja = profile.palja as Palja;
   const ilganIdx = palja.day.ganIdx;
   const ilganOhaeng = CHEONGAN_OHAENG_IDX[ilganIdx];
-  const preferred = PURPOSE_PREFERRED_OHAENG[purpose] ?? [(ilganOhaeng + 1) % 5];
+  const preferred = PURPOSE_PREFERRED_OHAENG[purpose] ?? [
+    (ilganOhaeng + 1) % 5,
+  ];
 
   const startD = new Date(start + 'T12:00:00');
   const endD = new Date(end + 'T12:00:00');
-  const suggestions: Array<{ date: string; reason: string; score: number }> = [];
+  const suggestions: Array<{
+    date: string;
+    reason: string;
+    score: number;
+    dayPillar: string;
+  }> = [];
 
-  for (let d = new Date(startD); d <= endD && suggestions.length < 100; d.setDate(d.getDate() + 1)) {
+  for (
+    let d = new Date(startD);
+    d <= endD && suggestions.length < 100;
+    d.setDate(d.getDate() + 1)
+  ) {
     const iso = d.toISOString().slice(0, 10);
-    const ilji = calculatePalja({ birthDate: iso, isLunar: false, gender: 'M' }).day;
+    const ilji = calculatePalja({
+      birthDate: iso,
+      isLunar: false,
+      gender: 'M',
+    }).day;
     const dayGanOhaeng = CHEONGAN_OHAENG_IDX[ilji.ganIdx];
     const dayJiOhaeng = JIJI_OHAENG_IDX[ilji.jiIdx];
     let score = 50;
@@ -80,7 +106,13 @@ export async function POST(req: Request) {
       [4, 10],
       [5, 11],
     ];
-    if (chungPairs.some(([a, b]) => (a === ilji.jiIdx && b === palja.day.jiIdx) || (b === ilji.jiIdx && a === palja.day.jiIdx))) {
+    if (
+      chungPairs.some(
+        ([a, b]) =>
+          (a === ilji.jiIdx && b === palja.day.jiIdx) ||
+          (b === ilji.jiIdx && a === palja.day.jiIdx),
+      )
+    ) {
       score -= 25;
       reasons.push('일지와 충 — 피하는 게 좋아');
     }
@@ -90,10 +122,35 @@ export async function POST(req: Request) {
         date: iso,
         reason: reasons.join(' · ') || '무난한 흐름',
         score: Math.min(100, score),
+        dayPillar: `${ilji.ganHanja}${ilji.jiHanja} (${ilji.gan}${ilji.ji})`,
       });
     }
   }
 
   suggestions.sort((a, b) => b.score - a.score);
-  return NextResponse.json({ suggestions: suggestions.slice(0, 10) });
+  const top = suggestions.slice(0, 10);
+  try {
+    const saju = buildSajuResult({
+      birthDate: profile.birth_date,
+      birthTime: profile.birth_time ?? undefined,
+      isLunar: profile.is_lunar,
+      isLeapMonth: profile.is_leap_month,
+      gender: profile.gender,
+    });
+    const enriched = await enrichAuspiciousSuggestions({
+      saju,
+      name: profile.name,
+      purpose,
+      start,
+      end,
+      candidates: top,
+    });
+    return NextResponse.json({ suggestions: enriched });
+  } catch {
+    return NextResponse.json({
+      suggestions: top.map(
+        ({ dayPillar: _dayPillar, ...suggestion }) => suggestion,
+      ),
+    });
+  }
 }

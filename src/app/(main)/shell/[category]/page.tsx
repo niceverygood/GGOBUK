@@ -1,12 +1,16 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase/server';
-import { INTERPRETATION_CATEGORIES, generateInterpretation } from '@/lib/llm/interpret';
+import {
+  INTERPRETATION_CATEGORIES,
+  generateInterpretation,
+} from '@/lib/llm/interpret';
 import { buildSajuResult } from '@/lib/saju';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
 import { InterpretationBody } from '@/components/shell/InterpretationBody';
+import { RegenerateInterpretationButton } from '@/components/shell/RegenerateInterpretationButton';
 import type { InterpretationCategory } from '@/types/db';
 
 interface PageProps {
@@ -32,7 +36,11 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
     .maybeSingle();
   if (!profile) redirect('/onboarding/saju');
 
-  const { data: userRow } = await supabase.from('users').select('is_pro').eq('id', user.id).single();
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('is_pro')
+    .eq('id', user.id)
+    .single();
   const isPro = !!userRow?.is_pro;
   const catIdx = INTERPRETATION_CATEGORIES.findIndex((c) => c.key === category);
   if (!isPro && catIdx >= 3) redirect('/more/pro');
@@ -56,7 +64,11 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         isLeapMonth: profile.is_leap_month,
         gender: profile.gender,
       });
-      const r = await generateInterpretation(saju, category as InterpretationCategory, profile.name);
+      const r = await generateInterpretation(
+        saju,
+        category as InterpretationCategory,
+        profile.name,
+      );
       content = r.content;
       await admin.from('interpretations').insert({
         saju_id: profile.id,
@@ -67,7 +79,10 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('OPENROUTER_API_KEY') || msg.includes('ANTHROPIC_API_KEY')) {
+      if (
+        msg.includes('OPENROUTER_API_KEY') ||
+        msg.includes('ANTHROPIC_API_KEY')
+      ) {
         llmUnavailable = true;
       } else {
         throw e;
@@ -85,8 +100,12 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
 
         <div className="flex items-start justify-between mt-2">
           <div>
-            <p className="text-xs font-extrabold text-muted">꼬북도사의 정식 풀이</p>
-            <h1 className="text-2xl font-black tracking-tight text-navy">{cat.title}</h1>
+            <p className="text-xs font-extrabold text-muted">
+              꼬북도사의 정식 풀이
+            </p>
+            <h1 className="text-2xl font-black tracking-tight text-navy">
+              {cat.title}
+            </h1>
           </div>
           <KkobukAvatar variant="dosa" size="md" />
         </div>
@@ -96,19 +115,32 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
             <div className="text-sm font-bold text-navy leading-relaxed space-y-3">
               <p>꼬북도사가 잠시 자리를 비웠어요 🐢</p>
               <p className="text-muted font-semibold text-[13px] leading-7">
-                LLM 풀이는 <code className="bg-ivory px-1.5 py-0.5 rounded">OPENROUTER_API_KEY</code>
-                또는 <code className="bg-ivory px-1.5 py-0.5 rounded">ANTHROPIC_API_KEY</code>가 설정돼야
-                동작합니다. 키를 채우고 새로고침하면 같은 자리에서 풀이가 나와요.
+                LLM 풀이는{' '}
+                <code className="bg-ivory px-1.5 py-0.5 rounded">
+                  OPENROUTER_API_KEY
+                </code>
+                또는{' '}
+                <code className="bg-ivory px-1.5 py-0.5 rounded">
+                  ANTHROPIC_API_KEY
+                </code>
+                가 설정돼야 동작합니다. 키를 채우고 새로고침하면 같은 자리에서
+                풀이가 나와요.
               </p>
               <p className="text-muted font-semibold text-[12px] mt-4">
-                참고로 사주 8자와 오행, 십성, 신살, 대운 같은 계산 기반 정보는 LLM 없이도 등껍질
-                메인 화면에서 다 볼 수 있어요.
+                참고로 사주 8자와 오행, 십성, 신살, 대운 같은 계산 기반 정보는
+                LLM 없이도 등껍질 메인 화면에서 다 볼 수 있어요.
               </p>
             </div>
           ) : (
             <InterpretationBody text={content} />
           )}
         </Card>
+
+        {!llmUnavailable && (
+          <RegenerateInterpretationButton
+            category={category as InterpretationCategory}
+          />
+        )}
       </div>
 
       <BottomActionBar>
