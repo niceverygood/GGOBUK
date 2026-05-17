@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   description: '꼬북이 도사가 친근하게 풀어주는 사주. 등껍질을 탭하면 운명이 보입니다.',
   applicationName: '꼬북점',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: { capable: true, statusBarStyle: 'default', title: '꼬북점' },
 };
 
