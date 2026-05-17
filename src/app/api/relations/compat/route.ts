@@ -11,7 +11,7 @@ const Body = z.object({
 });
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 function rowToSajuInput(row: SajuProfileRow) {
   return buildSajuResult({
@@ -28,7 +28,8 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = Body.parse(await req.json());
 
@@ -38,7 +39,8 @@ export async function POST(req: Request) {
     .eq('owner_id', user.id)
     .eq('relation_type', 'self')
     .maybeSingle<SajuProfileRow>();
-  if (!selfProfile) return NextResponse.json({ error: 'no self profile' }, { status: 404 });
+  if (!selfProfile)
+    return NextResponse.json({ error: 'no self profile' }, { status: 404 });
 
   const { data: otherProfile } = await supabase
     .from('saju_profiles')
@@ -46,7 +48,8 @@ export async function POST(req: Request) {
     .eq('id', body.saju_b_id)
     .eq('owner_id', user.id)
     .maybeSingle<SajuProfileRow>();
-  if (!otherProfile) return NextResponse.json({ error: 'other not found' }, { status: 404 });
+  if (!otherProfile)
+    return NextResponse.json({ error: 'other not found' }, { status: 404 });
 
   const sajuA = rowToSajuInput(selfProfile);
   const sajuB = rowToSajuInput(otherProfile);
@@ -58,14 +61,24 @@ export async function POST(req: Request) {
       sajuB,
       nameA: selfProfile.name,
       nameB: otherProfile.name,
-      relationLabel: body.relation_label ?? otherProfile.relation_label ?? undefined,
+      relationLabel:
+        body.relation_label ?? otherProfile.relation_label ?? undefined,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
-    if (msg.includes('OPENROUTER_API_KEY') || msg.includes('ANTHROPIC_API_KEY')) {
-      return NextResponse.json({ error: 'llm_not_configured' }, { status: 503 });
+    if (
+      msg.includes('OPENROUTER_API_KEY') ||
+      msg.includes('ANTHROPIC_API_KEY')
+    ) {
+      return NextResponse.json(
+        { error: 'llm_not_configured' },
+        { status: 503 },
+      );
     }
-    return NextResponse.json({ error: msg || 'compat failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: msg || 'compat failed' },
+      { status: 500 },
+    );
   }
 
   // Upsert the relation edge
@@ -76,7 +89,10 @@ export async function POST(req: Request) {
     .eq('saju_b_id', otherProfile.id)
     .maybeSingle();
   if (existing) {
-    await supabase.from('relations').update({ compatibility: result }).eq('id', existing.id);
+    await supabase
+      .from('relations')
+      .update({ compatibility: result })
+      .eq('id', existing.id);
   } else {
     await supabase.from('relations').insert({
       user_id: user.id,

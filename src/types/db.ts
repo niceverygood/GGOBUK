@@ -106,6 +106,11 @@ export interface DailyFortuneRow {
   created_at: string;
 }
 
+export interface CompatibilitySection {
+  title: string;
+  body: string;
+}
+
 export interface CompatibilityResult {
   score: number;
   hap: string[];
@@ -113,6 +118,11 @@ export interface CompatibilityResult {
   highlights: string[];
   cautions: string[];
   summary: string;
+  headline?: string;
+  metaphor?: string;
+  verdict?: string;
+  sections?: CompatibilitySection[];
+  actionTips?: string[];
 }
 
 export interface RelationRow {

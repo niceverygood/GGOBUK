@@ -3,7 +3,9 @@ import Anthropic from '@anthropic-ai/sdk';
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY?.trim();
 const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim();
 
-const anthropic = anthropicApiKey ? new Anthropic({ apiKey: anthropicApiKey }) : null;
+const anthropic = anthropicApiKey
+  ? new Anthropic({ apiKey: anthropicApiKey })
+  : null;
 const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export class LLMNotConfiguredError extends Error {
@@ -17,20 +19,27 @@ export function isLLMConfigured(): boolean {
   return !!openRouterApiKey || !!anthropic;
 }
 
-export type ModelTier = 'main' | 'cheap';
+export type ModelTier = 'main' | 'cheap' | 'compat';
 type LLMProvider = 'openrouter' | 'anthropic';
 
 const ANTHROPIC_MODELS: Record<ModelTier, string> = {
   main: 'claude-sonnet-4-20250514',
   cheap: 'claude-haiku-4-5-20251001',
+  compat:
+    process.env.ANTHROPIC_MODEL_COMPAT?.trim() || 'claude-sonnet-4-20250514',
 };
 
 const OPENROUTER_MODELS: Record<ModelTier, string> = {
-  main: process.env.OPENROUTER_MODEL_MAIN?.trim() || 'anthropic/claude-opus-4.7',
-  cheap: process.env.OPENROUTER_MODEL_CHEAP?.trim() || 'anthropic/claude-haiku-4.5',
+  main:
+    process.env.OPENROUTER_MODEL_MAIN?.trim() || 'anthropic/claude-opus-4.7',
+  cheap:
+    process.env.OPENROUTER_MODEL_CHEAP?.trim() || 'anthropic/claude-haiku-4.5',
+  compat: process.env.OPENROUTER_MODEL_COMPAT?.trim() || 'openai/gpt-5.1',
 };
 
-const MODELS: Record<ModelTier, string> = openRouterApiKey ? OPENROUTER_MODELS : ANTHROPIC_MODELS;
+const MODELS: Record<ModelTier, string> = openRouterApiKey
+  ? OPENROUTER_MODELS
+  : ANTHROPIC_MODELS;
 
 function getProvider(): LLMProvider {
   if (openRouterApiKey) return 'openrouter';
@@ -53,7 +62,9 @@ export interface CompleteParams {
   responseFormat?: 'json_object';
 }
 
-export async function complete(params: CompleteParams): Promise<{ text: string; tokensUsed: number; model: string }> {
+export async function complete(
+  params: CompleteParams,
+): Promise<{ text: string; tokensUsed: number; model: string }> {
   const provider = getProvider();
   const model = MODELS[params.tier];
   if (provider === 'openrouter') {
@@ -100,7 +111,10 @@ export async function* stream(params: CompleteParams): AsyncIterable<string> {
     messages: params.messages,
   });
   for await (const event of res) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+    if (
+      event.type === 'content_block_delta' &&
+      event.delta.type === 'text_delta'
+    ) {
       yield event.delta.text;
     }
   }
@@ -148,7 +162,9 @@ function openRouterMessages(params: CompleteParams): OpenRouterMessage[] {
 }
 
 function appReferer(): string | undefined {
-  const explicit = process.env.OPENROUTER_SITE_URL?.trim() || process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  const explicit =
+    process.env.OPENROUTER_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BASE_URL?.trim();
   if (explicit) return explicit;
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
@@ -173,7 +189,11 @@ function openRouterHeaders(): Record<string, string> {
   return headers;
 }
 
-function openRouterBody(model: string, params: CompleteParams, streamResponse = false): Record<string, unknown> {
+function openRouterBody(
+  model: string,
+  params: CompleteParams,
+  streamResponse = false,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model,
     messages: openRouterMessages(params),
@@ -224,7 +244,9 @@ async function openRouterComplete(
 
   const json = (await res.json()) as OpenRouterCompletionResponse;
   if (json.error) {
-    throw new Error(`OpenRouter API error ${json.error.code ?? 'unknown'}: ${json.error.message ?? 'unknown error'}`);
+    throw new Error(
+      `OpenRouter API error ${json.error.code ?? 'unknown'}: ${json.error.message ?? 'unknown error'}`,
+    );
   }
 
   const text = normalizeContent(json.choices?.[0]?.message?.content);
@@ -239,19 +261,25 @@ async function openRouterComplete(
 
 function parseStreamChunk(line: string): string {
   const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith(':') || !trimmed.startsWith('data:')) return '';
+  if (!trimmed || trimmed.startsWith(':') || !trimmed.startsWith('data:'))
+    return '';
 
   const data = trimmed.slice(5).trim();
   if (!data || data === '[DONE]') return '';
 
   const json = JSON.parse(data) as OpenRouterCompletionResponse;
   if (json.error) {
-    throw new Error(`OpenRouter API error ${json.error.code ?? 'unknown'}: ${json.error.message ?? 'unknown error'}`);
+    throw new Error(
+      `OpenRouter API error ${json.error.code ?? 'unknown'}: ${json.error.message ?? 'unknown error'}`,
+    );
   }
   return normalizeContent(json.choices?.[0]?.delta?.content);
 }
 
-async function* openRouterStream(model: string, params: CompleteParams): AsyncIterable<string> {
+async function* openRouterStream(
+  model: string,
+  params: CompleteParams,
+): AsyncIterable<string> {
   const res = await fetch(OPENROUTER_CHAT_URL, {
     method: 'POST',
     headers: openRouterHeaders(),
