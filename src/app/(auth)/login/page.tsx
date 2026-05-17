@@ -55,8 +55,7 @@ export default function LoginPage() {
         throw new Error(detail?.error ?? '테스트 계정 준비에 실패했어');
       }
       clearPreviewInput();
-      router.push('/home');
-      router.refresh();
+      router.replace('/home');
     } catch (e) {
       const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
       setErr(

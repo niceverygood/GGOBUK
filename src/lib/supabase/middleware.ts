@@ -3,7 +3,27 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { isSupabaseConfigured, supabaseUrl, supabasePublicKey } from './env';
 
 export async function updateSession(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  const path = url.pathname;
+  const isAuthRoute =
+    path.startsWith('/login') ||
+    path.startsWith('/splash') ||
+    path.startsWith('/api/auth') ||
+    path.startsWith('/callback');
+  const isPublic =
+    path === '/' ||
+    isAuthRoute ||
+    path.startsWith('/preview') ||
+    path.startsWith('/api/preview') ||
+    path.startsWith('/sprite-test') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/icons') ||
+    path.startsWith('/characters') ||
+    path.startsWith('/manifest.json');
+
   let response = NextResponse.next({ request });
+
+  if (isPublic || path.startsWith('/api/')) return response;
 
   // If Supabase isn't configured (local dev without keys), let the request through.
   // Pages and routes that actually need auth will fail individually with clearer messages.
@@ -25,28 +45,10 @@ export async function updateSession(request: NextRequest) {
   });
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  const url = request.nextUrl.clone();
-  const path = url.pathname;
-  const isAuthRoute =
-    path.startsWith('/login') ||
-    path.startsWith('/splash') ||
-    path.startsWith('/api/auth') ||
-    path.startsWith('/callback');
-  const isPublic =
-    path === '/' ||
-    isAuthRoute ||
-    path.startsWith('/preview') ||
-    path.startsWith('/api/preview') ||
-    path.startsWith('/sprite-test') ||
-    path.startsWith('/_next') ||
-    path.startsWith('/icons') ||
-    path.startsWith('/characters') ||
-    path.startsWith('/manifest.json');
-
-  if (!user && !isPublic) {
+  if (!session) {
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
