@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import { generateCompat } from '@/lib/llm/compat';
+import { CREDIT_COSTS } from '@/lib/credits';
+import {
+  addCredits,
+  isInsufficientCreditsError,
+  spendCredits,
+} from '@/lib/credits/server';
 import type { SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
@@ -54,6 +60,23 @@ export async function POST(req: Request) {
   const sajuA = rowToSajuInput(selfProfile);
   const sajuB = rowToSajuInput(otherProfile);
 
+  try {
+    await spendCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.compatibility,
+      reason: '궁합 AI 리포트',
+      referenceId: otherProfile.id,
+    });
+  } catch (e) {
+    if (isInsufficientCreditsError(e)) {
+      return NextResponse.json(
+        { error: 'insufficient_credits' },
+        { status: 402 },
+      );
+    }
+    throw e;
+  }
+
   let result;
   try {
     result = await generateCompat({
@@ -70,11 +93,25 @@ export async function POST(req: Request) {
       msg.includes('OPENROUTER_API_KEY') ||
       msg.includes('ANTHROPIC_API_KEY')
     ) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.compatibility,
+        reason: '궁합 AI 리포트 실패 환불',
+        kind: 'refund',
+        referenceId: otherProfile.id,
+      }).catch(() => undefined);
       return NextResponse.json(
         { error: 'llm_not_configured' },
         { status: 503 },
       );
     }
+    await addCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.compatibility,
+      reason: '궁합 AI 리포트 실패 환불',
+      kind: 'refund',
+      referenceId: otherProfile.id,
+    }).catch(() => undefined);
     return NextResponse.json(
       { error: msg || 'compat failed' },
       { status: 500 },
@@ -90,10 +127,20 @@ export async function POST(req: Request) {
     .maybeSingle();
   let relationId = existing?.id;
   if (existing) {
-    await supabase
+    const { error } = await supabase
       .from('relations')
       .update({ compatibility: result })
       .eq('id', existing.id);
+    if (error) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.compatibility,
+        reason: '궁합 AI 리포트 저장 실패 환불',
+        kind: 'refund',
+        referenceId: otherProfile.id,
+      }).catch(() => undefined);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   } else {
     const { data: inserted, error } = await supabase
       .from('relations')
@@ -105,8 +152,16 @@ export async function POST(req: Request) {
       })
       .select('id')
       .single();
-    if (error)
+    if (error) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.compatibility,
+        reason: '궁합 AI 리포트 저장 실패 환불',
+        kind: 'refund',
+        referenceId: otherProfile.id,
+      }).catch(() => undefined);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     relationId = inserted.id;
   }
 

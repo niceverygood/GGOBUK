@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CREDIT_COSTS } from '@/lib/credits';
 
 interface Suggestion {
   date: string;
@@ -16,12 +17,12 @@ export default function AuspiciousPage() {
   const [end, setEnd] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Suggestion[]>([]);
-  const [forbidden, setForbidden] = useState(false);
+  const [needsCredit, setNeedsCredit] = useState(false);
 
   async function search() {
     setLoading(true);
     setResults([]);
-    setForbidden(false);
+    setNeedsCredit(false);
     try {
       const res = await fetch('/api/auspicious', {
         method: 'POST',
@@ -29,7 +30,7 @@ export default function AuspiciousPage() {
         body: JSON.stringify({ purpose, start, end }),
       });
       if (res.status === 402) {
-        setForbidden(true);
+        setNeedsCredit(true);
         return;
       }
       const d = await res.json();
@@ -42,7 +43,9 @@ export default function AuspiciousPage() {
   return (
     <main className="px-5 pt-8 pb-32">
       <h1 className="text-2xl font-bold">길일 찾기</h1>
-      <p className="text-xs opacity-60 mt-1">중요한 날, 사주에 맞는 좋은 날짜를 골라줄게</p>
+      <p className="text-xs opacity-60 mt-1">
+        중요한 날, 사주에 맞는 좋은 날짜를 골라줄게
+      </p>
 
       <div className="mt-6 space-y-3">
         <input
@@ -72,13 +75,19 @@ export default function AuspiciousPage() {
         >
           {loading ? '꼬북도사가 살펴보는 중...' : '좋은 날 찾기'}
         </button>
+        <p className="text-center text-[11px] font-bold opacity-60">
+          검색 1회에 {CREDIT_COSTS.auspicious} 크래딧을 사용해.
+        </p>
       </div>
 
-      {forbidden && (
+      {needsCredit && (
         <div className="mt-6 rounded-2xl bg-[var(--color-gold)]/30 p-4 text-sm">
-          이 기능은 Pro 전용이야.
-          <button onClick={() => router.push('/more/pro')} className="ml-2 underline font-semibold">
-            Pro로 업그레이드
+          크래딧이 부족해.
+          <button
+            onClick={() => router.push('/more/pro')}
+            className="ml-2 underline font-semibold"
+          >
+            충전하기
           </button>
         </div>
       )}
@@ -88,7 +97,9 @@ export default function AuspiciousPage() {
           <li key={r.date} className="rounded-2xl bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="font-semibold">{r.date}</div>
-              <div className="text-[var(--color-shell-dark)] font-bold">{r.score}점</div>
+              <div className="text-[var(--color-shell-dark)] font-bold">
+                {r.score}점
+              </div>
             </div>
             <p className="mt-1 text-sm opacity-80">{r.reason}</p>
           </li>

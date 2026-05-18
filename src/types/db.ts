@@ -1,12 +1,32 @@
 // Hand-written DB row types matching supabase/migrations/00000000000001_init.sql.
 // Regenerate with `supabase gen types` once the project is linked.
 
-import type { Palja, OhaengCount, SipsungMap, SinsalEntry, DaewoonPeriod } from '@/lib/saju/types';
+import type {
+  Palja,
+  OhaengCount,
+  SipsungMap,
+  SinsalEntry,
+  DaewoonPeriod,
+} from '@/lib/saju/types';
 
-export type RelationType = 'self' | 'family' | 'friend' | 'lover' | 'colleague' | 'other';
+export type RelationType =
+  | 'self'
+  | 'family'
+  | 'friend'
+  | 'lover'
+  | 'colleague'
+  | 'other';
 export type Persona = 'kkobuk' | 'dosa' | 'mudang' | 'bosal';
 export type SubscriptionPlan = 'monthly' | 'yearly';
-export type SubscriptionStatus = 'pending' | 'active' | 'cancelled' | 'expired' | 'failed';
+export type SubscriptionStatus =
+  | 'pending'
+  | 'active'
+  | 'cancelled'
+  | 'expired'
+  | 'failed';
+export type CreditPackageId = 'starter' | 'plus' | 'deep';
+export type CreditPurchaseStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
+export type CreditTransactionKind = 'purchase' | 'spend' | 'refund' | 'bonus';
 export type InterpretationCategory =
   | 'overview'
   | 'ohaeng'
@@ -27,6 +47,7 @@ export interface UserRow {
   kakao_id: string | null;
   is_pro: boolean;
   pro_expires_at: string | null;
+  credit_balance: number;
   push_enabled: boolean;
   push_token: string | null;
   push_time: string;
@@ -165,4 +186,34 @@ export interface UsageLogRow {
   date: string;
   chat_messages: number;
   interpretations_viewed: number;
+}
+
+export interface CreditPurchaseRow {
+  id: string;
+  user_id: string;
+  partner_order_id: string;
+  kakao_tid: string;
+  package_id: CreditPackageId;
+  credits: number;
+  bonus_credits: number;
+  amount: number;
+  status: CreditPurchaseStatus;
+  approved_at: string | null;
+  payment_method_type: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditTransactionRow {
+  id: string;
+  user_id: string;
+  kind: CreditTransactionKind;
+  amount: number;
+  balance_after: number;
+  reason: string;
+  reference_id: string | null;
+  kakao_tid: string | null;
+  package_id: CreditPackageId | null;
+  price_krw: number | null;
+  created_at: string;
 }

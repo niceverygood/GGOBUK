@@ -46,34 +46,48 @@ export default function PreviewResultPage() {
   const router = useRouter();
   const [name, setName] = useState<string>('테스트');
   const [saju, setSaju] = useState<SajuResult | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<DaewoonPeriod | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<DaewoonPeriod | null>(
+    null,
+  );
 
   useEffect(() => {
-    const stored = loadPreviewInput();
-    if (!stored) {
-      router.replace('/preview');
-      return;
-    }
-    setName(stored.name);
-    try {
-      const result = computePreview(stored.input);
-      setSaju(result);
-      const currentYear = new Date().getFullYear();
-      const curr = result.daewoon.find(
-        (p) => currentYear >= p.startYear && currentYear <= p.startYear + 9,
-      );
-      setSelectedPeriod(curr ?? result.daewoon[0]);
-    } catch (e) {
-      console.error('saju calc failed', e);
-      router.replace('/preview');
-    }
+    const timer = window.setTimeout(() => {
+      const stored = loadPreviewInput();
+      if (!stored) {
+        router.replace('/preview');
+        return;
+      }
+      setName(stored.name);
+      try {
+        const result = computePreview(stored.input);
+        setSaju(result);
+        const currentYear = new Date().getFullYear();
+        const curr = result.daewoon.find(
+          (p) => currentYear >= p.startYear && currentYear <= p.startYear + 9,
+        );
+        setSelectedPeriod(curr ?? result.daewoon[0]);
+      } catch (e) {
+        console.error('saju calc failed', e);
+        router.replace('/preview');
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [router]);
 
   if (!saju) {
-    return <main className="p-10 text-center text-sm font-bold opacity-60">계산 중...</main>;
+    return (
+      <main className="p-10 text-center text-sm font-bold opacity-60">
+        계산 중...
+      </main>
+    );
   }
 
-  const summary = [saju.palja.year, saju.palja.month, saju.palja.day, saju.palja.time]
+  const summary = [
+    saju.palja.year,
+    saju.palja.month,
+    saju.palja.day,
+    saju.palja.time,
+  ]
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .map((p) => `${p.ganHanja}${p.jiHanja}`)
     .join(' · ');
@@ -85,10 +99,16 @@ export default function PreviewResultPage() {
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-xs font-extrabold text-muted">미리보기 · 저장 안 됨</p>
-            <h1 className="text-2xl font-black tracking-tight text-navy truncate">{name}의 등껍질</h1>
+            <p className="text-xs font-extrabold text-muted">
+              미리보기 · 저장 안 됨
+            </p>
+            <h1 className="text-2xl font-black tracking-tight text-navy truncate">
+              {name}의 등껍질
+            </h1>
           </div>
-          <Badge tone="mint" className="shrink-0 whitespace-nowrap">일간 {saju.palja.day.ganOhaeng}</Badge>
+          <Badge tone="mint" className="shrink-0 whitespace-nowrap">
+            일간 {saju.palja.day.ganOhaeng}
+          </Badge>
         </div>
 
         {/* 8 pillars dome */}
@@ -100,27 +120,52 @@ export default function PreviewResultPage() {
         <Card className="mt-6 p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-black text-navy">
-              일간 <span className="font-hanja">{saju.palja.day.ganHanja}</span> ({saju.palja.day.gan}{saju.palja.day.ji})
+              일간 <span className="font-hanja">{saju.palja.day.ganHanja}</span>{' '}
+              ({saju.palja.day.gan}
+              {saju.palja.day.ji})
             </p>
             <span className="text-xs font-black text-[#F4D03F]">핵심</span>
           </div>
-          <p className="mt-1 text-sm font-semibold text-[#82786D]">8자: <span className="font-hanja">{summary}</span></p>
+          <p className="mt-1 text-sm font-semibold text-[#82786D]">
+            8자: <span className="font-hanja">{summary}</span>
+          </p>
         </Card>
 
         {/* Sipsung map */}
         <section className="mt-6 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-5">
           <p className="text-sm font-black text-navy mb-3">십성</p>
           <div className="grid grid-cols-2 gap-2 text-sm font-bold">
-            <Pair label={`연간 (${saju.palja.year.gan})`} value={saju.sipsung.yearGan} />
-            <Pair label={`연지 (${saju.palja.year.ji})`} value={saju.sipsung.yearJi} />
-            <Pair label={`월간 (${saju.palja.month.gan})`} value={saju.sipsung.monthGan} />
-            <Pair label={`월지 (${saju.palja.month.ji})`} value={saju.sipsung.monthJi} />
-            <Pair label={`일지 (${saju.palja.day.ji})`} value={saju.sipsung.dayJi} />
+            <Pair
+              label={`연간 (${saju.palja.year.gan})`}
+              value={saju.sipsung.yearGan}
+            />
+            <Pair
+              label={`연지 (${saju.palja.year.ji})`}
+              value={saju.sipsung.yearJi}
+            />
+            <Pair
+              label={`월간 (${saju.palja.month.gan})`}
+              value={saju.sipsung.monthGan}
+            />
+            <Pair
+              label={`월지 (${saju.palja.month.ji})`}
+              value={saju.sipsung.monthJi}
+            />
+            <Pair
+              label={`일지 (${saju.palja.day.ji})`}
+              value={saju.sipsung.dayJi}
+            />
             {saju.palja.time && saju.sipsung.timeGan && (
-              <Pair label={`시간 (${saju.palja.time.gan})`} value={saju.sipsung.timeGan} />
+              <Pair
+                label={`시간 (${saju.palja.time.gan})`}
+                value={saju.sipsung.timeGan}
+              />
             )}
             {saju.palja.time && saju.sipsung.timeJi && (
-              <Pair label={`시지 (${saju.palja.time.ji})`} value={saju.sipsung.timeJi} />
+              <Pair
+                label={`시지 (${saju.palja.time.ji})`}
+                value={saju.sipsung.timeJi}
+              />
             )}
           </div>
         </section>
@@ -136,7 +181,8 @@ export default function PreviewResultPage() {
                     {s.name}
                   </span>
                   <span className="text-xs font-bold text-muted">
-                    <span className="text-navy/70 mr-1">{s.position}</span>{s.description}
+                    <span className="text-navy/70 mr-1">{s.position}</span>
+                    {s.description}
                   </span>
                 </div>
               ))}
@@ -146,7 +192,9 @@ export default function PreviewResultPage() {
 
         {/* Daewoon timeline */}
         <section className="mt-6 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-2">
-          <p className="text-sm font-black text-navy mb-1 ml-3 mt-2">대운 타임라인</p>
+          <p className="text-sm font-black text-navy mb-1 ml-3 mt-2">
+            대운 타임라인
+          </p>
           <LifeRoad
             periods={saju.daewoon}
             currentYear={currentYear}
@@ -160,13 +208,15 @@ export default function PreviewResultPage() {
             <p className="text-sm font-black text-navy">
               {selectedPeriod.startYear}–{selectedPeriod.startYear + 9} ·{' '}
               <span className="font-hanja">
-                {selectedPeriod.pillar.ganHanja}{selectedPeriod.pillar.jiHanja}
+                {selectedPeriod.pillar.ganHanja}
+                {selectedPeriod.pillar.jiHanja}
               </span>{' '}
               ({selectedPeriod.sipsung})
             </p>
             <p className="mt-1 text-sm font-semibold text-[#82786D]">
-              {selectedPeriod.startAge}세부터 {selectedPeriod.startAge + 9}세까지의 큰 기운.
-              일간 {saju.ilgan}을 기준으로 {selectedPeriod.sipsung}이 강하게 작용해.
+              {selectedPeriod.startAge}세부터 {selectedPeriod.startAge + 9}
+              세까지의 큰 기운. 일간 {saju.ilgan}을 기준으로{' '}
+              {selectedPeriod.sipsung}이 강하게 작용해.
             </p>
           </Card>
         )}
@@ -185,9 +235,15 @@ export default function PreviewResultPage() {
                 key={cat.key}
                 className="min-h-[110px] p-3.5 rounded-3xl bg-white border border-navy/10 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
               >
-                <div className="text-2xl leading-none">{CATEGORY_ICONS[cat.key] ?? '·'}</div>
-                <h4 className="mt-2 text-[15px] font-black text-navy">{cat.title}</h4>
-                <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">{CATEGORY_BLURB[cat.key]}</p>
+                <div className="text-2xl leading-none">
+                  {CATEGORY_ICONS[cat.key] ?? '·'}
+                </div>
+                <h4 className="mt-2 text-[15px] font-black text-navy">
+                  {cat.title}
+                </h4>
+                <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">
+                  {CATEGORY_BLURB[cat.key]}
+                </p>
               </div>
             ))}
           </div>
@@ -198,12 +254,21 @@ export default function PreviewResultPage() {
           <p className="text-sm font-black text-navy mb-3">꼬북이 페르소나</p>
           <div className="grid grid-cols-4 gap-1.5">
             {(['kkobuk', 'dosa', 'mudang', 'bosal'] as const).map((p) => (
-              <div key={p} className="rounded-2xl bg-white border border-navy/10 p-1.5 flex flex-col items-center min-w-0">
+              <div
+                key={p}
+                className="rounded-2xl bg-white border border-navy/10 p-1.5 flex flex-col items-center min-w-0"
+              >
                 <div className="w-12 h-12 rounded-xl bg-mint/20 flex items-center justify-center overflow-hidden">
                   <KkobukAvatar variant={p} size="sm" />
                 </div>
                 <span className="text-[10px] font-extrabold text-navy mt-1 truncate w-full text-center">
-                  {p === 'kkobuk' ? '꼬북이' : p === 'dosa' ? '꼬북도사' : p === 'mudang' ? '꼬북무당' : '꼬북보살'}
+                  {p === 'kkobuk'
+                    ? '꼬북이'
+                    : p === 'dosa'
+                      ? '꼬북도사'
+                      : p === 'mudang'
+                        ? '꼬북무당'
+                        : '꼬북보살'}
                 </span>
               </div>
             ))}

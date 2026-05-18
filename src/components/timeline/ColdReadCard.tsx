@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 import type { DaewoonPeriod } from '@/lib/saju/types';
+import { CREDIT_COSTS } from '@/lib/credits';
 
 export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
   const [text, setText] = useState<string | null>(null);
@@ -9,20 +11,35 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
     'correct' | 'wrong' | 'partial' | null
   >(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    setText(null);
-    setFeedback(null);
+  async function generate() {
     setLoading(true);
-    void fetch('/api/timeline/coldread', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ daewoonStartYear: period.startYear }),
-    })
-      .then((r) => r.json())
-      .then((d) => setText(d.text ?? null))
-      .finally(() => setLoading(false));
-  }, [period.startYear]);
+    setError('');
+    try {
+      const res = await fetch('/api/timeline/coldread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ daewoonStartYear: period.startYear }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof data.error === 'string' ? data.error : 'unknown',
+        );
+      }
+      setText(data.text ?? null);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : 'unknown';
+      setError(
+        code === 'insufficient_credits'
+          ? '크래딧이 부족해. 충전 후 다시 눌러줘.'
+          : '대운 해설을 생성하지 못했어. 잠시 후 다시 시도해줘.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function submitFeedback(fb: 'correct' | 'wrong' | 'partial') {
     if (!text) return;
@@ -46,12 +63,30 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
         {period.startAge + 9}세 · {period.pillar.ganHanja}
         {period.pillar.jiHanja} ({period.sipsung})
       </div>
+      {!text && !loading && (
+        <button
+          onClick={generate}
+          className="mt-3 w-full rounded-2xl bg-navy py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.18)]"
+        >
+          크래딧 {CREDIT_COSTS.daewoon}개로 대운 AI 해설 보기
+        </button>
+      )}
       {loading && (
         <div className="mt-3 rounded-2xl bg-ivory px-4 py-4">
           <p className="text-sm font-bold leading-relaxed text-muted">
             선택한 10년을 내 사주와 연결해서 읽는 중이야. 곧 이 시기의 반복되는
             사건, 기회, 조심할 점을 정리해줄게.
           </p>
+        </div>
+      )}
+      {error && (
+        <div className="mt-3 rounded-2xl bg-red/10 px-4 py-3 text-sm font-bold text-red">
+          {error}{' '}
+          {error.includes('부족') && (
+            <Link href="/more/pro" className="underline underline-offset-4">
+              충전하기
+            </Link>
+          )}
         </div>
       )}
       {text && <p className="mt-2 leading-relaxed text-[15px]">{text}</p>}

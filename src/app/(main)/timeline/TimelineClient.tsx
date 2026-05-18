@@ -241,7 +241,7 @@ export function TimelineClient({ daewoon }: TimelineClientProps) {
                 </div>
               </div>
             </Card>
-            <ColdReadCard period={selected} />
+            <ColdReadCard key={selected.startYear} period={selected} />
           </>
         )}
       </div>

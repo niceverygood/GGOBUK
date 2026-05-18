@@ -13,7 +13,12 @@ export default async function MorePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: userRow } = await supabase.from('users').select('*').eq('id', user.id).single();
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  const credits = Number(userRow?.credit_balance ?? 0);
 
   return (
     <main className="px-5 pt-8 pb-32 relative">
@@ -29,24 +34,45 @@ export default async function MorePage() {
               {userRow?.nickname ?? user.email ?? '꼬북이'}
             </p>
           </div>
-          {userRow?.is_pro && <Badge tone="gold">PRO</Badge>}
+          <Badge tone="gold">{credits} 크래딧</Badge>
         </Card>
 
         <div className="mt-4 space-y-2">
           <MoreLink
             href="/more/pro"
-            title={userRow?.is_pro ? '꼬북점 Pro (구독 중)' : '꼬북점 Pro 구독'}
-            subtitle="모든 풀이 + 무제한 채팅 + 대운 타임라인"
-            icon="✨"
+            title="크래딧 충전"
+            subtitle="구독 없이 필요한 AI 풀이만 사용"
+            icon="🪙"
           />
-          <MoreLink href="/timeline" title="대운 타임라인" subtitle="10년 단위 큰 흐름 (Pro)" icon="🗺" />
-          <MoreLink href="/more/auspicious" title="길일 찾기" subtitle="중요 일정에 좋은 날짜 (Pro)" icon="☯" />
-          <MoreLink href="/more/settings" title="알림 설정" subtitle="매일 아침 한 줄 운세" icon="🔔" />
+          <MoreLink
+            href="/timeline"
+            title="대운 타임라인"
+            subtitle="10년 단위 큰 흐름 · AI 해설은 크래딧 사용"
+            icon="🗺"
+          />
+          <MoreLink
+            href="/more/auspicious"
+            title="길일 찾기"
+            subtitle="중요 일정에 좋은 날짜 · 크래딧 사용"
+            icon="☯"
+          />
+          <MoreLink
+            href="/more/settings"
+            title="알림 설정"
+            subtitle="매일 아침 한 줄 운세"
+            icon="🔔"
+          />
           <MoreLink
             href="/persona"
             title="페르소나 전환"
             subtitle="꼬북이의 4가지 모드"
-            icon={<KkobukSprite variant="persona-kkobuk" size="xs" ariaLabel="페르소나 전환" />}
+            icon={
+              <KkobukSprite
+                variant="persona-kkobuk"
+                size="xs"
+                ariaLabel="페르소나 전환"
+              />
+            }
           />
         </div>
       </div>
@@ -70,7 +96,9 @@ function MoreLink({
       href={href}
       className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
     >
-      <span className="flex h-8 w-8 items-center justify-center text-xl">{icon}</span>
+      <span className="flex h-8 w-8 items-center justify-center text-xl">
+        {icon}
+      </span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-black text-navy">{title}</div>
         <div className="text-xs font-bold text-muted mt-0.5">{subtitle}</div>

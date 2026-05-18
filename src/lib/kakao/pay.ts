@@ -1,7 +1,17 @@
 // Kakao Pay HTTP client.
-// Test CID: TC0SUBSCRIPTION (정기결제 sandbox). Replace with prod CID after Kakao approval.
+// Test CID: TC0ONETIME (one-time payment sandbox). Replace with prod CID after Kakao approval.
 
 const BASE = 'https://kapi.kakao.com';
+const ONE_TIME_CID =
+  process.env.KAKAO_PAY_CID_ONETIME ??
+  (process.env.KAKAO_PAY_CID === 'TC0SUBSCRIPTION'
+    ? 'TC0ONETIME'
+    : process.env.KAKAO_PAY_CID) ??
+  'TC0ONETIME';
+const SUBSCRIPTION_CID =
+  process.env.KAKAO_PAY_CID_SUBSCRIPTION ??
+  process.env.KAKAO_PAY_CID ??
+  'TC0SUBSCRIPTION';
 
 function authHeaders(): HeadersInit {
   const key = process.env.KAKAO_ADMIN_KEY;
@@ -20,9 +30,13 @@ export async function payReady(params: {
   approvalUrl: string;
   cancelUrl: string;
   failUrl: string;
-}): Promise<{ tid: string; next_redirect_mobile_url: string; next_redirect_pc_url: string }> {
+}): Promise<{
+  tid: string;
+  next_redirect_mobile_url: string;
+  next_redirect_pc_url: string;
+}> {
   const form = new URLSearchParams({
-    cid: process.env.KAKAO_PAY_CID ?? 'TC0SUBSCRIPTION',
+    cid: ONE_TIME_CID,
     partner_order_id: params.partnerOrderId,
     partner_user_id: params.partnerUserId,
     item_name: params.itemName,
@@ -38,7 +52,10 @@ export async function payReady(params: {
     headers: authHeaders(),
     body: form,
   });
-  if (!res.ok) throw new Error(`Kakao pay ready failed: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(
+      `Kakao pay ready failed: ${res.status} ${await res.text()}`,
+    );
   return res.json();
 }
 
@@ -55,7 +72,7 @@ export async function payApprove(params: {
   created_at: string;
 }> {
   const form = new URLSearchParams({
-    cid: process.env.KAKAO_PAY_CID ?? 'TC0SUBSCRIPTION',
+    cid: ONE_TIME_CID,
     tid: params.tid,
     partner_order_id: params.partnerOrderId,
     partner_user_id: params.partnerUserId,
@@ -67,13 +84,18 @@ export async function payApprove(params: {
     headers: authHeaders(),
     body: form,
   });
-  if (!res.ok) throw new Error(`Kakao pay approve failed: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(
+      `Kakao pay approve failed: ${res.status} ${await res.text()}`,
+    );
   return res.json();
 }
 
-export async function paySubscriptionStatus(sid: string): Promise<{ status: string; last_approved_at: string | null }> {
+export async function paySubscriptionStatus(
+  sid: string,
+): Promise<{ status: string; last_approved_at: string | null }> {
   const form = new URLSearchParams({
-    cid: process.env.KAKAO_PAY_CID ?? 'TC0SUBSCRIPTION',
+    cid: SUBSCRIPTION_CID,
     sid,
   });
   const res = await fetch(`${BASE}/v1/payment/manage/subscription/status`, {
@@ -87,7 +109,7 @@ export async function paySubscriptionStatus(sid: string): Promise<{ status: stri
 
 export async function paySubscriptionInactivate(sid: string): Promise<void> {
   const form = new URLSearchParams({
-    cid: process.env.KAKAO_PAY_CID ?? 'TC0SUBSCRIPTION',
+    cid: SUBSCRIPTION_CID,
     sid,
   });
   const res = await fetch(`${BASE}/v1/payment/manage/subscription/inactive`, {

@@ -4,6 +4,8 @@ import { createServerClient } from '@/lib/supabase/server';
 import { calculatePalja } from '@/lib/saju/palja';
 import { buildSajuResult } from '@/lib/saju';
 import { enrichAuspiciousSuggestions } from '@/lib/llm/auspicious';
+import { CREDIT_COSTS } from '@/lib/credits';
+import { isInsufficientCreditsError, spendCredits } from '@/lib/credits/server';
 import { CHEONGAN_OHAENG_IDX, JIJI_OHAENG_IDX } from '@/lib/saju/constants';
 import type { Palja } from '@/lib/saju/types';
 import type { SajuProfileRow } from '@/types/db';
@@ -33,14 +35,6 @@ export async function POST(req: Request) {
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('is_pro')
-    .eq('id', user.id)
-    .single();
-  if (!userRow?.is_pro)
-    return NextResponse.json({ error: 'pro_only' }, { status: 402 });
-
   const { purpose, start, end } = Body.parse(await req.json());
 
   const { data: profile } = await supabase
@@ -51,6 +45,23 @@ export async function POST(req: Request) {
     .maybeSingle<SajuProfileRow>();
   if (!profile?.palja)
     return NextResponse.json({ error: 'no profile' }, { status: 404 });
+
+  try {
+    await spendCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.auspicious,
+      reason: `길일 찾기:${purpose}`,
+      referenceId: `${start}_${end}`,
+    });
+  } catch (e) {
+    if (isInsufficientCreditsError(e)) {
+      return NextResponse.json(
+        { error: 'insufficient_credits' },
+        { status: 402 },
+      );
+    }
+    throw e;
+  }
 
   const palja = profile.palja as Palja;
   const ilganIdx = palja.day.ganIdx;
@@ -148,9 +159,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ suggestions: enriched });
   } catch {
     return NextResponse.json({
-      suggestions: top.map(
-        ({ dayPillar: _dayPillar, ...suggestion }) => suggestion,
-      ),
+      suggestions: top.map(({ dayPillar, ...suggestion }) => {
+        void dayPillar;
+        return suggestion;
+      }),
     });
   }
 }

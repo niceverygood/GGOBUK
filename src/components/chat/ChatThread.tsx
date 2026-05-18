@@ -6,6 +6,7 @@ import { ChatMessage } from './ChatMessage';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge } from '@/components/ui/primitives';
+import { CREDIT_COSTS } from '@/lib/credits';
 
 interface InitialMessage {
   role: 'user' | 'assistant';
@@ -22,23 +23,28 @@ const PERSONA_SUBTITLE: Record<PersonaKey, string> = {
 const SITUATION_PROMPTS = [
   {
     label: '연애중',
-    prompt: '현재 연애중이야. 내 사주 기준으로 이 관계에서 조심할 점과 더 좋아지는 방법을 알려줘.',
+    prompt:
+      '현재 연애중이야. 내 사주 기준으로 이 관계에서 조심할 점과 더 좋아지는 방법을 알려줘.',
   },
   {
     label: '취업 준비',
-    prompt: '지금 취업을 준비 중이야. 내 사주에서 잘 맞는 일의 방향과 면접/준비운을 봐줘.',
+    prompt:
+      '지금 취업을 준비 중이야. 내 사주에서 잘 맞는 일의 방향과 면접/준비운을 봐줘.',
   },
   {
     label: '직장 고민',
-    prompt: '직장 문제로 고민 중이야. 내 사주상 일하는 방식, 갈등 포인트, 이직 타이밍을 봐줘.',
+    prompt:
+      '직장 문제로 고민 중이야. 내 사주상 일하는 방식, 갈등 포인트, 이직 타이밍을 봐줘.',
   },
   {
     label: '돈 흐름',
-    prompt: '요즘 돈 흐름이 궁금해. 내 사주 기준으로 재물운, 지출 습관, 돈 모으는 방법을 알려줘.',
+    prompt:
+      '요즘 돈 흐름이 궁금해. 내 사주 기준으로 재물운, 지출 습관, 돈 모으는 방법을 알려줘.',
   },
   {
     label: '가족 관계',
-    prompt: '가족 관계가 신경 쓰여. 내 사주에서 가족과의 거리감과 관계를 편하게 만드는 방법을 봐줘.',
+    prompt:
+      '가족 관계가 신경 쓰여. 내 사주에서 가족과의 거리감과 관계를 편하게 만드는 방법을 봐줘.',
   },
   {
     label: '오늘 컨디션',
@@ -59,6 +65,7 @@ export function ChatThread({
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
+  const [needsCredit, setNeedsCredit] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const personaMeta = PERSONAS[persona];
 
@@ -71,7 +78,12 @@ export function ChatThread({
     if (!trimmed || streaming) return;
     setInput('');
     setRateLimited(false);
-    setMessages((m) => [...m, { role: 'user', content: trimmed }, { role: 'assistant', content: '' }]);
+    setNeedsCredit(false);
+    setMessages((m) => [
+      ...m,
+      { role: 'user', content: trimmed },
+      { role: 'assistant', content: '' },
+    ]);
     setStreaming(true);
 
     try {
@@ -82,6 +94,11 @@ export function ChatThread({
       });
       if (res.status === 429) {
         setRateLimited(true);
+        setMessages((m) => m.slice(0, -1));
+        return;
+      }
+      if (res.status === 402) {
+        setNeedsCredit(true);
         setMessages((m) => m.slice(0, -1));
         return;
       }
@@ -102,7 +119,10 @@ export function ChatThread({
           if (payload.delta) {
             setMessages((m) => {
               const cp = m.slice();
-              cp[cp.length - 1] = { role: 'assistant', content: cp[cp.length - 1].content + payload.delta };
+              cp[cp.length - 1] = {
+                role: 'assistant',
+                content: cp[cp.length - 1].content + payload.delta,
+              };
               return cp;
             });
           }
@@ -122,8 +142,12 @@ export function ChatThread({
             <KkobukAvatar variant={persona} size="sm" />
           </div>
           <div>
-            <div className="text-base font-black text-navy">{personaMeta.displayName}</div>
-            <div className="text-[11px] font-bold text-muted">{PERSONA_SUBTITLE[persona]}</div>
+            <div className="text-base font-black text-navy">
+              {personaMeta.displayName}
+            </div>
+            <div className="text-[11px] font-bold text-muted">
+              {PERSONA_SUBTITLE[persona]}
+            </div>
           </div>
         </div>
         <Link href="/persona" className="inline-flex">
@@ -137,9 +161,13 @@ export function ChatThread({
             <div className="inline-flex">
               <KkobukAvatar variant={persona} size="lg" />
             </div>
-            <p className="text-sm font-bold text-muted">{personaMeta.displayName}에게 무엇이든 물어봐</p>
+            <p className="text-sm font-bold text-muted">
+              {personaMeta.displayName}에게 무엇이든 물어봐
+            </p>
             <div className="mt-5 rounded-3xl bg-white/85 border border-navy/10 p-4 text-left shadow-[0_10px_24px_rgba(44,62,80,0.06)]">
-              <p className="text-sm font-black text-navy">상황을 고르면 상담이 빨라져</p>
+              <p className="text-sm font-black text-navy">
+                상황을 고르면 상담이 빨라져
+              </p>
               <p className="mt-1 text-xs font-bold text-muted">
                 지금 상태를 하나만 골라도 사주 풀이가 훨씬 구체적으로 시작돼.
               </p>
@@ -169,7 +197,12 @@ export function ChatThread({
           </div>
         )}
         {messages.map((m, i) => (
-          <ChatMessage key={i} role={m.role} content={m.content} persona={persona} />
+          <ChatMessage
+            key={i}
+            role={m.role}
+            content={m.content}
+            persona={persona}
+          />
         ))}
         <div ref={endRef} />
       </div>
@@ -199,7 +232,17 @@ export function ChatThread({
 
       {rateLimited && (
         <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
-          오늘 무료 채팅 한도(5회)에 도달했어. Pro에서는 무제한이야.
+          오늘 무료 채팅 한도(5회)에 도달했어. 크래딧이 있으면 계속 질문할 수
+          있어.
+        </div>
+      )}
+
+      {needsCredit && (
+        <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
+          크래딧이 부족해. 추가 질문은 {CREDIT_COSTS.chat} 크래딧을 사용해.
+          <Link href="/more/pro" className="ml-2 underline underline-offset-4">
+            충전하기
+          </Link>
         </div>
       )}
 

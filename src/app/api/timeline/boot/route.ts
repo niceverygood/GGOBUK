@@ -9,10 +9,8 @@ export async function GET() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const { data: userRow } = await supabase.from('users').select('is_pro').eq('id', user.id).single();
-  if (!userRow?.is_pro) return NextResponse.json({ error: 'pro_only' }, { status: 402 });
+  if (!user)
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase
     .from('saju_profiles')
@@ -20,7 +18,10 @@ export async function GET() {
     .eq('owner_id', user.id)
     .eq('relation_type', 'self')
     .maybeSingle();
-  if (!profile) return NextResponse.json({ error: 'no profile' }, { status: 404 });
+  if (!profile)
+    return NextResponse.json({ error: 'no profile' }, { status: 404 });
 
-  return NextResponse.json({ isPro: true, daewoon: (profile.daewoon ?? []) as DaewoonPeriod[] });
+  return NextResponse.json({
+    daewoon: (profile.daewoon ?? []) as DaewoonPeriod[],
+  });
 }

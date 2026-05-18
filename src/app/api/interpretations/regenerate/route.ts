@@ -6,6 +6,12 @@ import {
   INTERPRETATION_CATEGORIES,
   generateInterpretation,
 } from '@/lib/llm/interpret';
+import { CREDIT_COSTS } from '@/lib/credits';
+import {
+  addCredits,
+  isInsufficientCreditsError,
+  spendCredits,
+} from '@/lib/credits/server';
 import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
@@ -45,6 +51,23 @@ export async function POST(req: Request) {
     gender: profile.gender,
   });
 
+  try {
+    await spendCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.interpretation,
+      reason: `사주 해설 생성:${category}`,
+      referenceId: profile.id,
+    });
+  } catch (e) {
+    if (isInsufficientCreditsError(e)) {
+      return NextResponse.json(
+        { error: 'insufficient_credits' },
+        { status: 402 },
+      );
+    }
+    throw e;
+  }
+
   let result;
   try {
     result = await generateInterpretation(
@@ -58,11 +81,25 @@ export async function POST(req: Request) {
       msg.includes('OPENROUTER_API_KEY') ||
       msg.includes('ANTHROPIC_API_KEY')
     ) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.interpretation,
+        reason: `사주 해설 실패 환불:${category}`,
+        kind: 'refund',
+        referenceId: profile.id,
+      }).catch(() => undefined);
       return NextResponse.json(
         { error: 'llm_not_configured' },
         { status: 503 },
       );
     }
+    await addCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.interpretation,
+      reason: `사주 해설 실패 환불:${category}`,
+      kind: 'refund',
+      referenceId: profile.id,
+    }).catch(() => undefined);
     return NextResponse.json(
       { error: msg || 'interpretation failed' },
       { status: 500 },
@@ -81,6 +118,14 @@ export async function POST(req: Request) {
     },
     { onConflict: 'saju_id,category' },
   );
+  if (error)
+    await addCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.interpretation,
+      reason: `사주 해설 저장 실패 환불:${category}`,
+      kind: 'refund',
+      referenceId: profile.id,
+    }).catch(() => undefined);
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
 

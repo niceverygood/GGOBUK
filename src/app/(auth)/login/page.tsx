@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
@@ -20,13 +20,12 @@ function loginErrorMessage(error: string): string {
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<'kakao' | 'test' | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [err, setErr] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
-    if (error) setErr(loginErrorMessage(error));
-  }, []);
+    return error ? loginErrorMessage(error) : null;
+  });
 
   async function signInWithKakao() {
     setErr(null);
