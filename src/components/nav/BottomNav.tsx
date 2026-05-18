@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Hexagon, MessageCircle, Users, MoreHorizontal } from 'lucide-react';
+import { Archive, Home, Hexagon, MessageCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const TABS = [
@@ -11,7 +11,7 @@ const TABS = [
   { href: '/shell', label: '등껍질', icon: Hexagon },
   { href: '/chat', label: '채팅', icon: MessageCircle },
   { href: '/relations', label: '인연', icon: Users },
-  { href: '/more', label: '더보기', icon: MoreHorizontal },
+  { href: '/library', label: '보관함', icon: Archive },
 ];
 
 export function BottomNav() {

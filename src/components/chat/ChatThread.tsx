@@ -19,6 +19,33 @@ const PERSONA_SUBTITLE: Record<PersonaKey, string> = {
   bosal: '따뜻한 위로 톤 · 상담',
 };
 
+const SITUATION_PROMPTS = [
+  {
+    label: '연애중',
+    prompt: '현재 연애중이야. 내 사주 기준으로 이 관계에서 조심할 점과 더 좋아지는 방법을 알려줘.',
+  },
+  {
+    label: '취업 준비',
+    prompt: '지금 취업을 준비 중이야. 내 사주에서 잘 맞는 일의 방향과 면접/준비운을 봐줘.',
+  },
+  {
+    label: '직장 고민',
+    prompt: '직장 문제로 고민 중이야. 내 사주상 일하는 방식, 갈등 포인트, 이직 타이밍을 봐줘.',
+  },
+  {
+    label: '돈 흐름',
+    prompt: '요즘 돈 흐름이 궁금해. 내 사주 기준으로 재물운, 지출 습관, 돈 모으는 방법을 알려줘.',
+  },
+  {
+    label: '가족 관계',
+    prompt: '가족 관계가 신경 쓰여. 내 사주에서 가족과의 거리감과 관계를 편하게 만드는 방법을 봐줘.',
+  },
+  {
+    label: '오늘 컨디션',
+    prompt: '오늘 내 컨디션과 감정 흐름을 사주 관점에서 짧고 현실적으로 봐줘.',
+  },
+];
+
 export function ChatThread({
   sessionId,
   persona,
@@ -111,6 +138,23 @@ export function ChatThread({
               <KkobukAvatar variant={persona} size="lg" />
             </div>
             <p className="text-sm font-bold text-muted">{personaMeta.displayName}에게 무엇이든 물어봐</p>
+            <div className="mt-5 rounded-3xl bg-white/85 border border-navy/10 p-4 text-left shadow-[0_10px_24px_rgba(44,62,80,0.06)]">
+              <p className="text-sm font-black text-navy">상황을 고르면 상담이 빨라져</p>
+              <p className="mt-1 text-xs font-bold text-muted">
+                지금 상태를 하나만 골라도 사주 풀이가 훨씬 구체적으로 시작돼.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SITUATION_PROMPTS.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => send(item.prompt)}
+                    className="rounded-full border border-navy/10 bg-ivory px-3 py-2 text-xs font-extrabold text-navy transition active:scale-[0.98]"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex flex-col gap-2 mt-4 max-w-xs mx-auto">
               {personaMeta.quickQuestions.map((q) => (
                 <button
@@ -132,6 +176,15 @@ export function ChatThread({
 
       {messages.length > 0 && (
         <div className="relative px-3 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+          {SITUATION_PROMPTS.slice(0, 4).map((item) => (
+            <button
+              key={item.label}
+              onClick={() => send(item.prompt)}
+              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-mint/15 border border-mint/30 text-xs font-extrabold text-navy"
+            >
+              {item.label}
+            </button>
+          ))}
           {personaMeta.quickQuestions.map((q) => (
             <button
               key={q}
