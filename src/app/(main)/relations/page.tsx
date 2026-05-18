@@ -3,9 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Plus, Sparkles, Users } from 'lucide-react';
+import {
+  RelationGraph,
+  type GraphNode,
+} from '@/components/relations/RelationGraph';
 import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
 import { Badge, Card, Toggle, ButtonPrimary } from '@/components/ui/primitives';
+import type { Palja } from '@/lib/saju/types';
 
 interface RelationRow {
   id: string;
@@ -13,7 +17,9 @@ interface RelationRow {
     id: string;
     name: string;
     ilgan: string | null;
+    relation_type?: string | null;
     relation_label: string | null;
+    palja?: Palja | null;
   };
   compatibility: { score: number } | null;
 }
@@ -23,8 +29,25 @@ interface MeData {
   hasProfile: boolean;
 }
 
-type Filter = 'all' | 'gilun' | 'distance';
+type Filter = 'all' | 'gilun' | 'distance' | 'family' | 'lover';
+type RelationType = 'family' | 'friend' | 'lover' | 'colleague' | 'other';
 type AddStatus = 'idle' | 'saving' | 'compat';
+
+const FILTER_OPTIONS: Array<{ value: Filter; label: string }> = [
+  { value: 'all', label: '전체' },
+  { value: 'gilun', label: '이번달 귀인 ★' },
+  { value: 'distance', label: '거리 둘 사람' },
+  { value: 'family', label: '가족' },
+  { value: 'lover', label: '연인' },
+];
+
+const RELATION_TYPE_OPTIONS: Array<{ value: RelationType; label: string }> = [
+  { value: 'friend', label: '친구' },
+  { value: 'family', label: '가족' },
+  { value: 'lover', label: '연인' },
+  { value: 'colleague', label: '동료' },
+  { value: 'other', label: '기타' },
+];
 
 function errorMessage(error: string): string {
   if (error === 'unauthorized') return '로그인이 필요해. 다시 로그인해줘.';
@@ -52,13 +75,32 @@ function scoreClass(score: number | null): string {
   return 'bg-gold/35 text-[#5A4A20]';
 }
 
-function ohaengClass(ohaeng: string | null): string {
-  if (ohaeng === '목') return 'bg-[#DFF1EF] text-[#245D59]';
-  if (ohaeng === '화') return 'bg-red/15 text-red';
-  if (ohaeng === '토') return 'bg-gold/35 text-[#5A4A20]';
-  if (ohaeng === '금') return 'bg-white text-navy border border-navy/10';
-  if (ohaeng === '수') return 'bg-navy text-white';
-  return 'bg-navy/10 text-navy';
+function relationLabel(row: RelationRow): string {
+  return row.saju_b.relation_label?.trim() || '인연';
+}
+
+function isFamily(row: RelationRow): boolean {
+  const label = relationLabel(row);
+  return (
+    row.saju_b.relation_type === 'family' ||
+    /가족|엄마|아빠|부모|형|누나|언니|동생|자녀/.test(label)
+  );
+}
+
+function isLover(row: RelationRow): boolean {
+  const label = relationLabel(row);
+  return (
+    row.saju_b.relation_type === 'lover' ||
+    /연인|애인|남친|여친|배우자|남편|아내|전 연인|전남친|전여친/.test(label)
+  );
+}
+
+function filterTitle(filter: Filter): string {
+  if (filter === 'gilun') return '이번달 귀인 ★';
+  if (filter === 'distance') return '거리 둘 사람';
+  if (filter === 'family') return '가족';
+  if (filter === 'lover') return '연인';
+  return '전체 인연';
 }
 
 export default function RelationsPage() {
@@ -76,6 +118,7 @@ export default function RelationsPage() {
   const [birthTime, setBirthTime] = useState('');
   const [timeUnknown, setTimeUnknown] = useState(false);
   const [gender, setGender] = useState<'M' | 'F'>('M');
+  const [relationType, setRelationType] = useState<RelationType>('friend');
   const [label, setLabel] = useState('');
 
   useEffect(() => {
@@ -114,7 +157,7 @@ export default function RelationsPage() {
           birthTime: timeUnknown ? undefined : birthTime,
           isLunar: false,
           gender,
-          relationType: 'friend',
+          relationType,
           relationLabel: label,
         }),
       });
@@ -140,6 +183,7 @@ export default function RelationsPage() {
       setName('');
       setBirthDate('');
       setBirthTime('');
+      setRelationType('friend');
       setLabel('');
       await load();
 
@@ -158,77 +202,67 @@ export default function RelationsPage() {
     const s = r.compatibility?.score ?? 50;
     if (filter === 'gilun') return s >= 70;
     if (filter === 'distance') return s <= 45;
+    if (filter === 'family') return isFamily(r);
+    if (filter === 'lover') return isLover(r);
     return true;
   });
 
   const summary = useMemo(() => {
-    const good = relations.filter((r) => (r.compatibility?.score ?? 0) >= 70).length;
-    const caution = relations.filter((r) => (r.compatibility?.score ?? 100) <= 45).length;
-    const pending = relations.filter((r) => r.compatibility?.score == null).length;
+    const good = relations.filter(
+      (r) => (r.compatibility?.score ?? 0) >= 70,
+    ).length;
+    const caution = relations.filter(
+      (r) => (r.compatibility?.score ?? 100) <= 45,
+    ).length;
+    const pending = relations.filter(
+      (r) => r.compatibility?.score == null,
+    ).length;
     return { good, caution, pending };
   }, [relations]);
 
+  const nodes: GraphNode[] = filtered.map((r) => ({
+    id: r.id,
+    name: r.saju_b.name,
+    relationLabel: r.saju_b.relation_label,
+    relationType: r.saju_b.relation_type,
+    ohaeng: ohaengFromGan(r.saju_b.ilgan),
+    gan: r.saju_b.palja?.day.gan ?? r.saju_b.ilgan,
+    ji: r.saju_b.palja?.day.ji,
+    ganHanja: r.saju_b.palja?.day.ganHanja,
+    jiHanja: r.saju_b.palja?.day.jiHanja,
+    score: r.compatibility?.score ?? null,
+  }));
+
   return (
-    <main className="px-5 pt-8 pb-36 relative">
+    <main className="px-5 pt-8 pb-40 relative overflow-x-hidden">
       <div className="hanji-overlay" />
       <div className="relative mx-auto w-full max-w-[560px]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-extrabold text-muted">관계의 합과 충</p>
-            <h1 className="text-2xl font-black tracking-tight text-navy">
-              인연 지도
-            </h1>
-          </div>
-          <button
-            onClick={() => {
-              setError('');
-              setAdding((v) => !v);
-            }}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-navy text-white text-xs font-extrabold shadow-[0_10px_18px_rgba(44,62,80,0.18)]"
-          >
-            {adding ? (
-              '취소'
-            ) : (
-              <>
-                <Plus size={14} strokeWidth={3} />
-                추가
-              </>
-            )}
-          </button>
+        <div>
+          <p className="text-xs font-extrabold text-muted">관계의 합과 충</p>
+          <h1 className="mt-1 text-[34px] font-black tracking-tight text-navy">
+            내 인연 지도
+          </h1>
+          <p className="mt-1 text-xs font-bold text-muted">
+            귀인 {summary.good}명 · 거리 조절 {summary.caution}명
+            {summary.pending > 0 ? ` · 생성 대기 ${summary.pending}명` : ''}
+          </p>
         </div>
 
-        <Card soft className="mt-4 p-4">
-          <div className="grid grid-cols-3 divide-x divide-navy/10 text-center">
-            <div>
-              <p className="text-[11px] font-extrabold text-muted">전체</p>
-              <p className="mt-1 text-xl font-black text-navy">{relations.length}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-extrabold text-muted">좋은 흐름</p>
-              <p className="mt-1 text-xl font-black text-mint-dark">{summary.good}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-extrabold text-muted">거리 조절</p>
-              <p className="mt-1 text-xl font-black text-red">{summary.caution}</p>
-            </div>
-          </div>
-          {summary.pending > 0 && (
-            <p className="mt-3 rounded-2xl bg-gold/25 px-3 py-2 text-center text-[11px] font-extrabold text-[#5A4A20]">
-              AI 궁합 생성 대기 {summary.pending}명
-            </p>
-          )}
-        </Card>
-
-        <div className="mt-4">
-          <Toggle
-            options={[
-              { value: 'all' as const, label: '전체' },
-              { value: 'gilun' as const, label: '이번달 귀인' },
-              { value: 'distance' as const, label: '거리 둘 사람' },
-            ]}
-            value={filter}
-            onChange={setFilter}
-          />
+        <div className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
+          {FILTER_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setFilter(option.value)}
+              className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-black transition ${
+                filter === option.value
+                  ? 'border-navy bg-navy text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]'
+                  : 'border-navy/10 bg-white text-muted'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
 
         {adding && (
@@ -250,6 +284,11 @@ export default function RelationsPage() {
               onChange={(e) => setLabel(e.target.value)}
               placeholder="관계 (예: 직장 동료, 친구)"
               className="w-full rounded-xl bg-ivory px-3 py-2.5 text-sm font-bold"
+            />
+            <Toggle
+              options={RELATION_TYPE_OPTIONS}
+              value={relationType}
+              onChange={setRelationType}
             />
             <div className="flex gap-2">
               <input
@@ -312,69 +351,74 @@ export default function RelationsPage() {
           </Card>
         )}
 
-        <div className="mt-5 space-y-3">
-          {filtered.length > 0 ? (
-            filtered.map((relation) => {
+        <RelationGraph
+          selfOhaeng={ohaengFromGan(me?.ilgan ?? null)}
+          nodes={nodes}
+          onAdd={() => {
+            setError('');
+            setAdding((v) => !v);
+          }}
+        />
+
+        {filtered.length === 0 && (
+          <Card className="mt-4 p-7 text-center">
+            <Badge tone="mint">
+              {relations.length > 0 ? '필터 결과 없음' : '인연 없음'}
+            </Badge>
+            <p className="mt-3 text-sm font-bold text-muted">
+              {relations.length > 0
+                ? '다른 필터로 바꿔서 다시 확인해봐.'
+                : '지도 안의 + 버튼으로 첫 인연을 추가해봐.'}
+            </p>
+          </Card>
+        )}
+
+        <section className="mt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black text-muted">
+              {filterTitle(filter)}
+            </h2>
+            <span className="text-sm font-black text-mint-dark">
+              {filtered.length}명
+            </span>
+          </div>
+          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
+            {filtered.map((relation) => {
               const score = relation.compatibility?.score ?? null;
               const ohaeng = ohaengFromGan(relation.saju_b.ilgan);
+              const day = relation.saju_b.palja?.day;
               return (
                 <Link
                   key={relation.id}
                   href={`/relations/${relation.id}`}
-                  className="group block rounded-3xl border border-navy/10 bg-white/90 p-4 shadow-[0_10px_24px_rgba(44,62,80,0.07)] transition active:scale-[0.99] hover:border-mint/60 hover:bg-white"
+                  className="flex min-w-[220px] items-center gap-3 rounded-3xl border border-navy/10 bg-white p-4 shadow-[0_10px_24px_rgba(44,62,80,0.07)] transition active:scale-[0.99]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-mint/15 text-navy">
-                      <Users size={22} strokeWidth={2.6} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-base font-black text-navy">
-                          {relation.saju_b.name}
-                        </p>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${ohaengClass(
-                            ohaeng,
-                          )}`}
-                        >
-                          {ohaeng ?? '미정'}
+                  <span
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-black ${scoreClass(
+                      score,
+                    )}`}
+                  >
+                    {relation.saju_b.name.slice(0, 1)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-black text-navy">
+                      {relation.saju_b.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs font-bold text-muted">
+                      {day?.ganHanja && day?.jiHanja ? (
+                        <span className="font-hanja mr-1">
+                          {day.ganHanja}
+                          {day.jiHanja}
                         </span>
-                      </div>
-                      <p className="mt-1 truncate text-xs font-bold text-muted">
-                        {relation.saju_b.relation_label || '인연'} · {scoreLabel(score)}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div
-                        className={`inline-flex min-w-14 items-center justify-center rounded-2xl px-2.5 py-2 text-sm font-black ${scoreClass(
-                          score,
-                        )}`}
-                      >
-                        {score == null ? <Sparkles size={16} strokeWidth={2.8} /> : score}
-                      </div>
-                      <ArrowRight
-                        size={16}
-                        strokeWidth={3}
-                        className="ml-auto mt-1 text-muted transition group-hover:translate-x-0.5 group-hover:text-navy"
-                      />
-                    </div>
-                  </div>
+                      ) : null}
+                      {ohaeng} · {scoreLabel(score)}
+                    </span>
+                  </span>
                 </Link>
               );
-            })
-          ) : (
-            <Card className="p-8 text-center">
-              <Badge tone="mint">
-                {relations.length > 0 ? '필터 결과 없음' : '인연 없음'}
-              </Badge>
-              <p className="mt-3 text-sm font-bold text-muted">
-                {relations.length > 0
-                  ? '다른 필터로 바꿔서 다시 확인해봐.'
-                  : '위 추가 버튼으로 첫 인연을 추가해봐.'}
-              </p>
-            </Card>
-          )}
-        </div>
+            })}
+          </div>
+        </section>
       </div>
     </main>
   );

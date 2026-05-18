@@ -1,139 +1,217 @@
 'use client';
 
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
+import { cn } from '@/lib/utils/cn';
 
 export interface GraphNode {
   id: string;
   name: string;
   relationLabel: string | null;
+  relationType?: string | null;
   ohaeng: string | null;
+  gan?: string | null;
+  ji?: string | null;
+  ganHanja?: string | null;
+  jiHanja?: string | null;
   score: number | null;
 }
 
-const OHAENG_COLOR: Record<string, string> = {
-  목: '#5DADE2',
-  화: '#E74C3C',
-  토: '#F4D03F',
-  금: '#ECF0F1',
-  수: '#34495E',
-};
+type EdgeTone = 'hap' | 'chung' | 'neutral';
 
-const OHAENG_TEXT: Record<string, string> = {
-  목: '#143537',
-  화: 'white',
-  토: '#3F3420',
-  금: '#2C3E50',
-  수: 'white',
-};
-
-const ICON_BY_RELATION: Record<string, string> = {
-  family: '👪',
-  friend: '👤',
-  lover: '💛',
-  colleague: '💼',
-  other: '✦',
+const OHAENG_STYLE: Record<
+  string,
+  { bg: string; fg: string; border: string; label: string }
+> = {
+  목: { bg: '#5DADE2', fg: 'white', border: '#FFFFFF', label: '목' },
+  화: { bg: '#E74C3C', fg: 'white', border: '#F8D338', label: '화' },
+  토: { bg: '#F4D03F', fg: '#263645', border: '#FFFFFF', label: '토' },
+  금: { bg: '#ECF0F1', fg: '#263645', border: '#FFFFFF', label: '금' },
+  수: { bg: '#34495E', fg: 'white', border: '#FFFFFF', label: '수' },
 };
 
 const SLOTS: Array<{ x: number; y: number }> = [
-  { x: 50, y: 15 },
-  { x: 82, y: 30 },
-  { x: 82, y: 70 },
-  { x: 50, y: 85 },
-  { x: 18, y: 70 },
-  { x: 18, y: 30 },
+  { x: 25, y: 24 },
+  { x: 76, y: 27 },
   { x: 84, y: 50 },
-  { x: 16, y: 50 },
+  { x: 73, y: 76 },
+  { x: 28, y: 72 },
+  { x: 14, y: 49 },
+  { x: 50, y: 17 },
+  { x: 50, y: 84 },
 ];
 
-function ohaengAtMidpoint(score: number | null): 'green' | 'red' | 'neutral' {
+function edgeTone(score: number | null): EdgeTone {
   if (score == null) return 'neutral';
-  if (score >= 70) return 'green';
-  if (score <= 45) return 'red';
+  if (score >= 70) return 'hap';
+  if (score <= 45) return 'chung';
   return 'neutral';
+}
+
+function relationToneLabel(score: number | null): string {
+  if (score == null) return '대기';
+  if (score >= 70) return '합';
+  if (score <= 45) return '충';
+  return '중립';
+}
+
+function relationDisplay(node: GraphNode): string {
+  const label = node.relationLabel?.trim();
+  if (label) return label;
+  if (node.relationType === 'family') return '가족';
+  if (node.relationType === 'lover') return '연인';
+  if (node.relationType === 'colleague') return '동료';
+  return '인연';
+}
+
+function pillarDisplay(node: GraphNode): string {
+  if (node.ganHanja && node.jiHanja) return `${node.ganHanja}${node.jiHanja}`;
+  if (node.gan && node.ji) return `${node.gan}${node.ji}`;
+  return node.gan ?? '?';
+}
+
+function edgeColor(tone: EdgeTone): string {
+  if (tone === 'hap') return '#2FAAA2';
+  if (tone === 'chung') return '#E74C3C';
+  return '#C7CBC8';
 }
 
 export function RelationGraph({
   selfOhaeng,
   nodes,
+  onAdd,
 }: {
   selfOhaeng: string | null;
   nodes: GraphNode[];
+  onAdd?: () => void;
 }) {
   const cap = nodes.slice(0, 8);
+
   return (
-    <div className="bg-white border border-navy/10 rounded-3xl p-4 shadow-[0_12px_30px_rgba(44,62,80,0.08)]">
-      <div className="relative mx-auto aspect-square min-h-[260px] max-h-[340px] max-w-[340px] overflow-hidden rounded-3xl bg-mint/5">
-        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {cap.map((n, i) => {
-            const slot = SLOTS[i % SLOTS.length];
-            const tone = ohaengAtMidpoint(n.score);
-            const color = tone === 'green' ? '#27AE60' : tone === 'red' ? '#E74C3C' : '#9CA3AF';
+    <section className="relative -mx-2 mt-4">
+      <div className="relative mx-auto aspect-square w-full max-w-[430px] overflow-visible">
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          {[46, 33, 18].map((r) => (
+            <circle
+              key={r}
+              cx="50"
+              cy="50"
+              r={r}
+              fill="none"
+              stroke="#E8E0D4"
+              strokeWidth="0.35"
+            />
+          ))}
+          {cap.map((node, index) => {
+            const slot = SLOTS[index % SLOTS.length];
+            const tone = edgeTone(node.score);
             return (
               <line
-                key={n.id}
+                key={node.id}
                 x1="50"
                 y1="50"
                 x2={slot.x}
                 y2={slot.y}
-                stroke={color}
-                strokeWidth="0.6"
+                stroke={edgeColor(tone)}
+                strokeWidth={tone === 'neutral' ? '0.75' : '1.1'}
                 strokeLinecap="round"
-                opacity="0.7"
-                strokeDasharray={tone === 'neutral' ? '1,1.5' : undefined}
+                strokeDasharray={tone === 'chung' ? '2.2 2.2' : undefined}
+                opacity={tone === 'neutral' ? 0.55 : 0.95}
               />
             );
           })}
         </svg>
 
-        <div
-          className="absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-3xl flex flex-col items-center justify-center text-xl font-black shadow-[0_12px_28px_rgba(44,62,80,0.18)] border-[3px] border-white"
-          style={{
-            left: '50%',
-            top: '50%',
-            background: OHAENG_COLOR[selfOhaeng ?? ''] ?? '#4ECDC4',
-            color: OHAENG_TEXT[selfOhaeng ?? ''] ?? '#143537',
-          }}
-        >
-          🐢
-          <span className="text-[9px] mt-0.5 font-black opacity-90">
-            나 {selfOhaeng ?? ''}
-          </span>
+        <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+          <div className="grid h-24 w-24 place-items-center rounded-full border-[6px] border-gold bg-[#FFFBE8] shadow-[0_12px_28px_rgba(44,62,80,0.12)]">
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-mint/25">
+              <KkobukSprite
+                variant="front"
+                size="xs"
+                ariaLabel="나"
+                className="scale-125"
+              />
+            </div>
+            <span className="absolute -bottom-7 text-center text-lg font-black text-navy">
+              나 · {selfOhaeng ?? '토'}
+            </span>
+          </div>
         </div>
 
-        {cap.map((n, i) => {
-          const slot = SLOTS[i % SLOTS.length];
-          const ohaeng = n.ohaeng ?? '토';
-          const icon = ICON_BY_RELATION[n.relationLabel ?? 'other'] ?? '✦';
+        {cap.map((node, index) => {
+          const slot = SLOTS[index % SLOTS.length];
+          const ohaeng = node.ohaeng ?? '토';
+          const colors = OHAENG_STYLE[ohaeng] ?? OHAENG_STYLE.토;
+          const tone = edgeTone(node.score);
+          const strong =
+            tone === 'hap' || node.score == null || node.score >= 85;
           return (
             <Link
-              key={n.id}
-              href={`/relations/${n.id}`}
-              aria-label={`${n.name} 궁합 상세 보기`}
-              className="absolute -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black shadow-[0_10px_24px_rgba(44,62,80,0.12)] border-[3px] border-white transition hover:scale-105"
-              style={{
-                left: `${slot.x}%`,
-                top: `${slot.y}%`,
-                background: OHAENG_COLOR[ohaeng] ?? '#4ECDC4',
-                color: OHAENG_TEXT[ohaeng] ?? '#143537',
-              }}
+              key={node.id}
+              href={`/relations/${node.id}`}
+              aria-label={`${node.name} 궁합 상세 보기`}
+              className="absolute z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center transition active:scale-[0.98]"
+              style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             >
-              <span className="text-base leading-none">{icon}</span>
-              <span className="text-[9px] mt-0.5 font-black opacity-90">
-                {n.score ?? '-'}
+              <span className="mb-1 max-w-[76px] truncate text-[13px] font-black leading-none text-navy">
+                {node.name}
+              </span>
+              <span
+                className={cn(
+                  'grid place-items-center rounded-full border-[4px] shadow-[0_14px_28px_rgba(44,62,80,0.12)]',
+                  strong ? 'h-[72px] w-[72px]' : 'h-[58px] w-[58px]',
+                  tone === 'chung' && 'border-dashed',
+                )}
+                style={{
+                  backgroundColor: colors.bg,
+                  borderColor: tone === 'chung' ? '#F2A098' : colors.border,
+                  color: colors.fg,
+                }}
+              >
+                <span className="font-hanja text-base font-black leading-none">
+                  {pillarDisplay(node)}
+                </span>
+                <span className="mt-1 text-[10px] font-black leading-none opacity-90">
+                  {colors.label} · {relationToneLabel(node.score)}
+                </span>
+              </span>
+              <span className="mt-1 max-w-[82px] truncate text-[10px] font-extrabold text-muted">
+                {relationDisplay(node)}
               </span>
             </Link>
           );
         })}
+
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label="인연 추가"
+            className="absolute right-[8%] top-[58%] z-40 grid h-[72px] w-[72px] place-items-center rounded-full bg-navy text-white shadow-[0_18px_36px_rgba(44,62,80,0.24)] transition active:scale-95"
+          >
+            <Plus size={32} strokeWidth={2.4} />
+          </button>
+        )}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-black">
-        <div className="rounded-xl bg-mint/10 border border-navy/10 px-3 py-2">
-          <span className="text-[#27AE60]">● 합</span> <span className="text-muted font-bold">도움 주는 관계</span>
-        </div>
-        <div className="rounded-xl bg-red/10 border border-navy/10 px-3 py-2">
-          <span className="text-red">● 충</span> <span className="text-muted font-bold">에너지 쓰는 관계</span>
-        </div>
+      <div className="mt-2 flex items-center gap-3 px-2 text-xs font-bold text-muted">
+        <span className="inline-flex items-center gap-1">
+          <span className="h-1 w-7 rounded-full bg-[#2FAAA2]" />
+          합(合)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-1 w-7 rounded-full bg-red" />
+          충(沖)
+        </span>
+        <span>·</span>
+        <span>부딪힘</span>
       </div>
-    </div>
+    </section>
   );
 }

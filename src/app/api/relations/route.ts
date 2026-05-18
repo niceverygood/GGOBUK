@@ -8,7 +8,8 @@ export async function GET() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { data, error } = await supabase
     .from('relations')
@@ -16,11 +17,12 @@ export async function GET() {
       `
       id,
       compatibility,
-      saju_b:saju_profiles!relations_saju_b_id_fkey ( id, name, ilgan, relation_label )
+      saju_b:saju_profiles!relations_saju_b_id_fkey ( id, name, ilgan, relation_type, relation_label, palja )
     `,
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ relations: data });
 }

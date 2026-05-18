@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { Card, Toggle, ButtonPrimary, Badge } from '@/components/ui/primitives';
-import { RelationGraph, type GraphNode } from '@/components/relations/RelationGraph';
+import {
+  RelationGraph,
+  type GraphNode,
+} from '@/components/relations/RelationGraph';
 import { computePreview } from '@/lib/saju/preview';
 import { quickCompat } from '@/lib/saju/quick_compat';
 import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
@@ -18,7 +21,13 @@ interface Partner {
   chung: string[];
 }
 
-export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; selfName: string }) {
+export function PartnerCompare({
+  selfSaju,
+  selfName,
+}: {
+  selfSaju: SajuResult;
+  selfName: string;
+}) {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Partner | null>(null);
@@ -45,7 +54,10 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
         isLunar: false,
         gender,
       });
-      const { score, hap, chung } = quickCompat(selfSaju.palja as Palja, partnerSaju.palja as Palja);
+      const { score, hap, chung } = quickCompat(
+        selfSaju.palja as Palja,
+        partnerSaju.palja as Palja,
+      );
       const newPartner: Partner = {
         id: `p-${Date.now()}`,
         name: name.trim(),
@@ -75,6 +87,10 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
     name: p.name,
     relationLabel: p.label,
     ohaeng: ohaengFromGan(p.saju.ilgan),
+    gan: p.saju.palja.day.gan,
+    ji: p.saju.palja.day.ji,
+    ganHanja: p.saju.palja.day.ganHanja,
+    jiHanja: p.saju.palja.day.jiHanja,
     score: p.score,
   }));
 
@@ -86,7 +102,9 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
           onClick={() => setOpen((v) => !v)}
           className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-navy text-white text-xs font-extrabold"
         >
-          {open ? '취소' : `＋ 사람 추가${partners.length ? ` (${partners.length})` : ''}`}
+          {open
+            ? '취소'
+            : `＋ 사람 추가${partners.length ? ` (${partners.length})` : ''}`}
         </button>
       </div>
 
@@ -122,7 +140,11 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
               />
             )}
             <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted shrink-0">
-              <input type="checkbox" checked={timeUnknown} onChange={(e) => setTimeUnknown(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={timeUnknown}
+                onChange={(e) => setTimeUnknown(e.target.checked)}
+              />
               시간 모름
             </label>
           </div>
@@ -150,7 +172,10 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
         </Card>
       ) : (
         <>
-          <RelationGraph selfOhaeng={ohaengFromGan(selfSaju.ilgan)} nodes={nodes} />
+          <RelationGraph
+            selfOhaeng={ohaengFromGan(selfSaju.ilgan)}
+            nodes={nodes}
+          />
 
           <div className="mt-3 space-y-2">
             {partners.map((p) => (
@@ -158,21 +183,35 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
                 key={p.id}
                 onClick={() => setSelected(p)}
                 className={`w-full text-left rounded-2xl border p-3 transition ${
-                  selected?.id === p.id ? 'border-mint bg-mint/10' : 'border-navy/10 bg-white'
+                  selected?.id === p.id
+                    ? 'border-mint bg-mint/10'
+                    : 'border-navy/10 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-black text-navy truncate">
-                      {p.name} <span className="text-xs font-bold text-muted">· {p.label}</span>
+                      {p.name}{' '}
+                      <span className="text-xs font-bold text-muted">
+                        · {p.label}
+                      </span>
                     </p>
                     <p className="text-[11px] font-bold text-muted truncate">
-                      일주 <span className="font-hanja">{p.saju.palja.day.ganHanja}{p.saju.palja.day.jiHanja}</span> · 일간 {p.saju.ilgan}
+                      일주{' '}
+                      <span className="font-hanja">
+                        {p.saju.palja.day.ganHanja}
+                        {p.saju.palja.day.jiHanja}
+                      </span>{' '}
+                      · 일간 {p.saju.ilgan}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="text-2xl font-black leading-none text-mint-dark">{p.score}</div>
-                    <div className="text-[10px] font-extrabold text-muted">궁합</div>
+                    <div className="text-2xl font-black leading-none text-mint-dark">
+                      {p.score}
+                    </div>
+                    <div className="text-[10px] font-extrabold text-muted">
+                      궁합
+                    </div>
                   </div>
                 </div>
               </button>
@@ -194,10 +233,14 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
               </div>
               {selected.hap.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-extrabold text-[#27AE60] mb-1">합</p>
+                  <p className="text-[11px] font-extrabold text-[#27AE60] mb-1">
+                    합
+                  </p>
                   <ul className="space-y-0.5 text-xs font-bold text-navy">
                     {selected.hap.map((h) => (
-                      <li key={h} className="font-hanja">· {h}</li>
+                      <li key={h} className="font-hanja">
+                        · {h}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -207,7 +250,9 @@ export function PartnerCompare({ selfSaju, selfName }: { selfSaju: SajuResult; s
                   <p className="text-[11px] font-extrabold text-red mb-1">충</p>
                   <ul className="space-y-0.5 text-xs font-bold text-navy">
                     {selected.chung.map((c) => (
-                      <li key={c} className="font-hanja">· {c}</li>
+                      <li key={c} className="font-hanja">
+                        · {c}
+                      </li>
                     ))}
                   </ul>
                 </div>
