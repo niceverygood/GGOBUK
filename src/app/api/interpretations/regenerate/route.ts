@@ -17,6 +17,7 @@ import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
   category: z.string(),
+  focus: z.string().max(300).optional(),
 });
 
 export const runtime = 'nodejs';
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const { category } = Body.parse(await req.json());
+  const { category, focus } = Body.parse(await req.json());
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
   if (!cat)
     return NextResponse.json({ error: 'unknown_category' }, { status: 400 });
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
     await spendCredits({
       userId: user.id,
       amount: CREDIT_COSTS.interpretation,
-      reason: `사주 해설 생성:${category}`,
+      reason: `사주 해설 ${focus ? '심화 ' : ''}생성:${category}`,
       referenceId: profile.id,
     });
     creditsSpent = true;
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
       saju,
       category as InterpretationCategory,
       profile.name,
+      focus,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
@@ -107,12 +109,14 @@ export async function POST(req: Request) {
         saju,
         category as InterpretationCategory,
         profile.name,
+        focus,
       );
     } else {
       result = generateFallbackInterpretation(
         saju,
         category as InterpretationCategory,
         profile.name,
+        focus,
       );
     }
   }

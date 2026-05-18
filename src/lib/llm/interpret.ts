@@ -96,6 +96,7 @@ export async function generateInterpretation(
   saju: SajuResult,
   category: InterpretationCategory,
   name?: string,
+  focus?: string,
 ): Promise<{ content: string; tokensUsed: number; model: string }> {
   const cat = INTERPRETATION_CATEGORIES.find((c) => c.key === category);
   if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
@@ -105,6 +106,7 @@ export async function generateInterpretation(
 ${context}
 
 중점: ${cat.prompt}
+${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반론보다 더 구체적인 판독 근거, 위험 신호, 실전 처방을 강화해줘.` : ''}
 
 이 카테고리에서는 단순한 성격 설명보다 "왜 이 풀이가 나오는지"가 느껴져야 한다. 사주팔자, 오행 분포, 십성, 신살, 대운 중 실제 근거를 최소 6개 이상 사용해 리포트에 녹여줘.`;
   return complete({
@@ -237,6 +239,7 @@ export function generateFallbackInterpretation(
   saju: SajuResult,
   category: InterpretationCategory,
   name?: string,
+  focus?: string,
 ): { content: string; tokensUsed: number; model: string } {
   const cat = categoryAngle(category);
   const [strong, strongCount] = strongestOhaeng(saju);
@@ -256,7 +259,8 @@ export function generateFallbackInterpretation(
     : '대운 정보는 계산 대기';
   const displayName = name?.trim() || '사용자';
 
-  const content = `한 줄 결론: ${displayName}님의 ${cat.title}은 ${strong} 기운이 강하게 체감되고, ${weak} 기운을 의식적으로 보완할 때 균형이 좋아지는 구조입니다. ${cat.focus}을 볼 때 핵심은 일주 ${palja.day.ganHanja}${palja.day.jiHanja}(${palja.day.gan}${palja.day.ji})와 오행 분포의 온도 차이를 함께 읽는 것입니다.
+  const focusLine = focus ? ` 이번 심화 초점은 “${focus}”입니다.` : '';
+  const content = `한 줄 결론: ${displayName}님의 ${cat.title}은 ${strong} 기운이 강하게 체감되고, ${weak} 기운을 의식적으로 보완할 때 균형이 좋아지는 구조입니다. ${cat.focus}을 볼 때 핵심은 일주 ${palja.day.ganHanja}${palja.day.jiHanja}(${palja.day.gan}${palja.day.ji})와 오행 분포의 온도 차이를 함께 읽는 것입니다.${focusLine}
 
 ## 판독 근거 표
 | 사주 근거 | 작용 방식 | 현실 체감 |
