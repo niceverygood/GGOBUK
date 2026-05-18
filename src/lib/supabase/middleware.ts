@@ -13,6 +13,14 @@ export async function updateSession(request: NextRequest) {
   const isPublic =
     path === '/' ||
     isAuthRoute ||
+    path === '/robots.txt' ||
+    path === '/sitemap.xml' ||
+    path === '/llms.txt' ||
+    path === '/saju' ||
+    path === '/gunghap' ||
+    path === '/today-fortune' ||
+    path === '/daewoon' ||
+    path === '/taegil' ||
     path.startsWith('/preview') ||
     path.startsWith('/api/preview') ||
     path.startsWith('/sprite-test') ||
@@ -35,7 +43,8 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
+        for (const { name, value } of cookiesToSet)
+          request.cookies.set(name, value);
         response = NextResponse.next({ request });
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);

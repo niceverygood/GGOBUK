@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
@@ -135,12 +136,12 @@ export default function LoginPage() {
           가입과 동시에 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
         </p>
 
-        <a
+        <Link
           href="/preview"
           className="mt-8 text-xs font-extrabold text-muted underline-offset-4 underline"
         >
           로그인 없이 등껍질만 펼쳐보기 →
-        </a>
+        </Link>
       </div>
     </main>
   );
