@@ -25,6 +25,8 @@ export function InterpretationPanel({
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isRichReport =
+    content.includes('##') || content.includes('| 사주 근거 |');
 
   async function generate() {
     setLoading(true);
@@ -53,10 +55,11 @@ export function InterpretationPanel({
       <div className="space-y-4">
         <div>
           <p className="text-sm font-black text-navy">
-            AI 정식 해설이 아직 없어
+            AI 정밀 리포트가 아직 없어
           </p>
           <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-            크래딧을 사용하면 이 카테고리를 내 사주에 맞춰 깊게 풀어줄게.
+            크래딧을 사용하면 원국 근거, 표, 체감 체크포인트까지 묶어서 깊게
+            풀어줄게.
           </p>
         </div>
         <ButtonPrimary tone="mint" onClick={generate} disabled={loading}>
@@ -80,12 +83,23 @@ export function InterpretationPanel({
 
   return (
     <div>
+      {!isRichReport && (
+        <div className="mb-4 rounded-2xl bg-gold/15 px-4 py-3">
+          <p className="text-xs font-black text-[#6B5A24]">
+            새 정밀 리포트 형식 사용 가능
+          </p>
+          <p className="mt-1 text-[12px] font-bold leading-relaxed text-muted">
+            다시 생성하면 판독 근거표와 체감 체크포인트가 포함된 새 형식으로
+            정리돼.
+          </p>
+        </div>
+      )}
       <InterpretationBody text={content} />
       <div className="mt-5">
         <ButtonPrimary tone="mint" onClick={generate} disabled={loading}>
           {loading
             ? 'AI가 다시 읽는 중...'
-            : `크래딧 ${CREDIT_COSTS.interpretation}개로 다시 생성`}
+            : `크래딧 ${CREDIT_COSTS.interpretation}개로 정밀 리포트 생성`}
         </ButtonPrimary>
         {error && (
           <p className="mt-2 text-center text-xs font-bold text-red">{error}</p>

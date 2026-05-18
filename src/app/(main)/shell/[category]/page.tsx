@@ -5,6 +5,10 @@ import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
+import {
+  InterpretationEvidence,
+  type InterpretationEvidenceProfile,
+} from '@/components/shell/InterpretationEvidence';
 import { InterpretationPanel } from '@/components/shell/InterpretationPanel';
 import type { InterpretationCategory } from '@/types/db';
 
@@ -25,10 +29,10 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
 
   const { data: profile } = await supabase
     .from('saju_profiles')
-    .select('id')
+    .select('id,palja,ohaeng_count,sipsung,sinsal,ilgan')
     .eq('owner_id', user.id)
     .eq('relation_type', 'self')
-    .maybeSingle();
+    .maybeSingle<InterpretationEvidenceProfile & { id: string }>();
   if (!profile) redirect('/onboarding/saju');
 
   const { data: cached } = await supabase
@@ -49,7 +53,7 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         <div className="flex items-start justify-between mt-2">
           <div>
             <p className="text-xs font-extrabold text-muted">
-              꼬북도사의 정식 풀이
+              꼬북도사의 정밀 리포트
             </p>
             <h1 className="text-2xl font-black tracking-tight text-navy">
               {cat.title}
@@ -57,6 +61,11 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
           </div>
           <KkobukAvatar variant="dosa" size="md" />
         </div>
+
+        <InterpretationEvidence
+          profile={profile}
+          category={category as InterpretationCategory}
+        />
 
         <Card className="mt-4 p-5">
           <InterpretationPanel
