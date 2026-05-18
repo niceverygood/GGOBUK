@@ -37,17 +37,6 @@ export async function POST(req: Request) {
   if (!profile)
     return NextResponse.json({ error: 'no profile' }, { status: 404 });
 
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('is_pro')
-    .eq('id', user.id)
-    .single();
-  const catIdx = INTERPRETATION_CATEGORIES.findIndex(
-    (item) => item.key === category,
-  );
-  if (!userRow?.is_pro && catIdx >= 3)
-    return NextResponse.json({ error: 'pro_only' }, { status: 402 });
-
   const saju = buildSajuResult({
     birthDate: profile.birth_date,
     birthTime: profile.birth_time ?? undefined,

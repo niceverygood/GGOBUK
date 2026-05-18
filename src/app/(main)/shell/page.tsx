@@ -20,9 +20,6 @@ export default async function ShellPage() {
     .maybeSingle();
   if (!profile) redirect('/onboarding/saju');
 
-  const { data: userRow } = await supabase.from('users').select('is_pro').eq('id', user.id).single();
-  const isPro = !!userRow?.is_pro;
-
   const palja = profile.palja as Palja;
 
   return (
@@ -54,7 +51,7 @@ export default async function ShellPage() {
         </Card>
 
         <p className="mt-7 mb-3 text-sm font-black text-navy">풀이 카테고리</p>
-        <CategoryGrid isPro={isPro} />
+        <CategoryGrid />
       </div>
     </main>
   );

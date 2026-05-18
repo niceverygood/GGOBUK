@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 
 const ICONS: Record<string, string> = {
@@ -32,30 +32,30 @@ const SUBTITLES: Record<string, string> = {
   direction: '동북 방향의 기운',
 };
 
-export function CategoryGrid({ isPro, freeCount = 3 }: { isPro: boolean; freeCount?: number }) {
+export function CategoryGrid() {
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      {INTERPRETATION_CATEGORIES.map((cat, i) => {
-        const locked = !isPro && i >= freeCount;
-        return (
-          <Link
-            key={cat.key}
-            href={locked ? '/more/pro' : `/shell/${cat.key}`}
-            className={`relative min-h-[110px] p-3.5 rounded-3xl bg-white border border-navy/10 shadow-[0_9px_22px_rgba(44,62,80,0.06)] flex flex-col ${
-              locked ? 'opacity-60 saturate-50' : ''
-            }`}
-          >
+      {INTERPRETATION_CATEGORIES.map((cat) => (
+        <Link
+          key={cat.key}
+          href={`/shell/${cat.key}`}
+          prefetch
+          aria-label={`${cat.title} 해설 보기`}
+          className="group relative min-h-[110px] p-3.5 rounded-3xl bg-white border border-navy/10 shadow-[0_9px_22px_rgba(44,62,80,0.06)] flex flex-col transition active:scale-[0.99] hover:border-mint/70 hover:shadow-[0_12px_26px_rgba(44,62,80,0.1)]"
+        >
+          <div className="flex items-start justify-between gap-2">
             <div className="text-2xl leading-none">{ICONS[cat.key] ?? '·'}</div>
-            <h4 className="mt-2 text-[15px] font-black text-navy">{cat.title}</h4>
-            <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">{SUBTITLES[cat.key]}</p>
-            {locked && (
-              <span className="absolute right-2.5 top-2.5 w-6 h-6 rounded-full bg-navy/10 flex items-center justify-center text-muted">
-                <Lock size={12} />
-              </span>
-            )}
-          </Link>
-        );
-      })}
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-mint/15 text-navy opacity-0 transition group-hover:opacity-100">
+              <ArrowRight size={14} strokeWidth={3} />
+            </span>
+          </div>
+          <h4 className="mt-2 text-[15px] font-black text-navy">{cat.title}</h4>
+          <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">{SUBTITLES[cat.key]}</p>
+          <span className="mt-auto pt-2 text-[10px] font-extrabold text-mint-dark opacity-0 transition group-hover:opacity-100">
+            바로 보기
+          </span>
+        </Link>
+      ))}
     </div>
   );
 }
