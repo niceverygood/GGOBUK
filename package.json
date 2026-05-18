@@ -6,10 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "app:assets": "bash scripts/generate-ios-assets.sh",
+    "app:ios:add": "cap add ios",
+    "app:ios:prepare": "pnpm run build && pnpm run app:assets && pnpm run app:ios:sync",
+    "app:ios:sync": "cap sync ios",
+    "app:ios:open": "cap open ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "@tanstack/react-query": "^5.100.10",
@@ -27,6 +34,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
@@ -41,5 +49,6 @@
     "tsx": "^4.22.0",
     "typescript": "^5",
     "vitest": "^4.1.6"
-  }
+  },
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
 }

@@ -16,6 +16,8 @@ export async function updateSession(request: NextRequest) {
     path === '/robots.txt' ||
     path === '/sitemap.xml' ||
     path === '/llms.txt' ||
+    path === '/privacy' ||
+    path === '/terms' ||
     path === '/saju' ||
     path === '/gunghap' ||
     path === '/today-fortune' ||
