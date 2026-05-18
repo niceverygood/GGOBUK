@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ArrowRight, Layers3, Sparkles } from 'lucide-react';
 import { InterpretationBody } from '@/components/shell/InterpretationBody';
+import { TalismanPanel } from '@/components/shell/TalismanPanel';
 import { ButtonPrimary } from '@/components/ui/primitives';
 import { CREDIT_COSTS } from '@/lib/credits';
 import type { InterpretationCategory } from '@/types/db';
@@ -566,6 +567,7 @@ export function InterpretationPanel({
       <InterpretationBody text={content} />
       <div className="mt-5 space-y-3">
         {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
+        {!loading && <TalismanPanel category={category} />}
         {!loading && (
           <DeepDivePanel
             category={category}

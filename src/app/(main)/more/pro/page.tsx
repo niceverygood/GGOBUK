@@ -126,8 +126,11 @@ function CreditPageInner() {
             <div className="rounded-2xl bg-gold/20 p-3">
               길일 찾기 · {CREDIT_COSTS.auspicious}개
             </div>
-            <div className="col-span-2 rounded-2xl bg-white border border-navy/10 p-3">
+            <div className="rounded-2xl bg-white border border-navy/10 p-3">
               대운 AI 해설 · {CREDIT_COSTS.daewoon}개
+            </div>
+            <div className="rounded-2xl bg-white border border-navy/10 p-3">
+              부적 이미지 · {CREDIT_COSTS.talisman}개
             </div>
           </div>
         </Card>
@@ -179,7 +182,9 @@ function CreditPageInner() {
           <p>✓ 자동 갱신 없음</p>
           <p>✓ 필요한 AI 해설만 크래딧으로 사용</p>
           <p>✓ 무료 채팅 한도 이후에도 크래딧으로 이어서 질문</p>
-          <p>✓ 사주 해설, 궁합, 대운, 길일 찾기 모두 같은 크래딧 사용</p>
+          <p>
+            ✓ 사주 해설, 궁합, 대운, 길일, 부적 이미지 모두 같은 크래딧 사용
+          </p>
         </Card>
       </div>
 

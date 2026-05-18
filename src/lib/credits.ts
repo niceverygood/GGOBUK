@@ -44,6 +44,7 @@ export const CREDIT_COSTS = {
   compatibility: 4,
   daewoon: 2,
   auspicious: 3,
+  talisman: 5,
 } as const;
 
 export function creditPackageById(id: string): CreditPackage | undefined {
