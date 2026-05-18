@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   RelationGraph,
   type GraphNode,
 } from '@/components/relations/RelationGraph';
+import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
 import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
 import { Badge, Card, Toggle, ButtonPrimary } from '@/components/ui/primitives';
 import { CREDIT_COSTS } from '@/lib/credits';
@@ -108,10 +109,11 @@ function filterTitle(filter: Filter): string {
 
 export default function RelationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [me, setMe] = useState<MeData | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(() => searchParams.get('add') === '1');
   const [addStatus, setAddStatus] = useState<AddStatus>('idle');
   const [error, setError] = useState('');
 
@@ -240,15 +242,27 @@ export default function RelationsPage() {
     <main className="px-5 pt-8 pb-40 relative overflow-x-hidden">
       <div className="hanji-overlay" />
       <div className="relative mx-auto w-full max-w-[560px]">
-        <div>
-          <p className="text-xs font-extrabold text-muted">관계의 합과 충</p>
-          <h1 className="mt-1 text-[34px] font-black tracking-tight text-navy">
-            내 인연 지도
-          </h1>
-          <p className="mt-1 text-xs font-bold text-muted">
-            귀인 {summary.good}명 · 거리 조절 {summary.caution}명
-            {summary.pending > 0 ? ` · 생성 대기 ${summary.pending}명` : ''}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-extrabold text-muted">관계의 합과 충</p>
+            <h1 className="mt-1 text-[34px] font-black tracking-tight text-navy">
+              내 인연 지도
+            </h1>
+            <p className="mt-1 text-xs font-bold text-muted">
+              귀인 {summary.good}명 · 거리 조절 {summary.caution}명
+              {summary.pending > 0 ? ` · 생성 대기 ${summary.pending}명` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setAdding((v) => !v);
+            }}
+            className="mt-3 shrink-0 rounded-full bg-navy px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]"
+          >
+            {adding ? '취소' : '+ 추가'}
+          </button>
         </div>
 
         <div className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
@@ -391,33 +405,47 @@ export default function RelationsPage() {
               const ohaeng = ohaengFromGan(relation.saju_b.ilgan);
               const day = relation.saju_b.palja?.day;
               return (
-                <Link
+                <div
                   key={relation.id}
-                  href={`/relations/${relation.id}`}
-                  className="flex min-w-[220px] items-center gap-3 rounded-3xl border border-navy/10 bg-white p-4 shadow-[0_10px_24px_rgba(44,62,80,0.07)] transition active:scale-[0.99]"
+                  className="flex min-w-[250px] items-center gap-3 rounded-3xl border border-navy/10 bg-white p-4 shadow-[0_10px_24px_rgba(44,62,80,0.07)] transition active:scale-[0.99]"
                 >
-                  <span
-                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-black ${scoreClass(
-                      score,
-                    )}`}
+                  <Link
+                    href={`/relations/${relation.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-3"
                   >
-                    {relation.saju_b.name.slice(0, 1)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-black text-navy">
-                      {relation.saju_b.name}
+                    <span
+                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-black ${scoreClass(
+                        score,
+                      )}`}
+                    >
+                      {relation.saju_b.name.slice(0, 1)}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs font-bold text-muted">
-                      {day?.ganHanja && day?.jiHanja ? (
-                        <span className="font-hanja mr-1">
-                          {day.ganHanja}
-                          {day.jiHanja}
-                        </span>
-                      ) : null}
-                      {ohaeng} · {scoreLabel(score)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-base font-black text-navy">
+                        {relation.saju_b.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs font-bold text-muted">
+                        {day?.ganHanja && day?.jiHanja ? (
+                          <span className="font-hanja mr-1">
+                            {day.ganHanja}
+                            {day.jiHanja}
+                          </span>
+                        ) : null}
+                        {ohaeng} · {scoreLabel(score)}
+                      </span>
                     </span>
-                  </span>
-                </Link>
+                  </Link>
+                  <RelationDeleteButton
+                    compact
+                    relationId={relation.id}
+                    relationName={relation.saju_b.name}
+                    onDeleted={(deletedId) => {
+                      setRelations((current) =>
+                        current.filter((item) => item.id !== deletedId),
+                      );
+                    }}
+                  />
+                </div>
               );
             })}
           </div>

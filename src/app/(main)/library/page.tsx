@@ -13,6 +13,7 @@ import {
 import { createServerClient } from '@/lib/supabase/server';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { Badge, Card } from '@/components/ui/primitives';
+import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
 import type { InterpretationCategory } from '@/types/db';
 
 const CATEGORY_TITLE = Object.fromEntries(
@@ -28,7 +29,10 @@ function formatDate(date: string | null | undefined): string {
 }
 
 function relationPerson(row: {
-  saju_b?: { name?: string | null; relation_label?: string | null } | Array<{ name?: string | null; relation_label?: string | null }> | null;
+  saju_b?:
+    | { name?: string | null; relation_label?: string | null }
+    | Array<{ name?: string | null; relation_label?: string | null }>
+    | null;
 }) {
   if (Array.isArray(row.saju_b)) return row.saju_b[0] ?? null;
   return row.saju_b ?? null;
@@ -49,37 +53,35 @@ export default async function LibraryPage() {
     .maybeSingle();
   if (!profile) redirect('/onboarding/saju');
 
-  const [
-    interpretationsResult,
-    relationsResult,
-    dailyResult,
-    sessionsResult,
-  ] = await Promise.all([
-    supabase
-      .from('interpretations')
-      .select('category, generated_at')
-      .eq('saju_id', profile.id)
-      .order('generated_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('relations')
-      .select('id, created_at, compatibility, saju_b:saju_profiles!relations_saju_b_id_fkey(name, relation_label)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('daily_fortunes')
-      .select('date, one_liner')
-      .eq('saju_id', profile.id)
-      .order('date', { ascending: false })
-      .limit(3),
-    supabase
-      .from('chat_sessions')
-      .select('id, persona, title, updated_at')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(3),
-  ]);
+  const [interpretationsResult, relationsResult, dailyResult, sessionsResult] =
+    await Promise.all([
+      supabase
+        .from('interpretations')
+        .select('category, generated_at')
+        .eq('saju_id', profile.id)
+        .order('generated_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('relations')
+        .select(
+          'id, created_at, compatibility, saju_b:saju_profiles!relations_saju_b_id_fkey(name, relation_label)',
+        )
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('daily_fortunes')
+        .select('date, one_liner')
+        .eq('saju_id', profile.id)
+        .order('date', { ascending: false })
+        .limit(3),
+      supabase
+        .from('chat_sessions')
+        .select('id, persona, title, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(3),
+    ]);
 
   const interpretations = interpretationsResult.data ?? [];
   const relations = relationsResult.data ?? [];
@@ -92,8 +94,12 @@ export default async function LibraryPage() {
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-extrabold text-muted">{profile.name}님의 기록</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-navy">보관함</h1>
+            <p className="text-xs font-extrabold text-muted">
+              {profile.name}님의 기록
+            </p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-navy">
+              보관함
+            </h1>
           </div>
           <Link
             href="/more"
@@ -122,7 +128,10 @@ export default async function LibraryPage() {
             <LibraryRow
               key={`${item.category}-${item.generated_at}`}
               href={`/shell/${item.category}`}
-              title={CATEGORY_TITLE[item.category as InterpretationCategory] ?? '사주해설'}
+              title={
+                CATEGORY_TITLE[item.category as InterpretationCategory] ??
+                '사주해설'
+              }
               subtitle={`${formatDate(item.generated_at)} 생성`}
               status="완료"
             />
@@ -134,15 +143,16 @@ export default async function LibraryPage() {
           count={relations.length}
           icon={<HeartHandshake size={18} strokeWidth={2.4} />}
           empty="아직 저장된 궁합이 없어."
-          actionHref="/relations"
+          actionHref="/relations?add=1"
           actionLabel="인연 추가"
         >
           {relations.map((relation) => {
             const person = relationPerson(relation);
             const score = relation.compatibility?.score;
             return (
-              <LibraryRow
+              <LibraryRelationRow
                 key={relation.id}
+                relationId={relation.id}
                 href={`/relations/${relation.id}`}
                 title={person?.name ?? '인연'}
                 subtitle={person?.relation_label ?? '궁합 리포트'}
@@ -236,7 +246,9 @@ function LibrarySection({
             {icon}
           </span>
           <p className="text-sm font-black text-navy">{title}</p>
-          <Badge tone="gold" className="px-2 py-1">{count}</Badge>
+          <Badge tone="gold" className="px-2 py-1">
+            {count}
+          </Badge>
         </div>
         <Link href={actionHref} className="text-xs font-black text-mint-dark">
           {actionLabel}
@@ -248,7 +260,10 @@ function LibrarySection({
         ) : (
           <div className="p-5 text-center">
             <p className="text-sm font-bold text-muted">{empty}</p>
-            <Link href={actionHref} className="mt-2 inline-flex text-xs font-black text-mint-dark">
+            <Link
+              href={actionHref}
+              className="mt-2 inline-flex text-xs font-black text-mint-dark"
+            >
               {actionLabel} →
             </Link>
           </div>
@@ -270,15 +285,53 @@ function LibraryRow({
   status: string;
 }) {
   return (
-    <Link href={href} className="flex items-center gap-3 p-4 transition active:bg-mint/10">
+    <Link
+      href={href}
+      className="flex items-center gap-3 p-4 transition active:bg-mint/10"
+    >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black text-navy">{title}</p>
-        <p className="mt-0.5 truncate text-xs font-bold text-muted">{subtitle}</p>
+        <p className="mt-0.5 truncate text-xs font-bold text-muted">
+          {subtitle}
+        </p>
       </div>
       <span className="shrink-0 rounded-full bg-mint/15 px-2.5 py-1 text-[11px] font-black text-mint-dark">
         {status}
       </span>
     </Link>
+  );
+}
+
+function LibraryRelationRow({
+  relationId,
+  href,
+  title,
+  subtitle,
+  status,
+}: {
+  relationId: string;
+  href: string;
+  title: string;
+  subtitle: string;
+  status: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 p-4 transition active:bg-mint/10">
+      <Link href={href} className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black text-navy">{title}</p>
+        <p className="mt-0.5 truncate text-xs font-bold text-muted">
+          {subtitle}
+        </p>
+      </Link>
+      <span className="shrink-0 rounded-full bg-mint/15 px-2.5 py-1 text-[11px] font-black text-mint-dark">
+        {status}
+      </span>
+      <RelationDeleteButton
+        compact
+        relationId={relationId}
+        relationName={title}
+      />
+    </div>
   );
 }
 

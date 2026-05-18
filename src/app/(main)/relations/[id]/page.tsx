@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { RegenerateCompatibilityButton } from '@/components/relations/RegenerateCompatibilityButton';
+import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
 import { createServerClient } from '@/lib/supabase/server';
 import type { SajuProfileRow, RelationRow } from '@/types/db';
 
@@ -39,10 +40,21 @@ export default async function CompatPage({ params }: PageProps) {
       <Link href="/relations" className="text-xs opacity-60">
         ← 인연
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">{rel.saju_b.name}와의 궁합</h1>
-      <p className="text-xs opacity-60 mt-1">
-        {rel.saju_b.relation_label ?? '미지정'}
-      </p>
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-bold">
+            {rel.saju_b.name}와의 궁합
+          </h1>
+          <p className="mt-1 text-xs opacity-60">
+            {rel.saju_b.relation_label ?? '미지정'}
+          </p>
+        </div>
+        <RelationDeleteButton
+          relationId={rel.id}
+          relationName={rel.saju_b.name}
+          redirectTo="/relations"
+        />
+      </div>
 
       {compat ? (
         <>
