@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     await addCredits({
       userId: user.id,
       amount: totalCredits(pkg),
-      reason: '카카오페이 크래딧 충전',
+      reason: '카카오페이 꼬북알 충전',
       referenceId: pending.id,
       kakaoTid: pending.kakao_tid,
       packageId: pkg.id,

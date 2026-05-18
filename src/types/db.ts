@@ -24,7 +24,7 @@ export type SubscriptionStatus =
   | 'cancelled'
   | 'expired'
   | 'failed';
-export type CreditPackageId = 'starter' | 'plus' | 'deep';
+export type CreditPackageId = 'starter' | 'focus' | 'plus' | 'deep' | 'master';
 export type CreditPurchaseStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
 export type CreditTransactionKind = 'purchase' | 'spend' | 'refund' | 'bonus';
 export type InterpretationCategory =

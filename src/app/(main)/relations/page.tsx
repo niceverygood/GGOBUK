@@ -59,7 +59,7 @@ function errorMessage(error: string): string {
     return '방금 추가한 인연을 찾지 못했어. 다시 시도해줘.';
   if (error === 'llm_not_configured') return 'AI 키 설정이 아직 안 되어 있어.';
   if (error === 'insufficient_credits')
-    return '크래딧이 부족해. 충전 후 다시 시도해줘.';
+    return '꼬북알이 부족해. 충전 후 다시 시도해줘.';
   if (error === 'invalid_body') return '입력값을 다시 확인해줘.';
   return error || '궁합 생성에 실패했어. 잠시 후 다시 시도해줘.';
 }
@@ -353,7 +353,7 @@ export default function RelationsPage() {
                 ? '사주 계산 중...'
                 : addStatus === 'compat'
                   ? 'AI가 궁합 보는 중...'
-                  : `추가하고 궁합 보기 · ${CREDIT_COSTS.compatibility} 크래딧`}
+                  : `추가하고 궁합 보기 · ${CREDIT_COSTS.compatibility}꼬북알`}
             </ButtonPrimary>
             {addStatus === 'compat' && (
               <p className="text-center text-xs font-bold text-muted leading-relaxed">

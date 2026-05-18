@@ -19,12 +19,12 @@ const TALISMAN_STEPS = [
 function talismanErrorMessage(code: string) {
   if (code === 'unauthorized') return '로그인이 필요해요.';
   if (code === 'no profile') return '내 사주가 먼저 필요해요.';
-  if (code === 'insufficient_credits') return '크래딧이 부족해요.';
+  if (code === 'insufficient_credits') return '꼬북알이 부족해요.';
   if (code === 'openai_not_configured')
     return 'OpenAI 이미지 키가 아직 연결되지 않았어요. Vercel에 OPENAI_API_KEY를 넣고 재배포해줘.';
   if (code === 'openai_image_empty')
-    return '이미지가 비어 왔어요. 크래딧은 돌려뒀으니 다시 시도해줘.';
-  return '부적 이미지를 만들지 못했어요. 크래딧은 돌려뒀으니 잠시 후 다시 시도해줘.';
+    return '이미지가 비어 왔어요. 꼬북알은 돌려뒀으니 다시 시도해줘.';
+  return '부적 이미지를 만들지 못했어요. 꼬북알은 돌려뒀으니 잠시 후 다시 시도해줘.';
 }
 
 function safeFileName(title: string) {
@@ -148,7 +148,7 @@ export function TalismanPanel({
           <ButtonPrimary tone="gold" onClick={generate} disabled={loading}>
             {loading
               ? '부적 그리는 중...'
-              : `크래딧 ${CREDIT_COSTS.talisman}개로 부적 받기`}
+              : `${CREDIT_COSTS.talisman}꼬북알로 부적 받기`}
           </ButtonPrimary>
 
           {imageDataUrl && (
@@ -172,7 +172,7 @@ export function TalismanPanel({
         {error && (
           <p className="mt-3 text-center text-xs font-bold leading-relaxed text-red">
             {error}{' '}
-            {error.includes('크래딧') && (
+            {error.includes('꼬북알') && (
               <Link href="/more/pro" className="underline underline-offset-4">
                 충전하기
               </Link>

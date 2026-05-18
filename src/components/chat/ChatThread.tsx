@@ -232,14 +232,14 @@ export function ChatThread({
 
       {rateLimited && (
         <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
-          오늘 무료 채팅 한도(5회)에 도달했어. 크래딧이 있으면 계속 질문할 수
+          오늘 무료 채팅 한도(5회)에 도달했어. 꼬북알이 있으면 계속 질문할 수
           있어.
         </div>
       )}
 
       {needsCredit && (
         <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
-          크래딧이 부족해. 추가 질문은 {CREDIT_COSTS.chat} 크래딧을 사용해.
+          꼬북알이 부족해. 추가 질문은 {CREDIT_COSTS.chat}꼬북알을 사용해.
           <Link href="/more/pro" className="ml-2 underline underline-offset-4">
             충전하기
           </Link>

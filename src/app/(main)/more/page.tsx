@@ -1,11 +1,18 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { UsersRound } from 'lucide-react';
+import {
+  Bell,
+  CalendarCheck,
+  Map,
+  ShoppingBag,
+  UsersRound,
+} from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
+import { CREDIT_UNIT } from '@/lib/credits';
 
 export default async function MorePage() {
   const supabase = await createServerClient();
@@ -35,27 +42,29 @@ export default async function MorePage() {
               {userRow?.nickname ?? user.email ?? '꼬북이'}
             </p>
           </div>
-          <Badge tone="gold">{credits} 크래딧</Badge>
+          <Badge tone="gold">
+            {credits} {CREDIT_UNIT}
+          </Badge>
         </Card>
 
         <div className="mt-4 space-y-2">
           <MoreLink
             href="/more/pro"
-            title="크래딧 충전"
+            title="꼬북상점"
             subtitle="구독 없이 필요한 AI 풀이만 사용"
-            icon="🪙"
+            icon={<ShoppingBag size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/timeline"
             title="대운 타임라인"
-            subtitle="10년 단위 큰 흐름 · AI 해설은 크래딧 사용"
-            icon="🗺"
+            subtitle={`10년 단위 큰 흐름 · AI 해설은 ${CREDIT_UNIT} 사용`}
+            icon={<Map size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/more/auspicious"
             title="길일 찾기"
-            subtitle="중요 일정에 좋은 날짜 · 크래딧 사용"
-            icon="☯"
+            subtitle={`중요 일정에 좋은 날짜 · ${CREDIT_UNIT} 사용`}
+            icon={<CalendarCheck size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/more/people"
@@ -67,7 +76,7 @@ export default async function MorePage() {
             href="/more/settings"
             title="알림 설정"
             subtitle="매일 아침 한 줄 운세"
-            icon="🔔"
+            icon={<Bell size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/persona"

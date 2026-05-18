@@ -76,13 +76,13 @@ export default function AuspiciousPage() {
           {loading ? '꼬북도사가 살펴보는 중...' : '좋은 날 찾기'}
         </button>
         <p className="text-center text-[11px] font-bold opacity-60">
-          검색 1회에 {CREDIT_COSTS.auspicious} 크래딧을 사용해.
+          검색 1회에 {CREDIT_COSTS.auspicious}꼬북알을 사용해.
         </p>
       </div>
 
       {needsCredit && (
         <div className="mt-6 rounded-2xl bg-[var(--color-gold)]/30 p-4 text-sm">
-          크래딧이 부족해.
+          꼬북알이 부족해.
           <button
             onClick={() => router.push('/more/pro')}
             className="ml-2 underline font-semibold"

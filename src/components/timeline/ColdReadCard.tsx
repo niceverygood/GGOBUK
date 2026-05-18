@@ -33,7 +33,7 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
       const code = e instanceof Error ? e.message : 'unknown';
       setError(
         code === 'insufficient_credits'
-          ? '크래딧이 부족해. 충전 후 다시 눌러줘.'
+          ? '꼬북알이 부족해. 충전 후 다시 눌러줘.'
           : '대운 해설을 생성하지 못했어. 잠시 후 다시 시도해줘.',
       );
     } finally {
@@ -68,7 +68,7 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
           onClick={generate}
           className="mt-3 w-full rounded-2xl bg-navy py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.18)]"
         >
-          크래딧 {CREDIT_COSTS.daewoon}개로 대운 AI 해설 보기
+          {CREDIT_COSTS.daewoon}꼬북알로 대운 AI 해설 보기
         </button>
       )}
       {loading && (

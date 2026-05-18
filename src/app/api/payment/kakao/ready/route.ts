@@ -6,7 +6,7 @@ import { payReady } from '@/lib/kakao/pay';
 import { creditPackageById, totalCredits } from '@/lib/credits';
 
 const Body = z.object({
-  packageId: z.enum(['starter', 'plus', 'deep']),
+  packageId: z.enum(['starter', 'focus', 'deep', 'master']),
 });
 
 export const runtime = 'nodejs';
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const data = await payReady({
     partnerOrderId,
     partnerUserId: user.id,
-    itemName: `꼬북점 크래딧 ${totalCredits(pkg)}개`,
+    itemName: `꼬북점 꼬북알 ${totalCredits(pkg)}개`,
     totalAmount: pkg.priceKrw,
     approvalUrl: `${baseUrl}/api/payment/kakao/approve?order=${partnerOrderId}&package=${pkg.id}`,
     cancelUrl: `${baseUrl}/more/pro?cancelled=1`,

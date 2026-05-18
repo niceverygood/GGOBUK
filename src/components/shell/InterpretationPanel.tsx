@@ -310,7 +310,7 @@ function errorMessage(code: string): string {
   if (code === 'llm_not_configured') return 'AI 키 설정이 아직 안 되어 있어요.';
   if (code === 'no profile') return '내 사주가 먼저 필요해요.';
   if (code === 'unauthorized') return '로그인이 필요해요.';
-  if (code === 'insufficient_credits') return '크래딧이 부족해요.';
+  if (code === 'insufficient_credits') return '꼬북알이 부족해요.';
   return '해설을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
@@ -421,7 +421,7 @@ function DeepDivePanel({
           </p>
           <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
             방금 리포트에서 더 궁금한 지점을 골라 초점을 좁혀볼 수 있어. 심화
-            분석은 주제별로 크래딧 {CREDIT_COSTS.interpretation}개를 사용해.
+            분석은 주제별로 {CREDIT_COSTS.interpretation}꼬북알을 사용해.
           </p>
         </div>
       </div>
@@ -444,7 +444,7 @@ function DeepDivePanel({
               </span>
             </span>
             <span className="shrink-0 rounded-full bg-mint/20 px-2.5 py-1 text-[10px] font-black text-navy">
-              {CREDIT_COSTS.interpretation} 크래딧
+              {CREDIT_COSTS.interpretation}꼬북알
             </span>
             <ArrowRight
               size={16}
@@ -459,7 +459,7 @@ function DeepDivePanel({
         href="/more/pro"
         className="mt-3 block rounded-2xl bg-navy px-4 py-3 text-center text-sm font-black text-white"
       >
-        크래딧 충전하고 계속 보기
+        꼬북알 충전하고 계속 보기
       </Link>
     </div>
   );
@@ -523,7 +523,7 @@ export function InterpretationPanel({
             AI 정밀 리포트가 아직 없어
           </p>
           <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-            크래딧을 사용하면 원국 근거, 표, 체감 체크포인트까지 묶어서 깊게
+            꼬북알을 사용하면 원국 근거, 표, 체감 체크포인트까지 묶어서 깊게
             풀어줄게.
           </p>
         </div>
@@ -535,12 +535,12 @@ export function InterpretationPanel({
         >
           {loading
             ? ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))].title
-            : `크래딧 ${CREDIT_COSTS.interpretation}개로 해설 생성`}
+            : `${CREDIT_COSTS.interpretation}꼬북알로 해설 생성`}
         </ButtonPrimary>
         {error && (
           <p className="text-center text-xs font-bold text-red">
             {error}{' '}
-            {error.includes('크래딧') && (
+            {error.includes('꼬북알') && (
               <Link href="/more/pro" className="underline underline-offset-4">
                 충전하기
               </Link>
@@ -585,7 +585,7 @@ export function InterpretationPanel({
               ? '심화 초점으로 다시 읽는 중...'
               : ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))]
                   .title
-            : `크래딧 ${CREDIT_COSTS.interpretation}개로 정밀 리포트 생성`}
+            : `${CREDIT_COSTS.interpretation}꼬북알로 정밀 리포트 생성`}
         </ButtonPrimary>
         {error && (
           <p className="mt-2 text-center text-xs font-bold text-red">{error}</p>
