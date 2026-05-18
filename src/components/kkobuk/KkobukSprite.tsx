@@ -32,29 +32,29 @@ interface SpriteAsset {
 const BASE = '/characters/ggobuk';
 
 export const SPRITE_MAP: Record<SpriteKey, SpriteAsset> = {
-  hero: { src: `${BASE}/characters/main_waving.png`, w: 320, h: 372 },
+  hero: { src: `${BASE}/characters/main_waving.png`, w: 1280, h: 1488 },
 
-  front: { src: `${BASE}/characters/turnaround_front.png`, w: 176, h: 243 },
-  side: { src: `${BASE}/characters/turnaround_side.png`, w: 158, h: 242 },
-  back: { src: `${BASE}/characters/turnaround_back.png`, w: 177, h: 242 },
+  front: { src: `${BASE}/characters/turnaround_front.png`, w: 704, h: 972 },
+  side: { src: `${BASE}/characters/turnaround_side.png`, w: 632, h: 968 },
+  back: { src: `${BASE}/characters/turnaround_back.png`, w: 708, h: 968 },
 
-  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 180, h: 216 },
-  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 211, h: 251 },
-  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 216, h: 232 },
-  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 183, h: 232 },
+  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 720, h: 864 },
+  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 844, h: 1004 },
+  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 864, h: 928 },
+  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 732, h: 928 },
 
-  'mood-기쁨': { src: `${BASE}/expressions/expr_happy.png`, w: 98, h: 93 },
-  'mood-신남': { src: `${BASE}/expressions/expr_excited.png`, w: 101, h: 93 },
-  'mood-고민': { src: `${BASE}/expressions/expr_thinking.png`, w: 101, h: 93 },
-  'mood-놀람': { src: `${BASE}/expressions/expr_surprised.png`, w: 98, h: 93 },
-  'mood-걱정': { src: `${BASE}/expressions/expr_worried.png`, w: 100, h: 93 },
-  'mood-편안': { src: `${BASE}/expressions/expr_relaxed.png`, w: 101, h: 93 },
+  'mood-기쁨': { src: `${BASE}/expressions/expr_happy.png`, w: 392, h: 372 },
+  'mood-신남': { src: `${BASE}/expressions/expr_excited.png`, w: 404, h: 372 },
+  'mood-고민': { src: `${BASE}/expressions/expr_thinking.png`, w: 404, h: 372 },
+  'mood-놀람': { src: `${BASE}/expressions/expr_surprised.png`, w: 392, h: 372 },
+  'mood-걱정': { src: `${BASE}/expressions/expr_worried.png`, w: 400, h: 372 },
+  'mood-편안': { src: `${BASE}/expressions/expr_relaxed.png`, w: 404, h: 372 },
 
-  'pose-book': { src: `${BASE}/poses/pose_reading_book.png`, w: 104, h: 106 },
-  'pose-meditate': { src: `${BASE}/poses/pose_fortune_board.png`, w: 128, h: 114 },
-  'pose-drink': { src: `${BASE}/poses/pose_holding_tea.png`, w: 116, h: 114 },
-  'pose-bag': { src: `${BASE}/poses/pose_walking_bag.png`, w: 101, h: 114 },
-  'pose-sing': { src: `${BASE}/poses/pose_singing.png`, w: 134, h: 115 },
+  'pose-book': { src: `${BASE}/poses/pose_reading_book.png`, w: 416, h: 424 },
+  'pose-meditate': { src: `${BASE}/poses/pose_fortune_board.png`, w: 512, h: 456 },
+  'pose-drink': { src: `${BASE}/poses/pose_holding_tea.png`, w: 464, h: 456 },
+  'pose-bag': { src: `${BASE}/poses/pose_walking_bag.png`, w: 404, h: 456 },
+  'pose-sing': { src: `${BASE}/poses/pose_singing.png`, w: 536, h: 460 },
 };
 
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
@@ -81,13 +81,17 @@ export function KkobukSprite({
   const region = SPRITE_MAP[variant];
   const targetH = SIZE_HEIGHT[size];
   const targetW = Math.round((region.w / region.h) * targetH);
+  const sourceH = Math.min(region.h, targetH * 3);
+  const sourceW = Math.round((region.w / region.h) * sourceH);
 
   return (
     <Image
       src={region.src}
       alt={ariaLabel ?? variant}
-      width={region.w}
-      height={region.h}
+      width={sourceW}
+      height={sourceH}
+      sizes={`${targetW}px`}
+      quality={95}
       draggable={false}
       className={cn('inline-block shrink-0 object-contain select-none', className)}
       style={{

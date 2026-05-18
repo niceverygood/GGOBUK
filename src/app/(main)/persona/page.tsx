@@ -16,10 +16,10 @@ const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
 };
 
 const PERSONA_CARD: Record<PersonaKey, { src: string; width: number; height: number }> = {
-  kkobuk: { src: '/characters/ggobuk/cards/card_basic_friend.png', width: 231, height: 347 },
-  dosa: { src: '/characters/ggobuk/cards/card_saju_master.png', width: 260, height: 347 },
-  mudang: { src: '/characters/ggobuk/cards/card_direct_shaman.png', width: 276, height: 347 },
-  bosal: { src: '/characters/ggobuk/cards/card_comfort_bodhisattva.png', width: 290, height: 347 },
+  kkobuk: { src: '/characters/ggobuk/cards/card_basic_friend.png', width: 924, height: 1388 },
+  dosa: { src: '/characters/ggobuk/cards/card_saju_master.png', width: 1040, height: 1388 },
+  mudang: { src: '/characters/ggobuk/cards/card_direct_shaman.png', width: 1104, height: 1388 },
+  bosal: { src: '/characters/ggobuk/cards/card_comfort_bodhisattva.png', width: 1160, height: 1388 },
 };
 import { cn } from '@/lib/utils/cn';
 
@@ -34,6 +34,11 @@ export default function PersonaSelectionPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<PersonaKey>('dosa');
   const [loading, setLoading] = useState(false);
+  const selectedCard = PERSONA_CARD[selected];
+  const selectedCardHeight = 384;
+  const selectedCardWidth = Math.round(
+    (selectedCard.width / selectedCard.height) * selectedCardHeight,
+  );
 
   async function start() {
     setLoading(true);
@@ -90,10 +95,12 @@ export default function PersonaSelectionPage() {
         <Card className="mt-5 p-4">
           <div className="flex items-center gap-4">
             <Image
-              src={PERSONA_CARD[selected].src}
+              src={selectedCard.src}
               alt={PERSONAS[selected].displayName}
-              width={PERSONA_CARD[selected].width}
-              height={PERSONA_CARD[selected].height}
+              width={selectedCardWidth}
+              height={selectedCardHeight}
+              sizes={`${Math.round((selectedCardWidth / selectedCardHeight) * 128)}px`}
+              quality={95}
               className="h-32 w-auto shrink-0 rounded-xl object-contain"
             />
             <div>
