@@ -187,30 +187,37 @@ export function RelationGraph({
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3 px-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-muted">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1 w-7 rounded-full bg-[#2FAAA2]" />
+            합(合)
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1 w-7 rounded-full bg-red" />
+            충(沖)
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1 w-7 rounded-full bg-[#C7CBC8]" />
+            보통
+          </span>
+        </div>
 
         {onAdd && (
           <button
             type="button"
             onClick={onAdd}
             aria-label="인연 추가"
-            className="absolute right-[8%] top-[58%] z-40 grid h-[72px] w-[72px] place-items-center rounded-full bg-navy text-white shadow-[0_18px_36px_rgba(44,62,80,0.24)] transition active:scale-95"
+            className="shrink-0 rounded-full bg-navy px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_20px_rgba(44,62,80,0.18)] transition active:scale-95"
           >
-            <Plus size={32} strokeWidth={2.4} />
+            <span className="inline-flex items-center gap-1">
+              <Plus size={14} strokeWidth={3} />
+              인연 추가
+            </span>
           </button>
         )}
-      </div>
-
-      <div className="mt-2 flex items-center gap-3 px-2 text-xs font-bold text-muted">
-        <span className="inline-flex items-center gap-1">
-          <span className="h-1 w-7 rounded-full bg-[#2FAAA2]" />
-          합(合)
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-1 w-7 rounded-full bg-red" />
-          충(沖)
-        </span>
-        <span>·</span>
-        <span>부딪힘</span>
       </div>
     </section>
   );

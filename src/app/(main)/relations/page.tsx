@@ -385,7 +385,7 @@ export default function RelationsPage() {
             <p className="mt-3 text-sm font-bold text-muted">
               {relations.length > 0
                 ? '다른 필터로 바꿔서 다시 확인해봐.'
-                : '지도 안의 + 버튼으로 첫 인연을 추가해봐.'}
+                : '인연 추가 버튼으로 첫 인연을 추가해봐.'}
             </p>
           </Card>
         )}
