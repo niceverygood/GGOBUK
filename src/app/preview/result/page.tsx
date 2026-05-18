@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
-import { OhaengChart } from '@/components/shell/OhaengChart';
 import { LifeRoad } from '@/components/timeline/LifeRoad';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge, Card } from '@/components/ui/primitives';
@@ -74,8 +73,6 @@ export default function PreviewResultPage() {
     return <main className="p-10 text-center text-sm font-bold opacity-60">계산 중...</main>;
   }
 
-  const total = saju.palja.time ? 8 : 6;
-  const firePct = Math.round((saju.ohaengCount.화 / total) * 100);
   const summary = [saju.palja.year, saju.palja.month, saju.palja.day, saju.palja.time]
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .map((p) => `${p.ganHanja}${p.jiHanja}`)
@@ -91,7 +88,7 @@ export default function PreviewResultPage() {
             <p className="text-xs font-extrabold text-muted">미리보기 · 저장 안 됨</p>
             <h1 className="text-2xl font-black tracking-tight text-navy truncate">{name}의 등껍질</h1>
           </div>
-          <Badge tone="mint" className="shrink-0 whitespace-nowrap">火 {firePct}%</Badge>
+          <Badge tone="mint" className="shrink-0 whitespace-nowrap">일간 {saju.palja.day.ganOhaeng}</Badge>
         </div>
 
         {/* 8 pillars dome */}
@@ -109,12 +106,6 @@ export default function PreviewResultPage() {
           </div>
           <p className="mt-1 text-sm font-semibold text-[#82786D]">8자: <span className="font-hanja">{summary}</span></p>
         </Card>
-
-        {/* Ohaeng chart */}
-        <section className="mt-6 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-5">
-          <p className="text-sm font-black text-navy mb-3">오행 분포</p>
-          <OhaengChart counts={saju.ohaengCount} total={total} />
-        </section>
 
         {/* Sipsung map */}
         <section className="mt-6 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-5">

@@ -28,6 +28,42 @@ const OHAENG_LABEL: Record<Ohaeng, string> = {
   수: '수',
 };
 
+const OHAENG_TILE: Record<
+  Ohaeng,
+  { background: string; borderColor: string; color: string; labelColor: string }
+> = {
+  목: {
+    background: 'linear-gradient(180deg, #E3F4FB 0%, #B9E3F6 100%)',
+    borderColor: '#5DADE2',
+    color: '#233C51',
+    labelColor: '#315D73',
+  },
+  화: {
+    background: 'linear-gradient(180deg, #FFE8E3 0%, #F5B6AB 100%)',
+    borderColor: '#E74C3C',
+    color: '#4E2822',
+    labelColor: '#A33C32',
+  },
+  토: {
+    background: 'linear-gradient(180deg, #FFF6C8 0%, #E8D56A 100%)',
+    borderColor: '#D7B62E',
+    color: '#453815',
+    labelColor: '#715D18',
+  },
+  금: {
+    background: 'linear-gradient(180deg, #FFFFFF 0%, #DDE4E4 100%)',
+    borderColor: '#AEB9BA',
+    color: '#263946',
+    labelColor: '#687578',
+  },
+  수: {
+    background: 'linear-gradient(180deg, #EDF4F8 0%, #A8B9C7 100%)',
+    borderColor: '#34495E',
+    color: '#203040',
+    labelColor: '#34495E',
+  },
+};
+
 const SIPSUNG_BY_POSITION: Record<Position, string> = {
   연간: '연주의 천간',
   연지: '연주의 지지',
@@ -87,28 +123,39 @@ export function TortoiseShell({ palja, activePosition, revealCount = 8, classNam
             const ganOrJi = seg.pillar ? (seg.isGan ? seg.pillar.ganHanja : seg.pillar.jiHanja) : '?';
             const kor = seg.pillar ? (seg.isGan ? seg.pillar.gan : seg.pillar.ji) : '미상';
             const ohaeng = seg.pillar ? (seg.isGan ? seg.pillar.ganOhaeng : seg.pillar.jiOhaeng) : null;
+            const tile = ohaeng ? OHAENG_TILE[ohaeng] : null;
             const active = activePosition === seg.position;
             return (
               <button
                 key={seg.position}
                 onClick={() => seg.pillar && setSelected(seg)}
                 className={cn(
-                  'flex flex-col items-center justify-center rounded-2xl border-2 relative transition-all duration-300',
+                  'flex flex-col items-center justify-center rounded-2xl border-2 relative overflow-hidden transition-all duration-300',
                   active
-                    ? 'bg-gold/70 border-navy shadow-[0_0_0_4px_rgba(244,208,63,0.25),inset_0_0_0_2px_rgba(255,255,255,0.5)] -translate-y-0.5'
-                    : 'bg-soft/50 border-navy/40 hover:border-navy/70',
+                    ? 'shadow-[0_0_0_4px_rgba(44,62,80,0.16),inset_0_0_0_2px_rgba(255,255,255,0.65)] -translate-y-0.5'
+                    : 'hover:shadow-[0_8px_18px_rgba(44,62,80,0.14)]',
                 )}
                 style={{
                   cursor: seg.pillar ? 'pointer' : 'default',
                   opacity: revealed ? 1 : 0.25,
                   transitionDelay: `${i * 80}ms`,
+                  background: tile?.background ?? 'rgba(250, 246, 240, 0.7)',
+                  borderColor: active ? 'var(--color-navy)' : (tile?.borderColor ?? 'rgba(44,62,80,0.35)'),
                 }}
                 disabled={!seg.pillar}
                 type="button"
                 aria-label={`${seg.position} ${kor}`}
               >
-                <span className="font-hanja font-black text-2xl leading-none text-navy">{ganOrJi}</span>
-                <span className="text-[9px] font-extrabold text-navy/70 mt-1">
+                <span
+                  className="font-hanja font-black text-2xl leading-none"
+                  style={{ color: tile?.color ?? 'var(--color-navy)' }}
+                >
+                  {ganOrJi}
+                </span>
+                <span
+                  className="text-[9px] font-extrabold mt-1"
+                  style={{ color: tile?.labelColor ?? 'rgba(44,62,80,0.7)' }}
+                >
                   {kor}{ohaeng && ` · ${OHAENG_LABEL[ohaeng]}`}
                 </span>
               </button>
