@@ -10,30 +10,43 @@ import type { InterpretationCategory } from '@/types/db';
 
 const ANALYSIS_STEPS = [
   {
+    at: 0,
     title: '원국 펼치는 중...',
     body: '연월일시 네 기둥을 다시 맞춰보고 있어요.',
   },
   {
+    at: 0.14,
     title: '오행 온도 재는 중...',
     body: '목화토금수의 쏠림과 빈자리를 비교하는 중이에요.',
   },
   {
+    at: 0.3,
     title: '십성 단서 모으는 중...',
     body: '성향, 관계, 돈, 일의 반복 패턴을 골라내고 있어요.',
   },
   {
+    at: 0.48,
     title: '신살 포인트 표시하는 중...',
     body: '체감이 큰 사건성 단서를 조심스럽게 확인하고 있어요.',
   },
   {
+    at: 0.66,
     title: '대운 흐름 연결하는 중...',
     body: '지금 시기와 앞으로의 큰 흐름을 이어 보고 있어요.',
   },
   {
+    at: 0.82,
     title: '리포트 문장 다듬는 중...',
     body: '표, 체크포인트, 활용 처방까지 읽기 좋게 정리하고 있어요.',
   },
+  {
+    at: 0.95,
+    title: '거의 다 됐어요...',
+    body: '응답을 받는 대로 바로 리포트 화면에 꽂아둘게요.',
+  },
 ];
+
+const EXPECTED_ANALYSIS_MS = 48_000;
 
 function errorMessage(code: string): string {
   if (code === 'llm_not_configured') return 'AI 키 설정이 아직 안 되어 있어요.';
@@ -43,11 +56,28 @@ function errorMessage(code: string): string {
   return '해설을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
-function AnalysisLoadingIndicator({ stepIndex }: { stepIndex: number }) {
-  const step = ANALYSIS_STEPS[stepIndex % ANALYSIS_STEPS.length];
-  const progress = Math.max(
-    12,
-    ((stepIndex % ANALYSIS_STEPS.length) + 1) * (100 / ANALYSIS_STEPS.length),
+function loadingProgress(elapsedMs: number) {
+  const raw = elapsedMs / EXPECTED_ANALYSIS_MS;
+  if (raw >= 1) return 95;
+  return Math.max(8, Math.round(raw * 92));
+}
+
+function loadingStepIndex(progress: number) {
+  const ratio = progress / 100;
+  let index = 0;
+  for (let i = 0; i < ANALYSIS_STEPS.length; i += 1) {
+    if (ratio >= ANALYSIS_STEPS[i].at) index = i;
+  }
+  return index;
+}
+
+function AnalysisLoadingIndicator({ elapsedMs }: { elapsedMs: number }) {
+  const progress = loadingProgress(elapsedMs);
+  const stepIndex = loadingStepIndex(progress);
+  const step = ANALYSIS_STEPS[stepIndex];
+  const secondsLeft = Math.max(
+    0,
+    Math.ceil((EXPECTED_ANALYSIS_MS - elapsedMs) / 1000),
   );
 
   return (
@@ -74,19 +104,31 @@ function AnalysisLoadingIndicator({ stepIndex }: { stepIndex: number }) {
 
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-navy/8">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-mint to-gold transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-mint to-gold transition-all duration-1000"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-1.5">
-        {ANALYSIS_STEPS.slice(0, 6).map((item, index) => {
-          const active = index <= stepIndex % ANALYSIS_STEPS.length;
+      <div className="mt-2 flex items-center justify-between text-[10px] font-black text-muted">
+        <span>예상 {Math.round(EXPECTED_ANALYSIS_MS / 1000)}초 안팎</span>
+        <span>
+          {progress >= 95 ? '마지막 응답 대기' : `약 ${secondsLeft}초 남음`}
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        {ANALYSIS_STEPS.slice(0, -1).map((item, index) => {
+          const active = index <= stepIndex;
+          const current = index === stepIndex;
           return (
             <div
               key={item.title}
               className={`rounded-xl px-2 py-1.5 text-center text-[10px] font-black transition ${
-                active ? 'bg-mint/18 text-navy' : 'bg-white/70 text-muted/70'
+                current
+                  ? 'bg-navy text-white'
+                  : active
+                    ? 'bg-mint/18 text-navy'
+                    : 'bg-white/70 text-muted/70'
               }`}
             >
               {item.title.replace('...', '')}
@@ -107,7 +149,7 @@ export function InterpretationPanel({
 }) {
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState('');
   const isRichReport =
     content.includes('##') || content.includes('| 사주 근거 |');
@@ -116,15 +158,15 @@ export function InterpretationPanel({
     if (!loading) return;
 
     const timer = window.setInterval(() => {
-      setLoadingStep((current) => (current + 1) % ANALYSIS_STEPS.length);
-    }, 2200);
+      setElapsedMs((current) => current + 500);
+    }, 500);
 
     return () => window.clearInterval(timer);
   }, [loading]);
 
   async function generate() {
     setLoading(true);
-    setLoadingStep(0);
+    setElapsedMs(0);
     setError('');
     try {
       const res = await fetch('/api/interpretations/regenerate', {
@@ -157,10 +199,10 @@ export function InterpretationPanel({
             풀어줄게.
           </p>
         </div>
-        {loading && <AnalysisLoadingIndicator stepIndex={loadingStep} />}
+        {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
         <ButtonPrimary tone="mint" onClick={generate} disabled={loading}>
           {loading
-            ? ANALYSIS_STEPS[loadingStep].title
+            ? ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))].title
             : `크래딧 ${CREDIT_COSTS.interpretation}개로 해설 생성`}
         </ButtonPrimary>
         {error && (
@@ -192,10 +234,10 @@ export function InterpretationPanel({
       )}
       <InterpretationBody text={content} />
       <div className="mt-5 space-y-3">
-        {loading && <AnalysisLoadingIndicator stepIndex={loadingStep} />}
+        {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
         <ButtonPrimary tone="mint" onClick={generate} disabled={loading}>
           {loading
-            ? ANALYSIS_STEPS[loadingStep].title
+            ? ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))].title
             : `크래딧 ${CREDIT_COSTS.interpretation}개로 정밀 리포트 생성`}
         </ButtonPrimary>
         {error && (
