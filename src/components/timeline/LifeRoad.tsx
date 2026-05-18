@@ -17,6 +17,13 @@ const EMOJI_BY_SIPSUNG: Record<string, string> = {
   정인: '📜',
 };
 
+function periodState(p: DaewoonPeriod, currentYear: number): string {
+  if (currentYear >= p.startYear && currentYear <= p.startYear + 9)
+    return '현재';
+  if (p.startYear > currentYear) return '다음';
+  return '지난';
+}
+
 export function LifeRoad({
   periods,
   currentYear,
@@ -38,16 +45,24 @@ export function LifeRoad({
     );
     if (currIdx >= 0) {
       const target = currIdx * 92 - 100;
-      scrollRef.current.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+      scrollRef.current.scrollTo({
+        left: Math.max(0, target),
+        behavior: 'smooth',
+      });
     }
   }, [periods, currentYear]);
 
   return (
-    <div ref={scrollRef} className="overflow-x-auto overflow-y-hidden no-scrollbar pt-8 pb-2">
-      <div className="relative" style={{ width: `${periods.length * 92 + 60}px`, height: '260px' }}>
-        {/* horizontal road */}
+    <div
+      ref={scrollRef}
+      className="overflow-x-auto overflow-y-hidden no-scrollbar pt-6 pb-1"
+    >
+      <div
+        className="relative"
+        style={{ width: `${periods.length * 92 + 60}px`, height: '172px' }}
+      >
         <div
-          className="absolute top-[110px] h-[18px] rounded-full"
+          className="absolute top-[86px] h-[18px] rounded-full"
           style={{
             left: '25px',
             right: '30px',
@@ -57,7 +72,8 @@ export function LifeRoad({
         />
         {periods.map((p, i) => {
           const isPast = p.startYear + 9 < currentYear;
-          const isCurrent = currentYear >= p.startYear && currentYear <= p.startYear + 9;
+          const isCurrent =
+            currentYear >= p.startYear && currentYear <= p.startYear + 9;
           const isSelected = selectedStartYear === p.startYear;
           const emoji = EMOJI_BY_SIPSUNG[p.sipsung] ?? '✦';
           return (
@@ -72,7 +88,8 @@ export function LifeRoad({
             >
               {isCurrent && (
                 <div className="text-red font-black text-xs mb-1 leading-tight">
-                  현재<br />▼
+                  현재
+                  <br />▼
                 </div>
               )}
               <div
@@ -87,11 +104,17 @@ export function LifeRoad({
               >
                 {emoji}
               </div>
+              <p className="mt-2 text-[10px] font-black text-muted">
+                {periodState(p, currentYear)}
+              </p>
               <div className="font-hanja font-black text-navy mt-2 text-lg leading-none">
-                {p.pillar.ganHanja}{p.pillar.jiHanja}
+                {p.pillar.ganHanja}
+                {p.pillar.jiHanja}
               </div>
-              <p className="text-[10px] font-bold text-muted mt-1">
+              <p className="text-[10px] font-bold text-muted mt-1 leading-tight">
                 {p.startAge}~{p.startAge + 9}세
+                <br />
+                {p.sipsung}
               </p>
             </button>
           );
