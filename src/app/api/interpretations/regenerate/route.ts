@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import {
   INTERPRETATION_CATEGORIES,
+  generateFallbackInterpretation,
   generateInterpretation,
 } from '@/lib/llm/interpret';
 import { CREDIT_COSTS } from '@/lib/credits';
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
     gender: profile.gender,
   });
 
+  let creditsSpent = false;
   try {
     await spendCredits({
       userId: user.id,
@@ -58,6 +60,7 @@ export async function POST(req: Request) {
       reason: `사주 해설 생성:${category}`,
       referenceId: profile.id,
     });
+    creditsSpent = true;
   } catch (e) {
     if (isInsufficientCreditsError(e)) {
       return NextResponse.json(
@@ -65,7 +68,11 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    throw e;
+    console.warn('[interpretations/regenerate] credit spend skipped', {
+      userId: user.id,
+      category,
+      message: e instanceof Error ? e.message : String(e),
+    });
   }
 
   let result;
@@ -77,33 +84,37 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
+    console.error('[interpretations/regenerate] llm failed; using fallback', {
+      userId: user.id,
+      category,
+      message: msg,
+    });
+    if (creditsSpent) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.interpretation,
+        reason: `사주 해설 AI 실패 환불:${category}`,
+        kind: 'refund',
+        referenceId: profile.id,
+      }).catch(() => undefined);
+      creditsSpent = false;
+    }
     if (
       msg.includes('OPENROUTER_API_KEY') ||
       msg.includes('ANTHROPIC_API_KEY')
     ) {
-      await addCredits({
-        userId: user.id,
-        amount: CREDIT_COSTS.interpretation,
-        reason: `사주 해설 실패 환불:${category}`,
-        kind: 'refund',
-        referenceId: profile.id,
-      }).catch(() => undefined);
-      return NextResponse.json(
-        { error: 'llm_not_configured' },
-        { status: 503 },
+      result = generateFallbackInterpretation(
+        saju,
+        category as InterpretationCategory,
+        profile.name,
+      );
+    } else {
+      result = generateFallbackInterpretation(
+        saju,
+        category as InterpretationCategory,
+        profile.name,
       );
     }
-    await addCredits({
-      userId: user.id,
-      amount: CREDIT_COSTS.interpretation,
-      reason: `사주 해설 실패 환불:${category}`,
-      kind: 'refund',
-      referenceId: profile.id,
-    }).catch(() => undefined);
-    return NextResponse.json(
-      { error: msg || 'interpretation failed' },
-      { status: 500 },
-    );
   }
 
   const admin = await createServerClient({ admin: true });
@@ -118,7 +129,14 @@ export async function POST(req: Request) {
     },
     { onConflict: 'saju_id,category' },
   );
-  if (error)
+  if (error) {
+    console.error('[interpretations/regenerate] cache save failed', {
+      userId: user.id,
+      category,
+      message: error.message,
+    });
+  }
+  if (error && creditsSpent)
     await addCredits({
       userId: user.id,
       amount: CREDIT_COSTS.interpretation,
@@ -126,8 +144,10 @@ export async function POST(req: Request) {
       kind: 'refund',
       referenceId: profile.id,
     }).catch(() => undefined);
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ content: result.content });
+  return NextResponse.json({
+    content: result.content,
+    cached: !error,
+    model: result.model,
+  });
 }
