@@ -14,6 +14,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { Badge, Card } from '@/components/ui/primitives';
 import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
+import { PremiumServiceStore } from '@/components/library/PremiumServiceStore';
 import type { InterpretationCategory } from '@/types/db';
 
 const CATEGORY_TITLE = Object.fromEntries(
@@ -115,6 +116,8 @@ export default async function LibraryPage() {
           <Stat label="궁합" value={relations.length} />
           <Stat label="대화" value={sessions.length} />
         </div>
+
+        <PremiumServiceStore />
 
         <LibrarySection
           title="사주해설"

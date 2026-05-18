@@ -14,6 +14,7 @@ import {
   formatKrw,
   totalCredits,
 } from '@/lib/credits';
+import { PREMIUM_SERVICES } from '@/lib/premium-services';
 
 const STORE_PROMISES = [
   '정기결제 없음',
@@ -28,6 +29,10 @@ const USAGE_ITEMS = [
   ['길일 찾기', CREDIT_COSTS.auspicious],
   ['궁합 리포트', CREDIT_COSTS.compatibility],
   ['부적 이미지', CREDIT_COSTS.talisman],
+  [
+    '프리미엄 운세 상품',
+    `${Math.min(...PREMIUM_SERVICES.map((s) => s.cost))}-${Math.max(...PREMIUM_SERVICES.map((s) => s.cost))}`,
+  ],
 ] as const;
 
 const RECOMMENDED_BUNDLES = [
