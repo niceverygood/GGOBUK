@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import { UsersRound } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
@@ -55,6 +56,12 @@ export default async function MorePage() {
             title="길일 찾기"
             subtitle="중요 일정에 좋은 날짜 · 크래딧 사용"
             icon="☯"
+          />
+          <MoreLink
+            href="/more/people"
+            title="인원 관리"
+            subtitle="나와 인연의 이름 · 생년월일시 수정"
+            icon={<UsersRound size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/more/settings"

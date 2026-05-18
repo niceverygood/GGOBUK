@@ -7,7 +7,7 @@ import {
   MessageCircle,
   ScrollText,
   Sparkles,
-  UserPlus,
+  UsersRound,
   Waypoints,
 } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
@@ -16,7 +16,15 @@ import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
 
-const WEEKDAY = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+const WEEKDAY = [
+  '일요일',
+  '월요일',
+  '화요일',
+  '수요일',
+  '목요일',
+  '금요일',
+  '토요일',
+];
 
 function moodPhrase(mood: string | null): string {
   switch (mood) {
@@ -124,7 +132,11 @@ export default async function HomePage() {
     .maybeSingle();
 
   // Today's 일진 for the header
-  const ilji = calculatePalja({ birthDate: today, isLunar: false, gender: 'M' }).day;
+  const ilji = calculatePalja({
+    birthDate: today,
+    isLunar: false,
+    gender: 'M',
+  }).day;
   const todayDate = new Date(today + 'T00:00:00');
   const weekday = WEEKDAY[todayDate.getDay()];
 
@@ -134,6 +146,10 @@ export default async function HomePage() {
     .from('relations')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id);
+  const { count: profileCount } = await supabase
+    .from('saju_profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('owner_id', user.id);
   const { count: interpretationCount } = await supabase
     .from('interpretations')
     .select('id', { count: 'exact', head: true })
@@ -145,9 +161,16 @@ export default async function HomePage() {
       <div className="relative">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-extrabold text-muted">{formatKoreanDate(today)} {weekday}</p>
+            <p className="text-xs font-extrabold text-muted">
+              {formatKoreanDate(today)} {weekday}
+            </p>
             <h1 className="mt-1 text-xl font-black text-navy">
-              {ilji.gan}{ilji.ji}일 <span className="font-hanja ml-1">{ilji.ganHanja}{ilji.jiHanja}日</span>
+              {ilji.gan}
+              {ilji.ji}일{' '}
+              <span className="font-hanja ml-1">
+                {ilji.ganHanja}
+                {ilji.jiHanja}日
+              </span>
             </h1>
           </div>
           <Badge tone="mint">길운 {gilun}</Badge>
@@ -155,10 +178,18 @@ export default async function HomePage() {
 
         <Card className="mt-5 p-5 text-center">
           <div className="flex justify-center">
-            <KkobukSprite variant={moodToSprite(mood)} size="lg" ariaLabel={`꼬북이 ${mood}`} />
+            <KkobukSprite
+              variant={moodToSprite(mood)}
+              size="lg"
+              ariaLabel={`꼬북이 ${mood}`}
+            />
           </div>
-          <p className="mt-2 text-xs font-extrabold text-muted">오늘의 꼬북이 표정</p>
-          <h2 className="mt-1 text-xl font-black text-navy">{moodPhrase(daily?.mood ?? null)}</h2>
+          <p className="mt-2 text-xs font-extrabold text-muted">
+            오늘의 꼬북이 표정
+          </p>
+          <h2 className="mt-1 text-xl font-black text-navy">
+            {moodPhrase(daily?.mood ?? null)}
+          </h2>
         </Card>
 
         <Card className="mt-4 p-4">
@@ -170,9 +201,21 @@ export default async function HomePage() {
 
         {daily && (
           <div className="grid grid-cols-3 gap-2 mt-4">
-            <FortuneChip icon="🤍" label="컬러" value={daily.lucky_color ?? '-'} />
-            <FortuneChip icon={daily.lucky_number ?? '-'} label="숫자" value="행운수" />
-            <FortuneChip icon="↗" label="방향" value={daily.lucky_direction ?? '-'} />
+            <FortuneChip
+              icon="🤍"
+              label="컬러"
+              value={daily.lucky_color ?? '-'}
+            />
+            <FortuneChip
+              icon={daily.lucky_number ?? '-'}
+              label="숫자"
+              value="행운수"
+            />
+            <FortuneChip
+              icon="↗"
+              label="방향"
+              value={daily.lucky_direction ?? '-'}
+            />
           </div>
         )}
 
@@ -184,7 +227,9 @@ export default async function HomePage() {
                 <p key={r}>✓ {r}</p>
               ))}
               {(daily.avoid ?? []).map((a: string) => (
-                <p key={a} className="text-red">! {a}</p>
+                <p key={a} className="text-red">
+                  ! {a}
+                </p>
               ))}
             </div>
           </Card>
@@ -193,35 +238,41 @@ export default async function HomePage() {
         <section className="mt-6">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-extrabold text-muted">꼬북점 운세 도구</p>
-              <h2 className="text-lg font-black text-navy">필요한 풀이 바로 열기</h2>
+              <p className="text-xs font-extrabold text-muted">
+                꼬북점 운세 도구
+              </p>
+              <h2 className="text-lg font-black text-navy">
+                필요한 풀이 바로 열기
+              </h2>
             </div>
             <Link href="/library" className="text-xs font-black text-mint-dark">
               보관함 →
             </Link>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            {FEATURE_CARDS.map(({ href, title, subtitle, badge, icon: Icon, className }) => (
-              <Link
-                key={href}
-                href={href}
-                prefetch
-                className={`min-h-[132px] rounded-3xl border border-navy/10 p-4 shadow-[0_10px_24px_rgba(44,62,80,0.06)] transition active:scale-[0.99] ${className}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/75 text-navy shadow-sm">
-                    <Icon size={21} strokeWidth={2.4} />
-                  </span>
-                  <span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-black text-navy">
-                    {badge}
-                  </span>
-                </div>
-                <p className="mt-3 text-base font-black text-navy">{title}</p>
-                <p className="mt-1 text-[11px] font-bold leading-tight text-muted">
-                  {subtitle}
-                </p>
-              </Link>
-            ))}
+            {FEATURE_CARDS.map(
+              ({ href, title, subtitle, badge, icon: Icon, className }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch
+                  className={`min-h-[132px] rounded-3xl border border-navy/10 p-4 shadow-[0_10px_24px_rgba(44,62,80,0.06)] transition active:scale-[0.99] ${className}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/75 text-navy shadow-sm">
+                      <Icon size={21} strokeWidth={2.4} />
+                    </span>
+                    <span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-black text-navy">
+                      {badge}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-base font-black text-navy">{title}</p>
+                  <p className="mt-1 text-[11px] font-bold leading-tight text-muted">
+                    {subtitle}
+                  </p>
+                </Link>
+              ),
+            )}
           </div>
         </section>
 
@@ -233,13 +284,17 @@ export default async function HomePage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-black text-navy">내 기록 요약</p>
               <p className="mt-0.5 text-xs font-bold text-muted">
-                사주해설 {interpretationCount ?? 0}개 · 인연 {relationCount ?? 0}명 저장됨
+                인원 {profileCount ?? 1}명 · 사주해설 {interpretationCount ?? 0}
+                개 · 인연 {relationCount ?? 0}명
               </p>
             </div>
-            <Link href="/relations" className="shrink-0 rounded-full bg-navy px-3 py-2 text-xs font-black text-white">
+            <Link
+              href="/more/people"
+              className="shrink-0 rounded-full bg-navy px-3 py-2 text-xs font-black text-white"
+            >
               <span className="inline-flex items-center gap-1">
-                <UserPlus size={13} strokeWidth={3} />
-                추가
+                <UsersRound size={13} strokeWidth={3} />
+                관리
               </span>
             </Link>
           </div>
@@ -258,7 +313,11 @@ export default async function HomePage() {
         className="fixed right-5 bottom-24 w-14 h-14 rounded-2xl bg-navy text-white flex items-center justify-center shadow-[0_14px_26px_rgba(44,62,80,0.24)] z-20 overflow-visible"
         aria-label="꼬북이와 대화"
       >
-        <KkobukSprite variant="persona-kkobuk" size="xs" ariaLabel="꼬북이와 대화" />
+        <KkobukSprite
+          variant="persona-kkobuk"
+          size="xs"
+          ariaLabel="꼬북이와 대화"
+        />
       </Link>
     </main>
   );
