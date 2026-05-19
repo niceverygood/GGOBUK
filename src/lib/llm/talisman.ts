@@ -1,67 +1,64 @@
-import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
-import type { SajuResult } from '@/lib/saju/types';
-import type { InterpretationCategory } from '@/types/db';
+import { INTERPRETATION_CATEGORIES } from "@/lib/llm/interpret";
+import type { SajuResult } from "@/lib/saju/types";
+import type { InterpretationCategory } from "@/types/db";
 
-const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
-const DEFAULT_IMAGE_MODEL = 'gpt-image-2';
+const OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations";
+const DEFAULT_IMAGE_MODEL = "gpt-image-2";
 const FALLBACK_IMAGE_MODELS = [
-  'gpt-image-1.5',
-  'gpt-image-1',
-  'gpt-image-1-mini',
+  "gpt-image-1.5",
+  "gpt-image-1",
+  "gpt-image-1-mini",
 ];
 
 const OHAENG_DESIGN: Record<
-  keyof SajuResult['ohaengCount'],
+  keyof SajuResult["ohaengCount"],
   { color: string; symbol: string; motif: string }
 > = {
   목: {
-    color: 'fresh jade green',
-    symbol: 'sprouting branches',
-    motif: 'growth and recovery',
+    color: "fresh jade green",
+    symbol: "sprouting branches",
+    motif: "growth and recovery",
   },
   화: {
-    color: 'warm vermilion red',
-    symbol: 'soft flame petals',
-    motif: 'confidence and warmth',
+    color: "warm vermilion red",
+    symbol: "soft flame petals",
+    motif: "confidence and warmth",
   },
   토: {
-    color: 'golden ochre',
-    symbol: 'square earth seals',
-    motif: 'stability and grounding',
+    color: "golden ochre",
+    symbol: "square earth seals",
+    motif: "stability and grounding",
   },
   금: {
-    color: 'pearl white and muted silver',
-    symbol: 'clean metal arcs',
-    motif: 'clarity and boundaries',
+    color: "pearl white and muted silver",
+    symbol: "clean metal arcs",
+    motif: "clarity and boundaries",
   },
   수: {
-    color: 'deep navy ink',
-    symbol: 'flowing wave marks',
-    motif: 'rest and intuition',
+    color: "deep navy ink",
+    symbol: "flowing wave marks",
+    motif: "rest and intuition",
   },
 };
 
-const OHAENG_SVG_COLORS: Record<
-  keyof SajuResult['ohaengCount'],
-  { fill: string; soft: string; stroke: string }
-> = {
-  목: { fill: '#56B870', soft: '#DDF4E4', stroke: '#27825C' },
-  화: { fill: '#EF4E42', soft: '#FFE3DD', stroke: '#B93832' },
-  토: { fill: '#F4D03F', soft: '#FFF4BF', stroke: '#B99B21' },
-  금: { fill: '#F8F4E8', soft: '#FFFDF5', stroke: '#A8B0B7' },
-  수: { fill: '#2C3E50', soft: '#DCE8F2', stroke: '#1B2A38' },
+const OHAENG_HANJA: Record<keyof SajuResult["ohaengCount"], string> = {
+  목: "木",
+  화: "火",
+  토: "土",
+  금: "金",
+  수: "水",
 };
 
 function strongestOhaeng(saju: SajuResult) {
   return Object.entries(saju.ohaengCount).sort((a, b) => b[1] - a[1])[0] as [
-    keyof SajuResult['ohaengCount'],
+    keyof SajuResult["ohaengCount"],
     number,
   ];
 }
 
 function weakestOhaeng(saju: SajuResult) {
   return Object.entries(saju.ohaengCount).sort((a, b) => a[1] - b[1])[0] as [
-    keyof SajuResult['ohaengCount'],
+    keyof SajuResult["ohaengCount"],
     number,
   ];
 }
@@ -69,24 +66,24 @@ function weakestOhaeng(saju: SajuResult) {
 function categoryTitle(category: InterpretationCategory) {
   return (
     INTERPRETATION_CATEGORIES.find((item) => item.key === category)?.title ??
-    '사주'
+    "사주"
   );
 }
 
 function categoryIntent(category: InterpretationCategory) {
   const map: Partial<Record<InterpretationCategory, string>> = {
-    overview: 'overall life balance, self-trust, and long-term clarity',
-    ohaeng: 'five-element balance, missing energy support, and daily harmony',
-    ilju: 'core identity, self-esteem, and calm decision-making',
-    strength: 'turning natural talents into visible confidence',
-    weakness: 'protecting the user from repeating weak patterns',
-    personality: 'emotional steadiness and kinder self-expression',
-    career: 'career focus, right timing, and practical momentum',
-    wealth: 'money retention, stable income flow, and wise spending',
-    love: 'healthy love, warm communication, and lasting relationship luck',
-    family: 'family boundaries, care, and peaceful responsibility',
-    friends: 'supportive relationships and better social energy',
-    direction: 'auspicious direction, space, color, and daily ritual',
+    overview: "overall life balance, self-trust, and long-term clarity",
+    ohaeng: "five-element balance, missing energy support, and daily harmony",
+    ilju: "core identity, self-esteem, and calm decision-making",
+    strength: "turning natural talents into visible confidence",
+    weakness: "protecting the user from repeating weak patterns",
+    personality: "emotional steadiness and kinder self-expression",
+    career: "career focus, right timing, and practical momentum",
+    wealth: "money retention, stable income flow, and wise spending",
+    love: "healthy love, warm communication, and lasting relationship luck",
+    family: "family boundaries, care, and peaceful responsibility",
+    friends: "supportive relationships and better social energy",
+    direction: "auspicious direction, space, color, and daily ritual",
   };
   return map[category] ?? map.overview!;
 }
@@ -108,8 +105,8 @@ function buildPrompt({
   const { palja } = saju;
   const timePillar = palja.time
     ? `${palja.time.ganHanja}${palja.time.jiHanja}`
-    : 'unknown time pillar';
-  const displayName = name?.trim() ? `${name.trim()}'s` : 'the user’s';
+    : "unknown time pillar";
+  const displayName = name?.trim() ? `${name.trim()}'s` : "the user’s";
 
   return `Create a premium vertical Korean folk talisman-inspired digital illustration for a mobile fortune app named "GGOBUK".
 
@@ -125,30 +122,31 @@ Birth chart design data:
 - Weakest five-element energy: ${weak} (${weakCount}), gently supplement it with ${weakDesign.color}, ${weakDesign.symbol}, ${weakDesign.motif}.
 
 Art direction:
-- Warm ivory hanji paper texture, subtle fibers, premium app-store quality.
-- Centerpiece: cute but refined turtle-shell seal, inspired by GGOBUK's turtle character, with an oval shell geometry and five-element color accents.
-- Use balanced talisman strokes, abstract seal marks, cloud and wave motifs, tiny gold dust, and hand-drawn ink lines.
-- Keep it soft, protective, hopeful, and collectible. No horror, no dark occult mood.
-- Avoid readable small text and avoid imitating real sacred scripts. Use abstract glyph-like decorative strokes instead.
-- Clean composition with generous margins, crisp edges, high-resolution, suitable for saving as a phone wallpaper.
-- No logos, no watermark, no photorealistic people, no UI mockup, no frame border.`;
+- Authentic Korean talisman-inspired composition: yellow hanji paper, cinnabar-red ink, hand-brushed vertical spell-like strokes, dense seal geometry, old paper fibers.
+- It should feel like a premium fortune talisman, not a cute character card, not a sticker, not a UI mockup.
+- Hide GGOBUK's turtle identity inside an abstract turtle-shell seal geometry, not as a smiling mascot.
+- Use ritual-looking border rules, circular stamps, square seals, vertical flow lines, and five-element knots. Add subtle ink bleed, uneven brush pressure, and stamped texture.
+- Keep it protective, hopeful, collectible, and aesthetically refined. No horror, no dark occult mood.
+- Avoid copying real religious scriptures. Use original abstract glyph-like decorative strokes inspired by talisman calligraphy.
+- Clean professional composition with generous margins, high-resolution, suitable for saving as a phone wallpaper.
+- No logos, no watermark, no photorealistic people, no UI mockup.`;
 }
 
 export class TalismanImageError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'TalismanImageError';
+    this.name = "TalismanImageError";
   }
 }
 
 function escapeXml(value: string) {
   return value.replace(/[<>&"']/g, (char) => {
     const map: Record<string, string> = {
-      '<': '&lt;',
-      '>': '&gt;',
-      '&': '&amp;',
-      '"': '&quot;',
-      "'": '&apos;',
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      '"': "&quot;",
+      "'": "&apos;",
     };
     return map[char] ?? char;
   });
@@ -162,88 +160,145 @@ function fallbackTalismanImage(params: {
   const title = `${categoryTitle(params.category)} 마음부적`;
   const [strong] = strongestOhaeng(params.saju);
   const [weak] = weakestOhaeng(params.saju);
-  const strongColor = OHAENG_SVG_COLORS[strong];
-  const weakColor = OHAENG_SVG_COLORS[weak];
   const { palja } = params.saju;
-  const pillars = [
-    palja.year,
-    palja.month,
-    palja.day,
-    palja.time,
-  ].filter(Boolean);
-  const name = params.name?.trim() || '꼬북';
-  const shellCells = pillars
+  const pillars = [palja.year, palja.month, palja.day, palja.time].filter(
+    Boolean,
+  );
+  const name = params.name?.trim() || "꼬북점";
+  const sealLabels = ["年命", "月令", "日主", "時門"];
+  const pillarSeals = pillars
     .map((pillar, index) => {
-      const x = 244 + (index % 2) * 190;
-      const y = 505 + Math.floor(index / 2) * 176;
-      return `<rect x="${x}" y="${y}" width="152" height="132" rx="38" fill="#FFFDF4" stroke="${strongColor.stroke}" stroke-width="5" opacity="0.96"/>
-        <text x="${x + 76}" y="${y + 58}" text-anchor="middle" font-size="42" font-weight="800" fill="#24384B">${escapeXml(
+      const x = 256 + (index % 2) * 256;
+      const y = 388 + Math.floor(index / 2) * 132;
+      return `<g opacity="0.92">
+        <rect x="${x}" y="${y}" width="172" height="94" rx="12" fill="none" stroke="#B51E18" stroke-width="5"/>
+        <rect x="${x + 12}" y="${y + 12}" width="148" height="70" rx="6" fill="none" stroke="#B51E18" stroke-width="2" opacity="0.38"/>
+        <text x="${x + 86}" y="${y + 43}" text-anchor="middle" font-size="34" font-weight="900" fill="#A81914">${escapeXml(
           `${pillar!.ganHanja}${pillar!.jiHanja}`,
         )}</text>
-        <text x="${x + 76}" y="${y + 94}" text-anchor="middle" font-size="22" font-weight="800" fill="#7A7164">${escapeXml(
-          `${pillar!.gan} · ${pillar!.ji}`,
-        )}</text>`;
+        <text x="${x + 86}" y="${y + 70}" text-anchor="middle" font-size="16" font-weight="900" fill="#87342E">${sealLabels[index] ?? "命印"}</text>
+      </g>`;
     })
-    .join('');
+    .join("");
+  const elementMarks = (
+    Object.keys(params.saju.ohaengCount) as Array<
+      keyof SajuResult["ohaengCount"]
+    >
+  )
+    .map((element, index) => {
+      const count = params.saju.ohaengCount[element];
+      const x = 250 + index * 132;
+      const dots = Array.from({ length: Math.max(1, count) })
+        .map((_, dotIndex) => {
+          const dx = x - (Math.max(1, count) - 1) * 8 + dotIndex * 16;
+          return `<circle cx="${dx}" cy="1230" r="4" fill="#A81914" opacity="0.72"/>`;
+        })
+        .join("");
+      return `<g>
+        <circle cx="${x}" cy="1184" r="32" fill="none" stroke="#A81914" stroke-width="5"/>
+        <circle cx="${x}" cy="1184" r="22" fill="none" stroke="#A81914" stroke-width="2" opacity="0.45"/>
+        <text x="${x}" y="1195" text-anchor="middle" font-size="34" font-weight="900" fill="#A81914">${OHAENG_HANJA[element]}</text>
+        ${dots}
+      </g>`;
+    })
+    .join("");
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
     <defs>
       <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#FFF9E9"/>
-        <stop offset="0.52" stop-color="#FFFDF8"/>
-        <stop offset="1" stop-color="${weakColor.soft}"/>
+        <stop offset="0" stop-color="#F9D75A"/>
+        <stop offset="0.48" stop-color="#F7C842"/>
+        <stop offset="1" stop-color="#EAB93A"/>
       </linearGradient>
-      <radialGradient id="aura" cx="50%" cy="40%" r="60%">
-        <stop offset="0" stop-color="${weakColor.soft}" stop-opacity="0.92"/>
-        <stop offset="0.5" stop-color="#FFF8D8" stop-opacity="0.72"/>
-        <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+      <radialGradient id="centerGlow" cx="50%" cy="43%" r="62%">
+        <stop offset="0" stop-color="#FFF1A7" stop-opacity="0.9"/>
+        <stop offset="0.62" stop-color="#F7C842" stop-opacity="0.25"/>
+        <stop offset="1" stop-color="#B51E18" stop-opacity="0"/>
       </radialGradient>
       <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#26384A" flood-opacity="0.14"/>
       </filter>
-      <pattern id="fiber" width="64" height="64" patternUnits="userSpaceOnUse">
-        <path d="M8 12h18M34 28h22M16 49h28" stroke="#E5D7B8" stroke-width="2" opacity="0.28" stroke-linecap="round"/>
+      <filter id="inkBleed" x="-8%" y="-8%" width="116%" height="116%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="7"/>
+        <feDisplacementMap in="SourceGraphic" scale="2.4"/>
+      </filter>
+      <pattern id="fiber" width="52" height="52" patternUnits="userSpaceOnUse">
+        <path d="M5 9h20M31 22h16M12 39h30" stroke="#C89A2A" stroke-width="1.6" opacity="0.28" stroke-linecap="round"/>
+        <circle cx="44" cy="10" r="1.8" fill="#A87520" opacity="0.16"/>
       </pattern>
     </defs>
-    <rect width="1024" height="1536" fill="url(#paper)"/>
-    <rect width="1024" height="1536" fill="url(#fiber)" opacity="0.75"/>
-    <circle cx="512" cy="560" r="420" fill="url(#aura)"/>
-    <text x="512" y="165" text-anchor="middle" font-size="42" font-weight="900" fill="#2C3E50">꼬북점 마음부적</text>
-    <text x="512" y="217" text-anchor="middle" font-size="24" font-weight="800" fill="#8A7F6C">${escapeXml(
-      name,
-    )} · ${escapeXml(title)}</text>
+    <rect width="1024" height="1536" fill="#8F1D18"/>
     <g filter="url(#shadow)">
-      <rect x="144" y="282" width="736" height="958" rx="72" fill="#FFFDF7" stroke="#E9D597" stroke-width="6"/>
-      <rect x="178" y="316" width="668" height="890" rx="54" fill="none" stroke="${weakColor.stroke}" stroke-width="3" stroke-dasharray="12 14" opacity="0.5"/>
-      <ellipse cx="512" cy="612" rx="276" ry="250" fill="${weakColor.soft}" stroke="${strongColor.stroke}" stroke-width="10"/>
-      <path d="M274 528C348 392 676 392 750 528C672 460 352 460 274 528Z" fill="${strongColor.fill}" opacity="0.22"/>
-      <path d="M270 698C348 820 676 820 754 698C658 768 366 768 270 698Z" fill="${strongColor.fill}" opacity="0.18"/>
-      ${shellCells}
-      <circle cx="512" cy="362" r="72" fill="${strongColor.fill}" stroke="#2C3E50" stroke-width="7"/>
-      <path d="M478 366c20 28 48 28 68 0M486 342h1M538 342h1" stroke="#2C3E50" stroke-width="10" stroke-linecap="round" fill="none"/>
-      <path d="M360 930c72-92 232-92 304 0M318 988c120 72 268 72 388 0" stroke="${strongColor.stroke}" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.74"/>
-      <text x="512" y="1048" text-anchor="middle" font-size="64" font-weight="900" fill="#2C3E50">${escapeXml(
+      <rect x="82" y="70" width="860" height="1396" rx="24" fill="url(#paper)"/>
+      <rect x="82" y="70" width="860" height="1396" rx="24" fill="url(#fiber)" opacity="0.82"/>
+      <rect x="114" y="106" width="796" height="1324" rx="12" fill="none" stroke="#B51E18" stroke-width="12"/>
+      <rect x="146" y="144" width="732" height="1248" rx="4" fill="none" stroke="#B51E18" stroke-width="4" stroke-dasharray="26 18" opacity="0.58"/>
+      <circle cx="512" cy="650" r="385" fill="url(#centerGlow)"/>
+    </g>
+
+    <g filter="url(#inkBleed)" fill="none" stroke="#A81914" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M208 244C294 202 398 198 512 230C626 198 730 202 816 244" stroke-width="8"/>
+      <path d="M218 300C326 268 442 278 512 330C582 278 698 268 806 300" stroke-width="5" opacity="0.8"/>
+      <path d="M186 1296C318 1250 706 1250 838 1296" stroke-width="8"/>
+      <path d="M220 1342C362 1370 662 1370 804 1342" stroke-width="5" opacity="0.76"/>
+    </g>
+
+    <text x="512" y="202" text-anchor="middle" font-size="66" font-weight="900" fill="#9F1914" letter-spacing="8">龜卜五行符</text>
+    <text x="512" y="262" text-anchor="middle" font-size="24" font-weight="900" fill="#7D221E">守心開運 · 調氣安命</text>
+
+    <g filter="url(#inkBleed)">
+      <circle cx="260" cy="318" r="42" fill="none" stroke="#B51E18" stroke-width="8"/>
+      <path d="M240 318h40M260 296v44M238 296l44 44M282 296l-44 44" stroke="#B51E18" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="764" cy="318" r="42" fill="none" stroke="#B51E18" stroke-width="8"/>
+      <path d="M744 318h40M764 296v44M742 296l44 44M786 296l-44 44" stroke="#B51E18" stroke-width="4" stroke-linecap="round"/>
+      <rect x="452" y="296" width="120" height="82" rx="6" fill="none" stroke="#B51E18" stroke-width="7"/>
+      <text x="512" y="352" text-anchor="middle" font-size="48" font-weight="900" fill="#A81914">${escapeXml(
         params.saju.ilgan,
       )}</text>
-      <text x="512" y="1094" text-anchor="middle" font-size="24" font-weight="900" fill="#8A7F6C">강한 ${strong} · 보완 ${weak}</text>
-      <g opacity="0.84">
-        <circle cx="262" cy="382" r="16" fill="${weakColor.fill}"/>
-        <circle cx="760" cy="382" r="16" fill="${strongColor.fill}"/>
-        <path d="M224 432c-38 34-36 92 6 122M798 432c38 34 36 92-6 122" stroke="#E6B73E" stroke-width="10" stroke-linecap="round" fill="none"/>
-        <path d="M246 1160h532" stroke="#F0D46A" stroke-width="16" stroke-linecap="round"/>
-      </g>
     </g>
-    <text x="512" y="1325" text-anchor="middle" font-size="26" font-weight="900" fill="#2C3E50">오늘의 마음을 지켜주는 작은 의식</text>
-    <text x="512" y="1370" text-anchor="middle" font-size="20" font-weight="800" fill="#8A7F6C">자기성찰과 재미를 위한 꼬북점 오행 부적</text>
+
+    ${pillarSeals}
+
+    <g filter="url(#inkBleed)" fill="none" stroke="#A81914" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M512 575C414 628 356 700 346 790C336 902 426 980 512 1022C598 980 688 902 678 790C668 700 610 628 512 575Z" stroke-width="14"/>
+      <path d="M512 610v388M420 690c54 44 130 44 184 0M396 775c76 58 156 58 232 0M410 876c72 50 132 50 204 0" stroke-width="8" opacity="0.82"/>
+      <path d="M512 610c-42 64-56 118-44 164C478 812 494 854 512 902C530 854 546 812 556 774C568 728 554 674 512 610Z" stroke-width="7" opacity="0.78"/>
+      <path d="M330 670c-86 62-96 164-42 236M694 670c86 62 96 164 42 236" stroke-width="10"/>
+      <path d="M292 1016c102 84 338 84 440 0M326 1068c88 54 284 54 372 0" stroke-width="9"/>
+      <path d="M250 582c42 40 68 84 76 132M774 582c-42 40-68 84-76 132" stroke-width="7" opacity="0.72"/>
+      <path d="M232 828h104M688 828h104M280 928h74M670 928h74" stroke-width="7" opacity="0.72"/>
+    </g>
+
+    <g filter="url(#inkBleed)" fill="#B51E18" opacity="0.9">
+      <circle cx="208" cy="534" r="10"/>
+      <circle cx="816" cy="534" r="10"/>
+      <circle cx="218" cy="1120" r="9"/>
+      <circle cx="806" cy="1120" r="9"/>
+      <rect x="188" y="615" width="46" height="10" rx="5"/>
+      <rect x="790" y="615" width="46" height="10" rx="5"/>
+      <rect x="188" y="1012" width="46" height="10" rx="5"/>
+      <rect x="790" y="1012" width="46" height="10" rx="5"/>
+    </g>
+
+    <g filter="url(#inkBleed)">
+      ${elementMarks}
+      <text x="512" y="1288" text-anchor="middle" font-size="28" font-weight="900" fill="#7D221E">${OHAENG_HANJA[strong]}旺 · ${OHAENG_HANJA[weak]}補 · ${escapeXml(name)}</text>
+      <path d="M304 1316h416" stroke="#A81914" stroke-width="6" stroke-linecap="round" opacity="0.72"/>
+    </g>
+
+    <g opacity="0.32" fill="#7D221E">
+      <text x="190" y="770" text-anchor="middle" font-size="34" font-weight="900" writing-mode="tb">木火土金水</text>
+      <text x="834" y="770" text-anchor="middle" font-size="34" font-weight="900" writing-mode="tb">守心開運安</text>
+    </g>
   </svg>`;
 
   return {
     imageDataUrl: `data:image/svg+xml;base64,${Buffer.from(svg).toString(
-      'base64',
+      "base64",
     )}`,
-    model: 'ggobuk-local-talisman',
+    model: "ggobuk-local-talisman",
     title,
-    format: 'svg',
+    format: "svg",
   };
 }
 
@@ -259,25 +314,27 @@ function imageModelCandidates() {
 }
 
 function shouldRetryWithFallback(error: unknown) {
-  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
   return (
-    message.includes('model') ||
-    message.includes('does not exist') ||
-    message.includes('not found') ||
-    message.includes('unsupported') ||
-    message.includes('invalid')
+    message.includes("model") ||
+    message.includes("does not exist") ||
+    message.includes("not found") ||
+    message.includes("unsupported") ||
+    message.includes("invalid")
   );
 }
 
 async function imageUrlToDataUrl(url: string, fallbackFormat: string) {
   const imageRes = await fetch(url);
   if (!imageRes.ok)
-    throw new TalismanImageError(`OpenAI image URL fetch failed: ${imageRes.status}`);
+    throw new TalismanImageError(
+      `OpenAI image URL fetch failed: ${imageRes.status}`,
+    );
 
   const contentType =
-    imageRes.headers.get('content-type') || `image/${fallbackFormat}`;
+    imageRes.headers.get("content-type") || `image/${fallbackFormat}`;
   const buffer = Buffer.from(await imageRes.arrayBuffer());
-  return `data:${contentType};base64,${buffer.toString('base64')}`;
+  return `data:${contentType};base64,${buffer.toString("base64")}`;
 }
 
 async function requestTalismanImage({
@@ -298,10 +355,10 @@ async function requestTalismanImage({
   };
 }) {
   const res = await fetch(OPENAI_IMAGES_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       model,
@@ -315,21 +372,21 @@ async function requestTalismanImage({
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message =
-      typeof data?.error?.message === 'string'
+      typeof data?.error?.message === "string"
         ? data.error.message
         : `OpenAI image request failed: ${res.status}`;
     throw new TalismanImageError(message);
   }
 
   const b64 =
-    typeof data?.data?.[0]?.b64_json === 'string' ? data.data[0].b64_json : '';
+    typeof data?.data?.[0]?.b64_json === "string" ? data.data[0].b64_json : "";
   if (b64) return `data:image/${format};base64,${b64}`;
 
   const imageUrl =
-    typeof data?.data?.[0]?.url === 'string' ? data.data[0].url : '';
+    typeof data?.data?.[0]?.url === "string" ? data.data[0].url : "";
   if (imageUrl) return imageUrlToDataUrl(imageUrl, format);
 
-  throw new TalismanImageError('openai_image_empty');
+  throw new TalismanImageError("openai_image_empty");
 }
 
 export async function generateTalismanImage(params: {
@@ -345,8 +402,8 @@ export async function generateTalismanImage(params: {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return fallbackTalismanImage(params);
 
-  const size = process.env.OPENAI_IMAGE_SIZE?.trim() || '1024x1536';
-  const format = process.env.OPENAI_IMAGE_FORMAT?.trim() || 'png';
+  const size = process.env.OPENAI_IMAGE_SIZE?.trim() || "1024x1536";
+  const format = process.env.OPENAI_IMAGE_FORMAT?.trim() || "png";
   let lastError: unknown;
 
   for (const model of imageModelCandidates()) {
@@ -371,7 +428,7 @@ export async function generateTalismanImage(params: {
     }
   }
 
-  console.error('[talisman] OpenAI image failed; using local fallback', {
+  console.error("[talisman] OpenAI image failed; using local fallback", {
     category: params.category,
     message: lastError instanceof Error ? lastError.message : String(lastError),
   });
