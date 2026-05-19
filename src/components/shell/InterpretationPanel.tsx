@@ -374,25 +374,36 @@ function AnalysisLoadingIndicator({ elapsedMs }: { elapsedMs: number }) {
         </span>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-        {ANALYSIS_STEPS.slice(0, -1).map((item, index) => {
-          const active = index <= stepIndex;
-          const current = index === stepIndex;
-          return (
-            <div
+      <div className="mt-3 rounded-2xl bg-white/65 p-2">
+        <div className="flex items-center justify-between gap-3">
+          <div
+            key={step.title}
+            className="min-h-9 flex-1 rounded-xl bg-navy px-3 py-2 text-center text-[11px] font-black text-white shadow-[0_8px_18px_rgba(44,62,80,0.14)] transition-all duration-500"
+          >
+            {step.title.replace('...', '')}
+          </div>
+          <span className="shrink-0 text-[10px] font-black text-muted">
+            {stepIndex + 1}/{ANALYSIS_STEPS.length}
+          </span>
+        </div>
+
+        <div
+          className="mt-2 flex items-center justify-center gap-1.5"
+          aria-label={`분석 단계 ${stepIndex + 1}/${ANALYSIS_STEPS.length}`}
+        >
+          {ANALYSIS_STEPS.map((item, index) => (
+            <span
               key={item.title}
-              className={`rounded-xl px-2 py-1.5 text-center text-[10px] font-black transition ${
-                current
-                  ? 'bg-navy text-white'
-                  : active
-                    ? 'bg-mint/18 text-navy'
-                    : 'bg-white/70 text-muted/70'
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                index === stepIndex
+                  ? 'w-6 bg-navy'
+                  : index < stepIndex
+                    ? 'w-3 bg-mint'
+                    : 'w-2 bg-navy/12'
               }`}
-            >
-              {item.title.replace('...', '')}
-            </div>
-          );
-        })}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
