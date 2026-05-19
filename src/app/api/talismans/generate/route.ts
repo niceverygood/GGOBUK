@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     gender: profile.gender,
   });
 
+  let creditsSpent = false;
   try {
     await spendCredits({
       userId: user.id,
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
       reason: `부적 이미지 생성:${category}`,
       referenceId: profile.id,
     });
+    creditsSpent = true;
   } catch (e) {
     if (isInsufficientCreditsError(e)) {
       return NextResponse.json(
@@ -70,7 +72,11 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    throw e;
+    console.warn('[talismans/generate] credit spend skipped', {
+      userId: user.id,
+      category,
+      message: e instanceof Error ? e.message : String(e),
+    });
   }
 
   try {
@@ -81,13 +87,15 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(result);
   } catch (e) {
-    await addCredits({
-      userId: user.id,
-      amount: CREDIT_COSTS.talisman,
-      reason: `부적 이미지 생성 실패 환불:${category}`,
-      kind: 'refund',
-      referenceId: profile.id,
-    }).catch(() => undefined);
+    if (creditsSpent) {
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.talisman,
+        reason: `부적 이미지 생성 실패 환불:${category}`,
+        kind: 'refund',
+        referenceId: profile.id,
+      }).catch(() => undefined);
+    }
 
     console.error('[talismans/generate] failed', {
       userId: user.id,
