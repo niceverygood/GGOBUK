@@ -1,8 +1,55 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { pairwiseSummary } from '@/lib/saju/hapchung';
-import type { SajuResult } from '@/lib/saju/types';
+import { analyzeSaju } from '@/lib/saju/analysis';
+import type { Palja, Pillar, SajuResult } from '@/lib/saju/types';
 import type { CompatibilityResult } from '@/types/db';
+
+function pairInteractions(a: Palja, b: Palja): string[] {
+  // Cross-chart pillar-level hap/chung detection. Mirrors hapchung.ts pair logic
+  // for every (pillar of A, pillar of B) combination.
+  const ganHap: Array<[number, number]> = [[0,5],[1,6],[2,7],[3,8],[4,9]];
+  const ganChung: Array<[number, number]> = [[0,6],[1,7],[2,8],[3,9]];
+  const jiYukhap: Array<[number, number]> = [[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]];
+  const jiChung: Array<[number, number]> = [[0,6],[1,7],[2,8],[3,9],[4,10],[5,11]];
+  const jiHyeong: Array<[number, number]> = [
+    [2, 5], [5, 8], [2, 8], [1, 10], [10, 7], [1, 7], [0, 3],
+  ];
+
+  const pairsA: Array<{ pos: string; p: Pillar }> = [
+    { pos: 'A연', p: a.year }, { pos: 'A월', p: a.month }, { pos: 'A일', p: a.day },
+    ...(a.time ? [{ pos: 'A시', p: a.time }] : []),
+  ];
+  const pairsB: Array<{ pos: string; p: Pillar }> = [
+    { pos: 'B연', p: b.year }, { pos: 'B월', p: b.month }, { pos: 'B일', p: b.day },
+    ...(b.time ? [{ pos: 'B시', p: b.time }] : []),
+  ];
+
+  const has = (pairs: Array<[number, number]>, x: number, y: number) =>
+    pairs.some(([m, n]) => (m === x && n === y) || (m === y && n === x));
+
+  const lines: string[] = [];
+  for (const x of pairsA) {
+    for (const y of pairsB) {
+      if (has(ganHap, x.p.ganIdx, y.p.ganIdx)) {
+        lines.push(`${x.pos}간 ${x.p.ganHanja} ↔ ${y.pos}간 ${y.p.ganHanja} 천간합`);
+      }
+      if (has(ganChung, x.p.ganIdx, y.p.ganIdx)) {
+        lines.push(`${x.pos}간 ${x.p.ganHanja} ↔ ${y.pos}간 ${y.p.ganHanja} 천간충`);
+      }
+      if (has(jiYukhap, x.p.jiIdx, y.p.jiIdx)) {
+        lines.push(`${x.pos}지 ${x.p.jiHanja} ↔ ${y.pos}지 ${y.p.jiHanja} 지지육합`);
+      }
+      if (has(jiChung, x.p.jiIdx, y.p.jiIdx)) {
+        lines.push(`${x.pos}지 ${x.p.jiHanja} ↔ ${y.pos}지 ${y.p.jiHanja} 지지충`);
+      }
+      if (has(jiHyeong, x.p.jiIdx, y.p.jiIdx)) {
+        lines.push(`${x.pos}지 ${x.p.jiHanja} ↔ ${y.pos}지 ${y.p.jiHanja} 지지형`);
+      }
+    }
+  }
+  return lines.slice(0, 12); // cap so prompt doesn't blow up
+}
 
 const SYSTEM = `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 사주를 깊이 읽어 프리미엄 궁합 리포트를 작성한다.
 
@@ -160,12 +207,41 @@ export async function generateCompat(params: {
     params.sajuA.palja,
     params.sajuB.palja,
   );
-  const userMsg = `[사람 A]\n${formatSajuContext(params.sajuA, params.nameA)}\n\n[사람 B]\n${formatSajuContext(
-    params.sajuB,
-    params.nameB,
-  )}\n\n관계: ${params.relationLabel ?? '미지정'}\n계산된 일주 합/충: 합=${hap.join(', ') || '없음'}, 충=${
-    chung.join(', ') || '없음'
-  }\n\n위 정보를 바탕으로, 앱 사용자가 저장하고 다시 읽고 싶을 만큼 깊고 풍부한 궁합 리포트를 JSON으로 작성해줘.`;
+  const allPairInteractions = pairInteractions(
+    params.sajuA.palja,
+    params.sajuB.palja,
+  );
+  const analysisA = analyzeSaju(params.sajuA);
+  const analysisB = analyzeSaju(params.sajuB);
+
+  const userMsg = `[사람 A]
+${formatSajuContext(params.sajuA, params.nameA)}
+
+[사람 B]
+${formatSajuContext(params.sajuB, params.nameB)}
+
+관계: ${params.relationLabel ?? '미지정'}
+
+## 두 사주 사이의 핵심 작용
+- 일주 합/충: 합 ${hap.join(', ') || '없음'} / 충 ${chung.join(', ') || '없음'}
+- 모든 자리 간 합·충·형 (감지된 것):
+${allPairInteractions.length > 0 ? allPairInteractions.map((l) => `  · ${l}`).join('\n') : '  · 두드러진 합/충 없음'}
+
+## 두 사람의 기본 골격
+- A: ${analysisA.gyeokguk.primary}, ${analysisA.strength.label}, 용신 ${analysisA.yongsin.main}
+- B: ${analysisB.gyeokguk.primary}, ${analysisB.strength.label}, 용신 ${analysisB.yongsin.main}
+
+작성 규칙:
+- score는 위 합/충/형 결과와 두 사람의 격국·용신 보완 정도를 정량적으로 반영해 정한다.
+  · 일주 합 + 일주 오행 보완 + 용신 보완이 겹치면 85–95.
+  · 합과 충이 비슷하게 섞이면 60–79.
+  · 일주 충 + 격국 충돌 + 용신 반대면 35–55.
+- hap/chung 필드에는 위의 "모든 자리 간 합·충·형" 중 가장 의미 있는 것을 자연어로 적는다 (예: "일지 사해충", "월간 정임합").
+- 각 섹션 body는 두 사람의 사주 글자/십성/격국/용신을 이름과 함께 인용한다.
+- 일반론(좋은 사람, 사랑이 중요해요 등) 금지.
+- 모든 자리 간 합·충·형 목록에 없는 합/충을 새로 만들어 인용하지 않는다.
+
+위 정보를 바탕으로 앱 사용자가 저장하고 다시 읽고 싶을 만큼 깊고 풍부한 궁합 리포트를 JSON으로 작성해줘.`;
   const { text } = await complete({
     tier: 'compat',
     system: SYSTEM,

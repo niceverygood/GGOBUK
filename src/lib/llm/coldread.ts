@@ -1,7 +1,33 @@
 import { complete } from "./client";
 import { formatSajuContext } from "./prompts/saju_context";
 import { PREMIUM_SAJU_GUIDE } from "./prompts/premium_saju";
+import { calculatePalja } from "@/lib/saju/palja";
+import { sipsungOf } from "@/lib/saju/sipsung";
+import {
+  CHEONGAN_OHAENG_IDX,
+  CHEONGAN_YINYANG,
+} from "@/lib/saju/constants";
 import type { SajuResult, DaewoonPeriod } from "@/lib/saju/types";
+
+function sewoonForRange(saju: SajuResult, startYear: number): string[] {
+  const lines: string[] = [];
+  const ilganIdx = saju.palja.day.ganIdx;
+  for (let y = startYear; y < startYear + 10; y++) {
+    const yearPillar = calculatePalja({
+      birthDate: `${y}-04-01`,
+      isLunar: false,
+      gender: 'M',
+    }).year;
+    const sipsung = sipsungOf(
+      CHEONGAN_OHAENG_IDX[ilganIdx],
+      CHEONGAN_YINYANG[ilganIdx],
+      CHEONGAN_OHAENG_IDX[yearPillar.ganIdx],
+      CHEONGAN_YINYANG[yearPillar.ganIdx],
+    );
+    lines.push(`${y}: ${yearPillar.ganHanja}${yearPillar.jiHanja} (${sipsung})`);
+  }
+  return lines;
+}
 
 const SYSTEM = `너는 대운 흐름을 현실 언어로 풀어주는 꼬북점 명리 상담가다.
 ${PREMIUM_SAJU_GUIDE}
@@ -52,11 +78,21 @@ export async function generateColdRead(params: {
   name?: string;
 }): Promise<string> {
   const context = formatSajuContext(params.saju, params.name);
-  const userMsg = `${context}\n\n${params.daewoon.startYear}년부터 ${
-    params.daewoon.startYear + 9
-  }년까지 (${params.daewoon.startAge}세~${params.daewoon.startAge + 9}세) 대운 ${
-    params.daewoon.pillar.ganHanja
-  }${params.daewoon.pillar.jiHanja} (${params.daewoon.sipsung}) 시기에 대한 추정을 해줘.`;
+  const sewoonList = sewoonForRange(params.saju, params.daewoon.startYear);
+  const userMsg = `${context}
+
+## 추정 대상 대운
+${params.daewoon.startYear}년~${params.daewoon.startYear + 9}년 (${params.daewoon.startAge}세~${params.daewoon.startAge + 9}세)
+대운 간지: ${params.daewoon.pillar.ganHanja}${params.daewoon.pillar.jiHanja} (${params.daewoon.sipsung})
+
+## 그 10년의 세운 흐름 (해마다 일간 기준 십성)
+${sewoonList.map((s) => `- ${s}`).join('\n')}
+
+작성 규칙:
+- 대운 천간/지지가 일간 ${params.saju.ilgan}을 어떻게 자극했는지 한 단락 이상으로 풀어준다.
+- 위 세운 목록에서 십성이 크게 바뀌는 해가 있다면 "이 즈음 어떤 변화가 있었을 가능성"을 한 줄로 언급한다.
+- 단정 금지. "~했을 가능성", "~의 시기였을 수 있다" 어투.
+- 마지막 문장은 그 10년을 돌아보는 질문으로 마무리.`;
   try {
     const { text } = await complete({
       tier: "saju",

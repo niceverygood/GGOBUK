@@ -1,6 +1,8 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { analyzeSaju, iljiRelation } from '@/lib/saju/analysis';
+import { CHEONGAN, JIJI } from '@/lib/saju/constants';
 import type { SajuResult } from '@/lib/saju/types';
 
 const SYSTEM = `너는 매일의 일진을 개인 사주와 연결해 읽는 꼬북점 상담가다.
@@ -97,7 +99,49 @@ export async function generateDaily(params: {
   name?: string;
 }): Promise<DailyFortuneOutput> {
   const context = formatSajuContext(params.saju, params.name);
-  const userMsg = `오늘은 ${params.date}, 일진은 ${params.iljiGan}${params.iljiJi}이야.\n\n${context}\n\n오늘 운세를 JSON으로.`;
+  const analysis = analyzeSaju(params.saju);
+
+  // Map ilji gan/ji string back to indices for the relation helper. iljiGan/iljiJi
+  // can be either Korean ("정", "사") or hanja ("丁", "巳") in practice — accept both.
+  const ganList = CHEONGAN as readonly string[];
+  const jiList = JIJI as readonly string[];
+  const ganHanja = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+  const jiHanja = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+  const ganIdx = (() => {
+    const i = ganList.indexOf(params.iljiGan);
+    if (i >= 0) return i;
+    const j = ganHanja.indexOf(params.iljiGan);
+    return j >= 0 ? j : 0;
+  })();
+  const jiIdx = (() => {
+    const i = jiList.indexOf(params.iljiJi);
+    if (i >= 0) return i;
+    const j = jiHanja.indexOf(params.iljiJi);
+    return j >= 0 ? j : 0;
+  })();
+  const rel = iljiRelation(params.saju.palja.day.ganIdx, ganIdx, jiIdx);
+
+  const userMsg = `오늘은 ${params.date}, 일진은 ${params.iljiGan}${params.iljiJi}이야.
+
+${context}
+
+## 오늘 일진 × 본인 분석
+- 일진 천간↔일간 관계: ${rel.ganSipsung}${rel.hap ? ' (천간합)' : rel.chung ? ' (천간충)' : ''}
+- 일진 지지 오행: ${rel.jiOhaeng}
+- 사용자 일간 강약: ${analysis.strength.label}, 용신 후보: ${analysis.yongsin.main}
+- 진행 중 대운: ${
+    analysis.currentDaewoon
+      ? `${analysis.currentDaewoon.pillar.ganHanja}${analysis.currentDaewoon.pillar.jiHanja} (${analysis.currentDaewoon.sipsung})`
+      : '없음'
+  }, 올해 세운: ${analysis.currentSewoon.pillar.ganHanja}${analysis.currentSewoon.pillar.jiHanja} (${analysis.currentSewoon.sipsung})
+
+작성 규칙:
+- one_liner는 위 일진 관계와 진행 중 대운/세운을 반영한 오늘의 결과지향 한 줄. 일반론 금지.
+- lucky_color는 용신 또는 부족한 오행에 대응하는 색.
+- recommend 3개는 일진과 본인 사주의 만남에서 실제로 잘 풀릴 행동.
+- avoid는 일진에서 자극되는 약점.
+- mood는 일진×일간 관계와 컨디션을 종합한다.
+JSON으로만 응답.`;
   const { text } = await complete({
     tier: 'saju',
     system: SYSTEM,
