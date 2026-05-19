@@ -2,7 +2,7 @@
 create extension if not exists "pgcrypto";
 
 -- users
-create table public.users (
+create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   nickname text,
   kakao_id text unique,
@@ -16,7 +16,7 @@ create table public.users (
 );
 
 -- saju profiles (self + relations)
-create table public.saju_profiles (
+create table if not exists public.saju_profiles (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid references public.users(id) on delete cascade not null,
   name text not null,
@@ -37,11 +37,11 @@ create table public.saju_profiles (
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
-create index idx_saju_owner on public.saju_profiles(owner_id);
-create index idx_saju_owner_self on public.saju_profiles(owner_id) where relation_type = 'self';
+create index if not exists idx_saju_owner on public.saju_profiles(owner_id);
+create index if not exists idx_saju_owner_self on public.saju_profiles(owner_id) where relation_type = 'self';
 
 -- 12 interpretations (LLM cache)
-create table public.interpretations (
+create table if not exists public.interpretations (
   id uuid primary key default gen_random_uuid(),
   saju_id uuid references public.saju_profiles(id) on delete cascade not null,
   category text not null
@@ -56,7 +56,7 @@ create table public.interpretations (
 );
 
 -- chat sessions
-create table public.chat_sessions (
+create table if not exists public.chat_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade not null,
   saju_id uuid references public.saju_profiles(id) on delete cascade not null,
@@ -65,9 +65,9 @@ create table public.chat_sessions (
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
-create index idx_chat_user on public.chat_sessions(user_id, updated_at desc);
+create index if not exists idx_chat_user on public.chat_sessions(user_id, updated_at desc);
 
-create table public.chat_messages (
+create table if not exists public.chat_messages (
   id uuid primary key default gen_random_uuid(),
   session_id uuid references public.chat_sessions(id) on delete cascade not null,
   role text check (role in ('user','assistant')) not null,
@@ -76,10 +76,10 @@ create table public.chat_messages (
   tokens_used int,
   created_at timestamptz default now() not null
 );
-create index idx_chat_messages_session on public.chat_messages(session_id, created_at);
+create index if not exists idx_chat_messages_session on public.chat_messages(session_id, created_at);
 
 -- daily fortunes
-create table public.daily_fortunes (
+create table if not exists public.daily_fortunes (
   id uuid primary key default gen_random_uuid(),
   saju_id uuid references public.saju_profiles(id) on delete cascade not null,
   date date not null,
@@ -95,10 +95,10 @@ create table public.daily_fortunes (
   created_at timestamptz default now() not null,
   unique(saju_id, date)
 );
-create index idx_daily_date on public.daily_fortunes(date);
+create index if not exists idx_daily_date on public.daily_fortunes(date);
 
 -- relations (edges)
-create table public.relations (
+create table if not exists public.relations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade not null,
   saju_a_id uuid references public.saju_profiles(id) on delete cascade not null,
@@ -110,7 +110,7 @@ create table public.relations (
 );
 
 -- timeline feedback
-create table public.timeline_feedback (
+create table if not exists public.timeline_feedback (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade not null,
   saju_id uuid references public.saju_profiles(id) on delete cascade not null,
@@ -121,7 +121,7 @@ create table public.timeline_feedback (
 );
 
 -- subscriptions (Kakao Pay)
-create table public.subscriptions (
+create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade not null,
   kakao_sid text not null,
@@ -135,10 +135,10 @@ create table public.subscriptions (
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
-create index idx_subs_user on public.subscriptions(user_id, status);
+create index if not exists idx_subs_user on public.subscriptions(user_id, status);
 
 -- usage limits
-create table public.usage_logs (
+create table if not exists public.usage_logs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade not null,
   date date not null,
@@ -155,12 +155,16 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists users_updated_at on public.users;
 create trigger users_updated_at before update on public.users
   for each row execute function set_updated_at();
+drop trigger if exists saju_updated_at on public.saju_profiles;
 create trigger saju_updated_at before update on public.saju_profiles
   for each row execute function set_updated_at();
+drop trigger if exists chat_sessions_updated_at on public.chat_sessions;
 create trigger chat_sessions_updated_at before update on public.chat_sessions
   for each row execute function set_updated_at();
+drop trigger if exists subs_updated_at on public.subscriptions;
 create trigger subs_updated_at before update on public.subscriptions
   for each row execute function set_updated_at();
 -- Row Level Security
@@ -175,43 +179,56 @@ alter table public.timeline_feedback enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.usage_logs enable row level security;
 
+drop policy if exists "users select self" on public.users;
 create policy "users select self" on public.users for select using (auth.uid() = id);
+drop policy if exists "users update self" on public.users;
 create policy "users update self" on public.users for update using (auth.uid() = id);
+drop policy if exists "users insert self" on public.users;
 create policy "users insert self" on public.users for insert with check (auth.uid() = id);
 
+drop policy if exists "saju all own" on public.saju_profiles;
 create policy "saju all own" on public.saju_profiles for all
   using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 
+drop policy if exists "interp select own" on public.interpretations;
 create policy "interp select own" on public.interpretations for select using (
   exists (select 1 from public.saju_profiles sp where sp.id = saju_id and sp.owner_id = auth.uid())
 );
+drop policy if exists "interp insert own" on public.interpretations;
 create policy "interp insert own" on public.interpretations for insert with check (
   exists (select 1 from public.saju_profiles sp where sp.id = saju_id and sp.owner_id = auth.uid())
 );
 
+drop policy if exists "chat sessions all own" on public.chat_sessions;
 create policy "chat sessions all own" on public.chat_sessions for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "chat messages all own" on public.chat_messages;
 create policy "chat messages all own" on public.chat_messages for all using (
   exists (select 1 from public.chat_sessions cs where cs.id = session_id and cs.user_id = auth.uid())
 ) with check (
   exists (select 1 from public.chat_sessions cs where cs.id = session_id and cs.user_id = auth.uid())
 );
 
+drop policy if exists "daily all own" on public.daily_fortunes;
 create policy "daily all own" on public.daily_fortunes for all using (
   exists (select 1 from public.saju_profiles sp where sp.id = saju_id and sp.owner_id = auth.uid())
 ) with check (
   exists (select 1 from public.saju_profiles sp where sp.id = saju_id and sp.owner_id = auth.uid())
 );
 
+drop policy if exists "relations all own" on public.relations;
 create policy "relations all own" on public.relations for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "timeline feedback all own" on public.timeline_feedback;
 create policy "timeline feedback all own" on public.timeline_feedback for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "subs select own" on public.subscriptions;
 create policy "subs select own" on public.subscriptions for select using (auth.uid() = user_id);
 
+drop policy if exists "usage all own" on public.usage_logs;
 create policy "usage all own" on public.usage_logs for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 -- Helper RPCs
