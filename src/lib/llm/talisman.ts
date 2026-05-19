@@ -3,6 +3,8 @@ import type { SajuResult } from '@/lib/saju/types';
 import type { InterpretationCategory } from '@/types/db';
 
 const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
+const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5';
+const FALLBACK_IMAGE_MODELS = ['gpt-image-1', 'gpt-image-1-mini'];
 
 const OHAENG_DESIGN: Record<
   keyof SajuResult['ohaengCount'],
@@ -124,23 +126,56 @@ export class TalismanImageError extends Error {
   }
 }
 
-export async function generateTalismanImage(params: {
-  saju: SajuResult;
-  category: InterpretationCategory;
-  name?: string;
-}): Promise<{
-  imageDataUrl: string;
+function imageModelCandidates() {
+  const configured = process.env.OPENAI_IMAGE_MODEL?.trim();
+  return Array.from(
+    new Set([
+      configured || DEFAULT_IMAGE_MODEL,
+      DEFAULT_IMAGE_MODEL,
+      ...FALLBACK_IMAGE_MODELS,
+    ]),
+  );
+}
+
+function shouldRetryWithFallback(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return (
+    message.includes('model') ||
+    message.includes('does not exist') ||
+    message.includes('not found') ||
+    message.includes('unsupported') ||
+    message.includes('invalid')
+  );
+}
+
+async function imageUrlToDataUrl(url: string, fallbackFormat: string) {
+  const imageRes = await fetch(url);
+  if (!imageRes.ok)
+    throw new TalismanImageError(`OpenAI image URL fetch failed: ${imageRes.status}`);
+
+  const contentType =
+    imageRes.headers.get('content-type') || `image/${fallbackFormat}`;
+  const buffer = Buffer.from(await imageRes.arrayBuffer());
+  return `data:${contentType};base64,${buffer.toString('base64')}`;
+}
+
+async function requestTalismanImage({
+  apiKey,
+  model,
+  size,
+  format,
+  params,
+}: {
+  apiKey: string;
   model: string;
-  title: string;
+  size: string;
   format: string;
-}> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new TalismanImageError('openai_not_configured');
-
-  const model = process.env.OPENAI_IMAGE_MODEL?.trim() || 'gpt-image-2';
-  const size = process.env.OPENAI_IMAGE_SIZE?.trim() || '1024x1536';
-  const format = process.env.OPENAI_IMAGE_FORMAT?.trim() || 'png';
-
+  params: {
+    saju: SajuResult;
+    category: InterpretationCategory;
+    name?: string;
+  };
+}) {
   const res = await fetch(OPENAI_IMAGES_URL, {
     method: 'POST',
     headers: {
@@ -167,12 +202,55 @@ export async function generateTalismanImage(params: {
 
   const b64 =
     typeof data?.data?.[0]?.b64_json === 'string' ? data.data[0].b64_json : '';
-  if (!b64) throw new TalismanImageError('openai_image_empty');
+  if (b64) return `data:image/${format};base64,${b64}`;
 
-  return {
-    imageDataUrl: `data:image/${format};base64,${b64}`,
-    model,
-    title: `${categoryTitle(params.category)} 마음부적`,
-    format,
-  };
+  const imageUrl =
+    typeof data?.data?.[0]?.url === 'string' ? data.data[0].url : '';
+  if (imageUrl) return imageUrlToDataUrl(imageUrl, format);
+
+  throw new TalismanImageError('openai_image_empty');
+}
+
+export async function generateTalismanImage(params: {
+  saju: SajuResult;
+  category: InterpretationCategory;
+  name?: string;
+}): Promise<{
+  imageDataUrl: string;
+  model: string;
+  title: string;
+  format: string;
+}> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new TalismanImageError('openai_not_configured');
+
+  const size = process.env.OPENAI_IMAGE_SIZE?.trim() || '1024x1536';
+  const format = process.env.OPENAI_IMAGE_FORMAT?.trim() || 'png';
+  let lastError: unknown;
+
+  for (const model of imageModelCandidates()) {
+    try {
+      const imageDataUrl = await requestTalismanImage({
+        apiKey,
+        model,
+        size,
+        format,
+        params,
+      });
+
+      return {
+        imageDataUrl,
+        model,
+        title: `${categoryTitle(params.category)} 마음부적`,
+        format,
+      };
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetryWithFallback(error)) break;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new TalismanImageError('openai_image_failed');
 }

@@ -48,6 +48,25 @@ const ANALYSIS_STEPS = [
 ];
 
 const EXPECTED_ANALYSIS_MS = 48_000;
+const BACKGROUND_TASK_TIMEOUT_MS = 120_000;
+
+type BackgroundTaskStatus = 'running' | 'success' | 'error';
+
+type BackgroundTaskSnapshot = {
+  category: InterpretationCategory;
+  focus: string;
+  startedAt: number;
+  status: BackgroundTaskStatus;
+  content?: string;
+  error?: string;
+};
+
+type BackgroundTask = BackgroundTaskSnapshot & {
+  promise?: Promise<void>;
+};
+
+const backgroundTasks = new Map<InterpretationCategory, BackgroundTask>();
+const taskListeners = new Map<InterpretationCategory, Set<() => void>>();
 
 const CATEGORY_DEEP_DIVES: Partial<
   Record<
@@ -311,7 +330,125 @@ function errorMessage(code: string): string {
   if (code === 'no profile') return '내 사주가 먼저 필요해요.';
   if (code === 'unauthorized') return '로그인이 필요해요.';
   if (code === 'insufficient_credits') return '꼬북알이 부족해요.';
+  if (code === 'background_timeout')
+    return '생성이 너무 오래 걸렸어요. 잠시 후 다시 시도해 주세요.';
   return '해설을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.';
+}
+
+function storageKey(category: InterpretationCategory) {
+  return `ggobuk:interpretation-task:${category}`;
+}
+
+function writeTaskSnapshot(task: BackgroundTaskSnapshot) {
+  if (typeof window === 'undefined') return;
+  const { category, focus, startedAt, status, content, error } = task;
+  window.sessionStorage.setItem(
+    storageKey(category),
+    JSON.stringify({ category, focus, startedAt, status, content, error }),
+  );
+}
+
+function readTaskSnapshot(
+  category: InterpretationCategory,
+): BackgroundTaskSnapshot | undefined {
+  const memoryTask = backgroundTasks.get(category);
+  if (memoryTask) return memoryTask;
+  if (typeof window === 'undefined') return undefined;
+
+  const raw = window.sessionStorage.getItem(storageKey(category));
+  if (!raw) return undefined;
+
+  try {
+    const parsed = JSON.parse(raw) as BackgroundTaskSnapshot;
+    if (parsed.category !== category) return undefined;
+
+    const elapsed = Date.now() - parsed.startedAt;
+    if (parsed.status === 'running' && elapsed > BACKGROUND_TASK_TIMEOUT_MS) {
+      const timedOut = {
+        ...parsed,
+        status: 'error' as const,
+        error: 'background_timeout',
+      };
+      writeTaskSnapshot(timedOut);
+      return timedOut;
+    }
+
+    return parsed;
+  } catch {
+    window.sessionStorage.removeItem(storageKey(category));
+    return undefined;
+  }
+}
+
+function notifyTask(category: InterpretationCategory) {
+  taskListeners.get(category)?.forEach((listener) => listener());
+}
+
+function subscribeTask(category: InterpretationCategory, listener: () => void) {
+  const listeners = taskListeners.get(category) ?? new Set<() => void>();
+  listeners.add(listener);
+  taskListeners.set(category, listeners);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) taskListeners.delete(category);
+  };
+}
+
+function setTaskSnapshot(task: BackgroundTask) {
+  backgroundTasks.set(task.category, task);
+  writeTaskSnapshot(task);
+  notifyTask(task.category);
+}
+
+function clearTaskSnapshot(category: InterpretationCategory) {
+  backgroundTasks.delete(category);
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(storageKey(category));
+}
+
+function startBackgroundGeneration({
+  category,
+  focus,
+}: {
+  category: InterpretationCategory;
+  focus?: string;
+}) {
+  const existing = backgroundTasks.get(category);
+  if (existing?.status === 'running') return existing;
+
+  const task: BackgroundTask = {
+    category,
+    focus: focus ?? '',
+    startedAt: Date.now(),
+    status: 'running',
+  };
+
+  task.promise = fetch('/api/interpretations/regenerate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ category, focus }),
+  })
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok)
+        throw new Error(
+          typeof data.error === 'string' ? data.error : 'unknown',
+        );
+
+      task.status = 'success';
+      task.content = typeof data.content === 'string' ? data.content : '';
+      task.error = undefined;
+    })
+    .catch((error) => {
+      task.status = 'error';
+      task.error = error instanceof Error ? error.message : 'unknown';
+    })
+    .finally(() => {
+      setTaskSnapshot(task);
+    });
+
+  setTaskSnapshot(task);
+  return task;
 }
 
 function loadingProgress(elapsedMs: number) {
@@ -492,38 +629,63 @@ export function InterpretationPanel({
     content.includes('##') || content.includes('| 사주 근거 |');
 
   useEffect(() => {
+    const syncTask = () => {
+      const task = readTaskSnapshot(category);
+      if (!task) return;
+
+      if (task.status === 'running') {
+        setLoading(true);
+        setElapsedMs(Math.max(0, Date.now() - task.startedAt));
+        setActiveFocus(task.focus);
+        setError('');
+        return;
+      }
+
+      setLoading(false);
+      setActiveFocus('');
+
+      if (task.status === 'success') {
+        setElapsedMs(EXPECTED_ANALYSIS_MS);
+        setError('');
+        if (task.content) setContent(task.content);
+        clearTaskSnapshot(category);
+        return;
+      }
+
+      setError(errorMessage(task.error ?? 'unknown'));
+      clearTaskSnapshot(category);
+    };
+
+    syncTask();
+    return subscribeTask(category, syncTask);
+  }, [category]);
+
+  useEffect(() => {
     if (!loading) return;
 
-    const timer = window.setInterval(() => {
+    const tick = () => {
+      const task = readTaskSnapshot(category);
+      if (task?.status === 'running') {
+        setElapsedMs(Math.max(0, Date.now() - task.startedAt));
+        return;
+      }
       setElapsedMs((current) => current + 500);
+    };
+
+    tick();
+    const timer = window.setInterval(() => {
+      tick();
     }, 500);
 
     return () => window.clearInterval(timer);
-  }, [loading]);
+  }, [category, loading]);
 
-  async function generate(focus?: string) {
+  function generate(focus?: string) {
+    const task = startBackgroundGeneration({ category, focus });
     setLoading(true);
-    setElapsedMs(0);
-    setActiveFocus(focus ?? '');
+    setElapsedMs(Math.max(0, Date.now() - task.startedAt));
+    setActiveFocus(task.focus);
     setError('');
-    try {
-      const res = await fetch('/api/interpretations/regenerate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, focus }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok)
-        throw new Error(
-          typeof data.error === 'string' ? data.error : 'unknown',
-        );
-      setContent(typeof data.content === 'string' ? data.content : '');
-    } catch (e) {
-      setError(errorMessage(e instanceof Error ? e.message : 'unknown'));
-    } finally {
-      setLoading(false);
-      setActiveFocus('');
-    }
   }
 
   if (!content) {
