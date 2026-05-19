@@ -8,7 +8,6 @@ create table public.users (
   kakao_id text unique,
   is_pro boolean default false not null,
   pro_expires_at timestamptz,
-  credit_balance int default 0 not null check (credit_balance >= 0),
   push_enabled boolean default false not null,
   push_token text,
   push_time time default '07:00' not null,
@@ -138,40 +137,6 @@ create table public.subscriptions (
 );
 create index idx_subs_user on public.subscriptions(user_id, status);
 
--- credit purchases (Kakao Pay one-time charge)
-create table public.credit_purchases (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade not null,
-  partner_order_id text unique not null,
-  kakao_tid text not null,
-  package_id text not null check (package_id in ('starter','plus','deep')),
-  credits int not null,
-  bonus_credits int default 0 not null,
-  amount int not null,
-  status text default 'pending' not null
-    check (status in ('pending','paid','cancelled','failed')),
-  approved_at timestamptz,
-  payment_method_type text,
-  created_at timestamptz default now() not null,
-  updated_at timestamptz default now() not null
-);
-create index idx_credit_purchases_user on public.credit_purchases(user_id, status, created_at desc);
-
-create table public.credit_transactions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade not null,
-  kind text not null check (kind in ('purchase','spend','refund','bonus')),
-  amount int not null,
-  balance_after int not null,
-  reason text not null,
-  reference_id text,
-  kakao_tid text,
-  package_id text,
-  price_krw int,
-  created_at timestamptz default now() not null
-);
-create index idx_credit_transactions_user on public.credit_transactions(user_id, created_at desc);
-
 -- usage limits
 create table public.usage_logs (
   id uuid primary key default gen_random_uuid(),
@@ -198,8 +163,6 @@ create trigger chat_sessions_updated_at before update on public.chat_sessions
   for each row execute function set_updated_at();
 create trigger subs_updated_at before update on public.subscriptions
   for each row execute function set_updated_at();
-create trigger credit_purchases_updated_at before update on public.credit_purchases
-  for each row execute function set_updated_at();
 -- Row Level Security
 alter table public.users enable row level security;
 alter table public.saju_profiles enable row level security;
@@ -210,8 +173,6 @@ alter table public.daily_fortunes enable row level security;
 alter table public.relations enable row level security;
 alter table public.timeline_feedback enable row level security;
 alter table public.subscriptions enable row level security;
-alter table public.credit_purchases enable row level security;
-alter table public.credit_transactions enable row level security;
 alter table public.usage_logs enable row level security;
 
 create policy "users select self" on public.users for select using (auth.uid() = id);
@@ -251,12 +212,6 @@ create policy "timeline feedback all own" on public.timeline_feedback for all
 
 create policy "subs select own" on public.subscriptions for select using (auth.uid() = user_id);
 
-create policy "credit purchases select own" on public.credit_purchases
-  for select using (auth.uid() = user_id);
-
-create policy "credit transactions select own" on public.credit_transactions
-  for select using (auth.uid() = user_id);
-
 create policy "usage all own" on public.usage_logs for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 -- Helper RPCs
@@ -288,8 +243,60 @@ $$ language plpgsql security definer set search_path = public;
 
 revoke all on function public.increment_interp_views(uuid) from public;
 grant execute on function public.increment_interp_views(uuid) to authenticated;
+-- Credit-based billing
 
--- Credit ledger helpers. These are service-role only because they mutate balance.
+alter table public.users
+  add column if not exists credit_balance int default 0 not null
+  check (credit_balance >= 0);
+
+create table if not exists public.credit_purchases (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(id) on delete cascade not null,
+  partner_order_id text unique not null,
+  kakao_tid text not null,
+  package_id text not null check (package_id in ('starter','plus','deep')),
+  credits int not null,
+  bonus_credits int default 0 not null,
+  amount int not null,
+  status text default 'pending' not null
+    check (status in ('pending','paid','cancelled','failed')),
+  approved_at timestamptz,
+  payment_method_type text,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+create index if not exists idx_credit_purchases_user on public.credit_purchases(user_id, status, created_at desc);
+
+create table if not exists public.credit_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(id) on delete cascade not null,
+  kind text not null check (kind in ('purchase','spend','refund','bonus')),
+  amount int not null,
+  balance_after int not null,
+  reason text not null,
+  reference_id text,
+  kakao_tid text,
+  package_id text,
+  price_krw int,
+  created_at timestamptz default now() not null
+);
+create index if not exists idx_credit_transactions_user on public.credit_transactions(user_id, created_at desc);
+
+drop trigger if exists credit_purchases_updated_at on public.credit_purchases;
+create trigger credit_purchases_updated_at before update on public.credit_purchases
+  for each row execute function set_updated_at();
+
+alter table public.credit_purchases enable row level security;
+alter table public.credit_transactions enable row level security;
+
+drop policy if exists "credit purchases select own" on public.credit_purchases;
+create policy "credit purchases select own" on public.credit_purchases
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "credit transactions select own" on public.credit_transactions;
+create policy "credit transactions select own" on public.credit_transactions
+  for select using (auth.uid() = user_id);
+
 create or replace function public.add_credits(
   p_user_id uuid,
   p_amount int,

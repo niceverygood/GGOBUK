@@ -56,14 +56,31 @@ export async function POST(req: Request) {
     name: parsed.profile?.name.trim() || DEFAULT_PROFILE.name,
   };
   const saju = buildSajuResult(profile);
-  const { error: userError } = await supabase.from('users').upsert(
-    {
-      id: user.id,
+
+  // Try upsert with credit_balance. If the column doesn't exist yet
+  // (migration 4 not applied in this environment), fall back to upserting
+  // without it so the test login still works on a partially-migrated DB.
+  async function upsertUser(includeCredits: boolean) {
+    const row: Record<string, unknown> = {
+      id: user!.id,
       nickname: '테스트 꼬북이',
-      credit_balance: 100,
-    },
-    { onConflict: 'id' },
-  );
+    };
+    if (includeCredits) row.credit_balance = 100;
+    return supabase.from('users').upsert(row, { onConflict: 'id' });
+  }
+
+  let { error: userError } = await upsertUser(true);
+  let creditsApplied = !userError;
+  if (
+    userError &&
+    /credit_balance|schema cache|column .* of 'users'/i.test(userError.message)
+  ) {
+    console.warn(
+      '[test/bootstrap] credit_balance column missing; retrying without it',
+    );
+    ({ error: userError } = await upsertUser(false));
+    creditsApplied = false;
+  }
   if (userError)
     return NextResponse.json({ error: userError.message }, { status: 500 });
 
@@ -148,6 +165,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     profile: selfProfile,
-    credits: 100,
+    credits: creditsApplied ? 100 : 0,
+    creditsApplied,
   });
 }
