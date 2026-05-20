@@ -1,15 +1,20 @@
 // Admin access control.
 //
 // A user is an admin if ANY of these are true:
+//   0. their email is a hard-coded SUPERADMIN_EMAILS (총괄관리자) — always on
 //   1. their auth user id is listed in ADMIN_USER_IDS (comma-separated)
 //   2. their email is listed in ADMIN_EMAILS (comma-separated, case-insensitive)
 //   3. their public.users row has is_admin = true
 //
 // Env allowlist is the safest default (no DB write needed, controlled in
 // Vercel). The is_admin column lets you grant access from the Supabase
-// dashboard without a redeploy.
+// dashboard without a redeploy. SUPERADMIN_EMAILS is for the operating
+// company's owner accounts so access never depends on env/DB state.
 
 import { createServerClient } from '@/lib/supabase/server';
+
+// 총괄관리자 — 환경변수/DB와 무관하게 항상 관리자.
+const SUPERADMIN_EMAILS = ['dev@bottlecorp.kr'];
 
 function splitEnv(value: string | undefined): string[] {
   return (value ?? '')
@@ -23,7 +28,9 @@ function adminUserIds(): string[] {
 }
 
 function adminEmails(): string[] {
-  return splitEnv(process.env.ADMIN_EMAILS).map((e) => e.toLowerCase());
+  return [...SUPERADMIN_EMAILS, ...splitEnv(process.env.ADMIN_EMAILS)].map((e) =>
+    e.toLowerCase(),
+  );
 }
 
 /** Whether any admin path is configured at all (env or expecting is_admin). */
