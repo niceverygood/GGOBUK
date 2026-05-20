@@ -6,7 +6,7 @@ import { payReady } from '@/lib/kakao/pay';
 import { creditPackageById, totalCredits } from '@/lib/credits';
 
 const Body = z.object({
-  packageId: z.enum(['starter', 'focus', 'deep', 'master']),
+  packageId: z.enum(['firstdeal', 'starter', 'focus', 'deep', 'master']),
 });
 
 export const runtime = 'nodejs';
@@ -23,6 +23,24 @@ export async function POST(req: Request) {
   const pkg = creditPackageById(packageId);
   if (!pkg)
     return NextResponse.json({ error: 'unknown_package' }, { status: 400 });
+
+  // First-purchase deal: re-verify eligibility on the server (24h window +
+  // not previously purchased) so it can't be bought by tampering with the
+  // client. Authority is the first_deal_status RPC.
+  if (pkg.firstDealOnly) {
+    const admin = await createServerClient({ admin: true });
+    const { data: statusData, error } = await admin.rpc('first_deal_status', {
+      p_user_id: user.id,
+    });
+    if (error)
+      return NextResponse.json({ error: 'eligibility_check_failed' }, { status: 500 });
+    const status = (statusData ?? { eligible: false }) as { eligible?: boolean };
+    if (!status.eligible)
+      return NextResponse.json(
+        { error: 'first_deal_not_eligible', detail: statusData },
+        { status: 403 },
+      );
+  }
 
   const partnerOrderId = `kkobuk_credit_${user.id.slice(0, 8)}_${Date.now()}`;
   const baseUrl = serverAppOrigin();

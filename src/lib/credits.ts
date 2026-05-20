@@ -4,13 +4,16 @@
 /** Active credit package ids matching the actual CREDIT_PACKAGES array. */
 export type CreditPackageId = 'starter' | 'focus' | 'deep' | 'master';
 
+/** First-purchase welcome deal id (24h limited, once per account). */
+export type FirstDealId = 'firstdeal';
+
 /** Legacy alias kept for already-persisted rows in credit_purchases. */
 export type LegacyCreditPackageId = 'plus';
 
-export type AnyCreditPackageId = CreditPackageId | LegacyCreditPackageId;
+export type AnyCreditPackageId = CreditPackageId | FirstDealId | LegacyCreditPackageId;
 
 export interface CreditPackage {
-  id: CreditPackageId;
+  id: CreditPackageId | FirstDealId;
   label: string;
   credits: number;
   bonusCredits: number;
@@ -20,7 +23,29 @@ export interface CreditPackage {
   perks: string[];
   recommended?: boolean;
   bestValue?: boolean;
+  /** Only purchasable within FIRST_DEAL_WINDOW_HOURS of signup, once per account. */
+  firstDealOnly?: boolean;
 }
+
+/** Hours after signup the first-purchase deal stays available. */
+export const FIRST_DEAL_WINDOW_HOURS = 24;
+
+/**
+ * 첫 충전 깜짝 특가 — 가입 24시간 이내 1회만. 1알당 95원으로 전 상품 중 최저가.
+ * Kept OUT of CREDIT_PACKAGES so it never shows in the normal grid; surfaced
+ * only via the FirstDealBanner when the user is eligible.
+ */
+export const FIRST_DEAL_PACKAGE: CreditPackage = {
+  id: 'firstdeal',
+  label: '웰컴 깜짝 특가',
+  credits: 12,
+  bonusCredits: 8,
+  priceKrw: 1900,
+  caption: '가입 24시간 한정 · 1알당 95원',
+  badge: '첫 충전 한정',
+  perks: ['지금 가입 보너스에 더해', '정밀 풀이 10개 분량', '역대 최저가 1알 95원'],
+  firstDealOnly: true,
+};
 
 /** Display unit shown to users. */
 export const CREDIT_UNIT = '꼬북알';
@@ -107,6 +132,8 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
 ];
 
 export function creditPackageById(id: string): CreditPackage | undefined {
+  // First-purchase welcome deal lives outside CREDIT_PACKAGES.
+  if (id === 'firstdeal') return FIRST_DEAL_PACKAGE;
   // Legacy: rows persisted under 'plus' should resolve to the 'focus' pack.
   if (id === 'plus') return CREDIT_PACKAGES.find((pkg) => pkg.id === 'focus');
   return CREDIT_PACKAGES.find((pkg) => pkg.id === id);

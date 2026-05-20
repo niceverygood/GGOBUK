@@ -6,6 +6,7 @@ import { Check, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card, ButtonPrimary, Badge } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
+import { FirstDealBanner } from '@/components/store/FirstDealBanner';
 import {
   CREDIT_COSTS,
   CREDIT_PACKAGES,
@@ -69,7 +70,7 @@ function CreditPageInner() {
   const chargedCredits = params.get('credits');
   const cancelled = params.get('cancelled');
   const failed = params.get('failed');
-  const [loading, setLoading] = useState<CreditPackageId | null>(null);
+  const [loading, setLoading] = useState<CreditPackageId | 'firstdeal' | null>(null);
   const [balance, setBalance] = useState(0);
   const [nativeIOS, setNativeIOS] = useState(false);
   const recommended = useMemo(
@@ -87,7 +88,7 @@ function CreditPageInner() {
       .then((d) => setBalance(Number(d?.user?.credit_balance ?? 0)));
   }, [success]);
 
-  async function start(packageId: CreditPackageId) {
+  async function start(packageId: CreditPackageId | 'firstdeal') {
     setLoading(packageId);
     try {
       const res = await fetch('/api/payment/kakao/ready', {
@@ -122,6 +123,10 @@ function CreditPageInner() {
           <Badge tone="gold">
             {balance} {CREDIT_UNIT} 보유
           </Badge>
+        </div>
+
+        <div className="mt-5">
+          <FirstDealBanner />
         </div>
 
         <Card className="mt-5 overflow-hidden p-5">
