@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { grantSignupBonusIfNeeded } from '@/lib/credits/server';
 
 function safeNext(path: string | null): string {
   if (!path || !path.startsWith('/') || path.startsWith('//')) return '/home';
@@ -43,6 +44,13 @@ export async function GET(request: Request) {
   await supabase
     .from('users')
     .upsert({ id: user.id, nickname, kakao_id: kakaoId }, { onConflict: 'id' });
+
+  // Grant 30-credit signup bonus (idempotent — RPC only credits once).
+  try {
+    await grantSignupBonusIfNeeded(user.id);
+  } catch (e) {
+    console.warn('[callback] signup bonus failed:', e);
+  }
 
   let destination = next;
   if (next === '/home') {

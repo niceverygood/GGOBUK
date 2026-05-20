@@ -4,6 +4,8 @@ import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
 import { todayKstIso } from '@/lib/utils/date';
+import { grantSignupBonusIfNeeded } from '@/lib/credits/server';
+import { SIGNUP_BONUS_CREDITS } from '@/lib/credits';
 
 const ProfileBody = z.object({
   name: z.string().min(1).max(40),
@@ -57,32 +59,26 @@ export async function POST(req: Request) {
   };
   const saju = buildSajuResult(profile);
 
-  // Try upsert with credit_balance. If the column doesn't exist yet
-  // (migration 4 not applied in this environment), fall back to upserting
-  // without it so the test login still works on a partially-migrated DB.
-  async function upsertUser(includeCredits: boolean) {
-    const row: Record<string, unknown> = {
-      id: user!.id,
-      nickname: '테스트 꼬북이',
-    };
-    if (includeCredits) row.credit_balance = 100;
-    return supabase.from('users').upsert(row, { onConflict: 'id' });
-  }
-
-  let { error: userError } = await upsertUser(true);
-  let creditsApplied = !userError;
-  if (
-    userError &&
-    /credit_balance|schema cache|column .* of 'users'/i.test(userError.message)
-  ) {
-    console.warn(
-      '[test/bootstrap] credit_balance column missing; retrying without it',
+  // Create the public.users row first (idempotent upsert). Credit grant
+  // happens through the grant_signup_bonus RPC so it goes through
+  // credit_transactions and is correctly recorded as a 'bonus'.
+  const { error: userError } = await supabase
+    .from('users')
+    .upsert(
+      { id: user.id, nickname: '테스트 꼬북이' },
+      { onConflict: 'id' },
     );
-    ({ error: userError } = await upsertUser(false));
-    creditsApplied = false;
-  }
   if (userError)
     return NextResponse.json({ error: userError.message }, { status: 500 });
+
+  // Grant signup bonus (idempotent — RPC only credits once per account).
+  let bonusBalance: number | null = null;
+  try {
+    bonusBalance = await grantSignupBonusIfNeeded(user.id);
+  } catch (e) {
+    console.warn('[test/bootstrap] signup bonus failed:', e);
+  }
+  const creditsApplied = bonusBalance !== null && bonusBalance > 0;
 
   const profilePayload = {
     owner_id: user.id,
@@ -165,7 +161,8 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     profile: selfProfile,
-    credits: creditsApplied ? 100 : 0,
+    credits: bonusBalance ?? 0,
+    signupBonus: SIGNUP_BONUS_CREDITS,
     creditsApplied,
   });
 }

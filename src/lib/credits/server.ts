@@ -66,3 +66,37 @@ export async function addCredits(params: {
   if (error) throw new Error(error.message);
   return Number(data ?? 0);
 }
+
+/**
+ * Grant the new-user signup bonus (PRICING.md §4). Idempotent: relies on
+ * grant_signup_bonus() in migration 5 which uses users.signup_bonus_granted
+ * as a once-only flag. Safe to call from /api/test/bootstrap and from the
+ * kakao OAuth callback — at most one of them will actually credit the
+ * account. Falls back to a no-op (returns null) when the RPC is not yet
+ * deployed on the connected Supabase project so production stays alive.
+ */
+export async function grantSignupBonusIfNeeded(
+  userId: string,
+): Promise<number | null> {
+  const admin = await createServerClient({ admin: true });
+  const { data, error } = await admin.rpc('grant_signup_bonus', {
+    p_user_id: userId,
+  });
+  if (error) {
+    if (
+      /function .*grant_signup_bonus.* does not exist/i.test(error.message) ||
+      /could not find the function/i.test(error.message)
+    ) {
+      console.warn(
+        '[credits] grant_signup_bonus RPC missing — apply migration 5',
+      );
+      return null;
+    }
+    if (/user_not_found/i.test(error.message)) {
+      // Race: users row not yet created. Caller should retry after upsert.
+      return null;
+    }
+    throw new Error(error.message);
+  }
+  return Number(data ?? 0);
+}

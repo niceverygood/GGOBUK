@@ -1,4 +1,13 @@
-export type CreditPackageId = 'starter' | 'focus' | 'plus' | 'deep' | 'master';
+// 꼬북점 가격정책 v1 — single source of truth shared by UI, API, and DB.
+// See PRICING.md at repo root for the human-readable policy.
+
+/** Active credit package ids matching the actual CREDIT_PACKAGES array. */
+export type CreditPackageId = 'starter' | 'focus' | 'deep' | 'master';
+
+/** Legacy alias kept for already-persisted rows in credit_purchases. */
+export type LegacyCreditPackageId = 'plus';
+
+export type AnyCreditPackageId = CreditPackageId | LegacyCreditPackageId;
 
 export interface CreditPackage {
   id: CreditPackageId;
@@ -12,6 +21,45 @@ export interface CreditPackage {
   recommended?: boolean;
   bestValue?: boolean;
 }
+
+/** Display unit shown to users. */
+export const CREDIT_UNIT = '꼬북알';
+
+/** New-user signup bonus (granted exactly once via grant_signup_bonus RPC). */
+export const SIGNUP_BONUS_CREDITS = 30;
+
+/** Refund window in days (purchased credits only, must be fully unused). */
+export const REFUND_WINDOW_DAYS = 7;
+
+/**
+ * Per-feature credit cost. 0 = free with no daily cap (but still subject to
+ * FREE_DAILY_LIMITS where applicable). Keep in sync with PRICING.md §2.
+ */
+export const CREDIT_COSTS = {
+  chat: 1,
+  interpretation: 2,
+  compatibility: 4,
+  daewoon: 2,
+  auspicious: 3,
+  talisman: 5,
+} as const;
+
+/**
+ * Per-day free quota before credits get spent. Resets at KST midnight.
+ * Keep in sync with PRICING.md §3.
+ */
+export const FREE_DAILY_LIMITS = {
+  /** persona chat assistant replies/day before each one costs CREDIT_COSTS.chat */
+  chat: 5,
+  /** daily fortune messages/day (always 1) */
+  dailyFortune: 1,
+  /** first N interpretation categories that stay free forever */
+  freeInterpretations: 3,
+  /** relations a free user can register (after this, credits required) */
+  relations: 3,
+  /** free talismans per account lifetime */
+  talismansLifetime: 1,
+} as const;
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
@@ -58,24 +106,19 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
   },
 ];
 
-export const CREDIT_UNIT = '꼬북알';
-
-export const CREDIT_COSTS = {
-  chat: 1,
-  interpretation: 2,
-  compatibility: 4,
-  daewoon: 2,
-  auspicious: 3,
-  talisman: 5,
-} as const;
-
 export function creditPackageById(id: string): CreditPackage | undefined {
+  // Legacy: rows persisted under 'plus' should resolve to the 'focus' pack.
   if (id === 'plus') return CREDIT_PACKAGES.find((pkg) => pkg.id === 'focus');
   return CREDIT_PACKAGES.find((pkg) => pkg.id === id);
 }
 
 export function totalCredits(pkg: CreditPackage): number {
   return pkg.credits + pkg.bonusCredits;
+}
+
+/** Price per credit in KRW (for showing "1알당 X원" hints). */
+export function pricePerCredit(pkg: CreditPackage): number {
+  return Math.round(pkg.priceKrw / totalCredits(pkg));
 }
 
 export function formatKrw(amount: number): string {
