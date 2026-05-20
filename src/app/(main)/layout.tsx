@@ -14,7 +14,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh max-w-md mx-auto text-ink">
+    <div className="min-h-dvh w-full max-w-md mx-auto overflow-x-hidden text-ink">
       {children}
       <BottomNav />
     </div>
