@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
@@ -72,22 +73,32 @@ export default function PersonaSelectionPage() {
             const p = PERSONAS[k];
             const active = selected === k;
             return (
-              <button
+              <div
                 key={k}
-                onClick={() => setSelected(k)}
                 className={cn(
-                  'w-full flex items-center gap-4 p-4 rounded-3xl bg-white border shadow-[0_10px_24px_rgba(44,62,80,0.06)] transition text-left',
+                  'w-full flex items-center gap-3 p-4 rounded-3xl bg-white border shadow-[0_10px_24px_rgba(44,62,80,0.06)] transition',
                   active ? 'border-2 border-mint bg-gradient-to-r from-mint/15 to-white' : 'border border-navy/10',
                 )}
               >
-                <div className="w-16 h-16 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden shrink-0">
-                  <KkobukSprite variant={PERSONA_SPRITE[k]} size="md" ariaLabel={p.displayName} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-black text-navy">{p.displayName}</h3>
-                  <p className="text-xs font-semibold text-[#82786D] mt-0.5">{SUBTITLES[k]}</p>
-                </div>
-              </button>
+                <button
+                  onClick={() => setSelected(k)}
+                  className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden shrink-0">
+                    <KkobukSprite variant={PERSONA_SPRITE[k]} size="md" ariaLabel={p.displayName} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-black text-navy">{p.displayName}</h3>
+                    <p className="text-xs font-semibold text-[#82786D] mt-0.5">{SUBTITLES[k]}</p>
+                  </div>
+                </button>
+                <Link
+                  href={`/persona/${k}`}
+                  className="shrink-0 px-3 py-2 rounded-full bg-navy/5 text-[11px] font-extrabold text-navy"
+                >
+                  소개
+                </Link>
+              </div>
             );
           })}
         </div>
