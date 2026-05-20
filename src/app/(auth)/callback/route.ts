@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { grantSignupBonusIfNeeded } from '@/lib/credits/server';
+import { logger } from '@/lib/utils/logger';
 
 function safeNext(path: string | null): string {
   if (!path || !path.startsWith('/') || path.startsWith('//')) return '/home';
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
   try {
     await grantSignupBonusIfNeeded(user.id);
   } catch (e) {
-    console.warn('[callback] signup bonus failed:', e);
+    logger.warn('callback', 'signup bonus failed', { error: e instanceof Error ? e.message : String(e) });
   }
 
   let destination = next;

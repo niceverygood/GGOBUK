@@ -7,6 +7,8 @@ import {
   isInsufficientCreditsError,
   spendCredits,
 } from '@/lib/credits/server';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
+import { todayKstIso } from '@/lib/utils/date';
 import type { PersonaKey } from '@/lib/llm/personas';
 import type { SajuProfileRow } from '@/types/db';
 
@@ -21,6 +23,9 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return new Response('unauthorized', { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'chat'), 20, 60_000);
+  if (!rl.allowed) return new Response('rate_limited', { status: 429 });
 
   const { sessionId, message } = (await req.json()) as {
     sessionId: string;
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
     .order('created_at', { ascending: true })
     .limit(20);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKstIso();
   const { data: usage } = await supabase
     .from('usage_logs')
     .select('chat_messages')

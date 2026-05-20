@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
 import { todayKstIso } from '@/lib/utils/date';
+import { logger } from '@/lib/utils/logger';
 import { grantSignupBonusIfNeeded } from '@/lib/credits/server';
 import { SIGNUP_BONUS_CREDITS } from '@/lib/credits';
 
@@ -35,6 +36,15 @@ const DEFAULT_PROFILE = {
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  // Block in production unless explicitly allowed (e.g. for App Store review).
+  // Set ALLOW_TEST_BOOTSTRAP=1 in Vercel env vars during review, remove after.
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_TEST_BOOTSTRAP !== '1'
+  ) {
+    return NextResponse.json({ error: 'not_available' }, { status: 404 });
+  }
+
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -76,7 +86,7 @@ export async function POST(req: Request) {
   try {
     bonusBalance = await grantSignupBonusIfNeeded(user.id);
   } catch (e) {
-    console.warn('[test/bootstrap] signup bonus failed:', e);
+    logger.warn('test/bootstrap', 'signup bonus failed', { error: e instanceof Error ? e.message : String(e) });
   }
   const creditsApplied = bonusBalance !== null && bonusBalance > 0;
 

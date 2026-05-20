@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import {
   Bell,
   CalendarCheck,
+  Egg,
   Map,
   ShoppingBag,
   UsersRound,
@@ -13,6 +14,7 @@ import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
 import { CREDIT_UNIT } from '@/lib/credits';
+import { MoreStoreLink } from '@/components/nav/MoreStoreLink';
 
 export default async function MorePage() {
   const supabase = await createServerClient();
@@ -48,12 +50,7 @@ export default async function MorePage() {
         </Card>
 
         <div className="mt-4 space-y-2">
-          <MoreLink
-            href="/more/pro"
-            title="꼬북상점"
-            subtitle="구독 없이 필요한 AI 풀이만 사용"
-            icon={<ShoppingBag size={22} strokeWidth={2.5} />}
-          />
+          <MoreStoreLink credits={credits} />
           <MoreLink
             href="/timeline"
             title="대운 타임라인"

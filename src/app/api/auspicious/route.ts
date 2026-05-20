@@ -6,6 +6,7 @@ import { buildSajuResult } from '@/lib/saju';
 import { enrichAuspiciousSuggestions } from '@/lib/llm/auspicious';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isInsufficientCreditsError, spendCredits } from '@/lib/credits/server';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { CHEONGAN_OHAENG_IDX, JIJI_OHAENG_IDX } from '@/lib/saju/constants';
 import type { Palja } from '@/lib/saju/types';
 import type { SajuProfileRow } from '@/types/db';
@@ -34,6 +35,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'auspicious'), 5, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   const { purpose, start, end } = Body.parse(await req.json());
 

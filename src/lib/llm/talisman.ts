@@ -1,4 +1,5 @@
 import { INTERPRETATION_CATEGORIES } from "@/lib/llm/interpret";
+import { logger } from "@/lib/utils/logger";
 import type { SajuResult } from "@/lib/saju/types";
 import type { InterpretationCategory } from "@/types/db";
 
@@ -428,7 +429,7 @@ export async function generateTalismanImage(params: {
     }
   }
 
-  console.error("[talisman] OpenAI image failed; using local fallback", {
+  logger.error("talisman", "OpenAI image failed; using local fallback", {
     category: params.category,
     message: lastError instanceof Error ? lastError.message : String(lastError),
   });

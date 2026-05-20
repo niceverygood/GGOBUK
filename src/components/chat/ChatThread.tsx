@@ -7,6 +7,7 @@ import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge } from '@/components/ui/primitives';
 import { CREDIT_COSTS } from '@/lib/credits';
+import { isNativeIOS } from '@/lib/utils/platform';
 
 interface InitialMessage {
   role: 'user' | 'assistant';
@@ -240,9 +241,11 @@ export function ChatThread({
       {needsCredit && (
         <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
           꼬북알이 부족해. 추가 질문은 {CREDIT_COSTS.chat}꼬북알을 사용해.
-          <Link href="/more/pro" className="ml-2 underline underline-offset-4">
-            충전하기
-          </Link>
+          {!isNativeIOS() && (
+            <Link href="/more/pro" className="ml-2 underline underline-offset-4">
+              충전하기
+            </Link>
+          )}
         </div>
       )}
 

@@ -13,6 +13,8 @@ import {
   isInsufficientCreditsError,
   spendCredits,
 } from '@/lib/credits/server';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
+import { logger } from '@/lib/utils/logger';
 import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
@@ -30,6 +32,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'interpretation'), 10, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   const { category, focus } = Body.parse(await req.json());
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    console.warn('[interpretations/regenerate] credit spend skipped', {
+    logger.warn('interpretations/regenerate', 'credit spend skipped', {
       userId: user.id,
       category,
       message: e instanceof Error ? e.message : String(e),
@@ -86,7 +92,7 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
-    console.error('[interpretations/regenerate] llm failed; using fallback', {
+    logger.error('interpretations/regenerate', 'llm failed; using fallback', {
       userId: user.id,
       category,
       message: msg,
@@ -134,7 +140,7 @@ export async function POST(req: Request) {
     { onConflict: 'saju_id,category' },
   );
   if (error) {
-    console.error('[interpretations/regenerate] cache save failed', {
+    logger.error('interpretations/regenerate', 'cache save failed', {
       userId: user.id,
       category,
       message: error.message,

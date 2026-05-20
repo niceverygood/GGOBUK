@@ -12,6 +12,8 @@ import {
 import { generatePremiumServiceReport } from '@/lib/llm/premium_service';
 import { buildSajuResult } from '@/lib/saju';
 import { createServerClient } from '@/lib/supabase/server';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
+import { logger } from '@/lib/utils/logger';
 import type { SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
@@ -40,6 +42,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'premium'), 5, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   const { serviceId, topic } = Body.parse(await req.json());
   const service = premiumServiceById(serviceId);
@@ -108,7 +114,7 @@ export async function POST(req: Request) {
       referenceId: profile.id,
     }).catch(() => undefined);
 
-    console.error('[premium-services/generate] failed', {
+    logger.error('premium-services/generate', 'failed', {
       userId: user.id,
       serviceId,
       message: e instanceof Error ? e.message : String(e),

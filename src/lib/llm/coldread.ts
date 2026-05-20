@@ -7,6 +7,7 @@ import {
   CHEONGAN_OHAENG_IDX,
   CHEONGAN_YINYANG,
 } from "@/lib/saju/constants";
+import { logger } from "@/lib/utils/logger";
 import type { SajuResult, DaewoonPeriod } from "@/lib/saju/types";
 
 function sewoonForRange(saju: SajuResult, startYear: number): string[] {
@@ -102,7 +103,7 @@ ${sewoonList.map((s) => `- ${s}`).join('\n')}
     });
     return text;
   } catch (error) {
-    console.error("[coldread] llm failed; using fallback", {
+    logger.error("coldread", "llm failed; using fallback", {
       startYear: params.daewoon.startYear,
       message: error instanceof Error ? error.message : String(error),
     });

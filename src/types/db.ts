@@ -1,5 +1,6 @@
-// Hand-written DB row types matching supabase/migrations/00000000000001_init.sql.
-// Regenerate with `supabase gen types` once the project is linked.
+// Hand-written DB row types matching supabase/migrations/ (001–005).
+// Regenerate with `supabase gen types typescript --linked > src/types/db.ts` once the project is linked.
+// Last synced: 2026-05-20 (migration 005_pricing).
 
 import type {
   Palja,
@@ -48,6 +49,7 @@ export interface UserRow {
   is_pro: boolean;
   pro_expires_at: string | null;
   credit_balance: number;
+  signup_bonus_granted: boolean;
   push_enabled: boolean;
   push_token: string | null;
   push_time: string;

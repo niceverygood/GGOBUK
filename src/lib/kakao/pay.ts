@@ -1,5 +1,13 @@
 // Kakao Pay HTTP client.
-// Test CID: TC0ONETIME (one-time payment sandbox). Replace with prod CID after Kakao approval.
+//
+// CID configuration:
+//   Test (sandbox):  TC0ONETIME / TC0SUBSCRIPTION — works without Kakao partner approval.
+//   Production:      Set KAKAO_PAY_CID_ONETIME and KAKAO_PAY_CID_SUBSCRIPTION
+//                    to the CIDs issued in the Kakao partner dashboard.
+//
+// In production, if CID is still TC0ONETIME, payments will succeed in sandbox mode only.
+
+import { logger } from '@/lib/utils/logger';
 
 const BASE = 'https://kapi.kakao.com';
 const ONE_TIME_CID =
@@ -12,6 +20,16 @@ const SUBSCRIPTION_CID =
   process.env.KAKAO_PAY_CID_SUBSCRIPTION ??
   process.env.KAKAO_PAY_CID ??
   'TC0SUBSCRIPTION';
+
+if (
+  process.env.NODE_ENV === 'production' &&
+  (ONE_TIME_CID.startsWith('TC0') || SUBSCRIPTION_CID.startsWith('TC0'))
+) {
+  logger.warn('kakao/pay', 'Using test CID in production — payments will only work in sandbox mode', {
+    oneTimeCid: ONE_TIME_CID,
+    subscriptionCid: SUBSCRIPTION_CID,
+  });
+}
 
 function authHeaders(): HeadersInit {
   const key = process.env.KAKAO_ADMIN_KEY;

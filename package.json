@@ -11,7 +11,8 @@
     "app:ios:add": "cap add ios",
     "app:ios:prepare": "pnpm run build && pnpm run app:assets && pnpm run app:ios:sync",
     "app:ios:sync": "cap sync ios",
-    "app:ios:open": "cap open ios"
+    "app:ios:open": "cap open ios",
+    "db:types": "npx supabase gen types typescript --linked > src/types/supabase.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

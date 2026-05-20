@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 
 export class InsufficientCreditsError extends Error {
   constructor() {
@@ -87,9 +88,7 @@ export async function grantSignupBonusIfNeeded(
       /function .*grant_signup_bonus.* does not exist/i.test(error.message) ||
       /could not find the function/i.test(error.message)
     ) {
-      console.warn(
-        '[credits] grant_signup_bonus RPC missing — apply migration 5',
-      );
+      logger.warn('credits', 'grant_signup_bonus RPC missing — apply migration 5');
       return null;
     }
     if (/user_not_found/i.test(error.message)) {

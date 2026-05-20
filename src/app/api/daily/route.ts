@@ -4,6 +4,7 @@ import { generateDaily } from '@/lib/llm/daily';
 import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
 import { todayKstIso } from '@/lib/utils/date';
+import { logger } from '@/lib/utils/logger';
 import type { SajuProfileRow } from '@/types/db';
 
 export const runtime = 'nodejs';
@@ -93,11 +94,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  // Cron endpoint. Authenticate via shared secret header.
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const provided = req.headers.get('x-cron-secret');
-    if (provided !== secret) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  // Cron endpoint. Authenticate via Vercel Cron header or shared secret.
+  const vercelCronAuth = req.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`;
+  const legacyCronAuth = req.headers.get('x-cron-secret') === process.env.CRON_SECRET;
+  if (process.env.CRON_SECRET && !vercelCronAuth && !legacyCronAuth) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const admin = await createServerClient({ admin: true });
@@ -153,7 +154,7 @@ export async function POST(req: Request) {
       generated++;
     } catch (e) {
       failed++;
-      console.error('daily generation failed', profile.id, e);
+      logger.error('daily', 'generation failed', { profileId: profile.id, error: e instanceof Error ? e.message : String(e) });
     }
   }
 

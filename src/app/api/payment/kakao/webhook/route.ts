@@ -3,9 +3,6 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-// Kakao Pay sends subscription billing events here.
-// Signature verification: in production, verify HMAC using the secret key Kakao provides.
-// For now we accept payloads and update subscription expiry on success.
 interface KakaoSubsEvent {
   sid: string;
   status: 'SUCCESS' | 'FAIL' | 'CANCELLED' | string;
@@ -13,8 +10,51 @@ interface KakaoSubsEvent {
   amount?: { total: number };
 }
 
+/**
+ * Verify Kakao Pay webhook HMAC-SHA256 signature.
+ * Kakao sends the signature in the `Kakao-Signature` header.
+ * The secret key is provided per CID in the Kakao partner dashboard.
+ */
+async function verifySignature(
+  rawBody: string,
+  signature: string | null,
+): Promise<boolean> {
+  const secret = process.env.KAKAO_PAY_SECRET_KEY;
+  // If no secret configured, reject all webhooks in production.
+  if (!secret) {
+    if (process.env.NODE_ENV === 'development') return true;
+    return false;
+  }
+  if (!signature) return false;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody));
+  const computed = Buffer.from(sig).toString('base64');
+  // Constant-time comparison
+  if (computed.length !== signature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < computed.length; i++) {
+    mismatch |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 export async function POST(req: Request) {
-  const body = (await req.json()) as KakaoSubsEvent;
+  const rawBody = await req.text();
+  const signature = req.headers.get('Kakao-Signature');
+
+  if (!(await verifySignature(rawBody, signature))) {
+    return NextResponse.json({ error: 'invalid_signature' }, { status: 403 });
+  }
+
+  const body = JSON.parse(rawBody) as KakaoSubsEvent;
   if (!body?.sid) return NextResponse.json({ error: 'bad_payload' }, { status: 400 });
 
   const admin = await createServerClient({ admin: true });

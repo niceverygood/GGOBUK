@@ -7,6 +7,7 @@ import { InterpretationBody } from "@/components/shell/InterpretationBody";
 import { TalismanPanel } from "@/components/shell/TalismanPanel";
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { CREDIT_COSTS } from "@/lib/credits";
+import { isNativeIOS } from "@/lib/utils/platform";
 import type { InterpretationCategory } from "@/types/db";
 
 const ANALYSIS_STEPS = [
@@ -553,12 +554,14 @@ function DeepDivePanel({
         ))}
       </div>
 
-      <Link
-        href="/more/pro"
-        className="mt-3 block rounded-2xl bg-navy px-4 py-3 text-center text-sm font-black text-white"
-      >
-        꼬북알 충전하고 계속 보기
-      </Link>
+      {!isNativeIOS() && (
+        <Link
+          href="/more/pro"
+          className="mt-3 block rounded-2xl bg-navy px-4 py-3 text-center text-sm font-black text-white"
+        >
+          꼬북알 충전하고 계속 보기
+        </Link>
+      )}
     </div>
   );
 }
@@ -663,7 +666,7 @@ export function InterpretationPanel({
         {error && (
           <p className="text-center text-xs font-bold text-red">
             {error}{" "}
-            {error.includes("꼬북알") && (
+            {error.includes("꼬북알") && !isNativeIOS() && (
               <Link href="/more/pro" className="underline underline-offset-4">
                 충전하기
               </Link>

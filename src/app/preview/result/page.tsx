@@ -8,6 +8,7 @@ import { LifeRoad } from '@/components/timeline/LifeRoad';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge, Card } from '@/components/ui/primitives';
 import { PartnerCompare } from '@/components/preview/PartnerCompare';
+import { logger } from '@/lib/utils/logger';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { computePreview, loadPreviewInput } from '@/lib/saju/preview';
 import type { DaewoonPeriod, SajuResult } from '@/lib/saju/types';
@@ -67,7 +68,7 @@ export default function PreviewResultPage() {
         );
         setSelectedPeriod(curr ?? result.daewoon[0]);
       } catch (e) {
-        console.error('saju calc failed', e);
+        logger.error('preview', 'saju calc failed', { error: e instanceof Error ? e.message : String(e) });
         router.replace('/preview');
       }
     }, 0);

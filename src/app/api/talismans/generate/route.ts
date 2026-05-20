@@ -10,6 +10,8 @@ import { generateTalismanImage } from '@/lib/llm/talisman';
 import { buildSajuResult } from '@/lib/saju';
 import { createServerClient } from '@/lib/supabase/server';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
+import { logger } from '@/lib/utils/logger';
 import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
 
 const Body = z.object({
@@ -33,6 +35,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'talisman'), 5, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   const { category } = Body.parse(await req.json());
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    console.warn('[talismans/generate] credit spend skipped', {
+    logger.warn('talismans/generate', 'credit spend skipped', {
       userId: user.id,
       category,
       message: e instanceof Error ? e.message : String(e),
@@ -97,7 +103,7 @@ export async function POST(req: Request) {
       }).catch(() => undefined);
     }
 
-    console.error('[talismans/generate] failed', {
+    logger.error('talismans/generate', 'failed', {
       userId: user.id,
       category,
       message: e instanceof Error ? e.message : String(e),

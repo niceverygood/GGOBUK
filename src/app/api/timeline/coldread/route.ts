@@ -9,6 +9,8 @@ import {
   isInsufficientCreditsError,
   spendCredits,
 } from "@/lib/credits/server";
+import { rateLimit, rateLimitKey } from "@/lib/utils/rate-limit";
+import { logger } from "@/lib/utils/logger";
 
 const Body = z.object({
   daewoonStartYear: z.number().int(),
@@ -24,6 +26,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, "coldread"), 10, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const body = Body.parse(await req.json());
 
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    console.warn("[timeline/coldread] credit spend skipped", {
+    logger.warn("timeline/coldread", "credit spend skipped", {
       userId: user.id,
       startYear: period.startYear,
       message: e instanceof Error ? e.message : String(e),
@@ -92,7 +98,7 @@ export async function POST(req: Request) {
       }).catch(() => undefined);
     }
 
-    console.error("[timeline/coldread] failed; using fallback", {
+    logger.error("timeline/coldread", "failed; using fallback", {
       userId: user.id,
       startYear: period.startYear,
       message: e instanceof Error ? e.message : String(e),

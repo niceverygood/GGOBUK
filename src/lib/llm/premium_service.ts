@@ -1,6 +1,7 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { todayKstIso } from '@/lib/utils/date';
 import type { PremiumService } from '@/lib/premium-services';
 import type { SajuResult } from '@/lib/saju/types';
 
@@ -26,7 +27,7 @@ export async function generatePremiumServiceReport(params: {
   service: PremiumService;
   topic?: string;
 }): Promise<{ content: string; tokensUsed: number; model: string }> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKstIso();
   const context = formatSajuContext(params.saju, params.name);
   const topicLine = params.topic?.trim()
     ? `\n사용자 고민: ${params.topic.trim()}`
