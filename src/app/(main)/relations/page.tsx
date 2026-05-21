@@ -116,6 +116,39 @@ export default function RelationsPage() {
   const [adding, setAdding] = useState(() => searchParams.get('add') === '1');
   const [addStatus, setAddStatus] = useState<AddStatus>('idle');
   const [error, setError] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+
+  async function inviteFriend() {
+    setInviting(true);
+    setInviteMsg(null);
+    try {
+      const res = await fetch('/api/relations/invite', { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok || !d.url) throw new Error(d.error ?? 'invite_failed');
+      const shareText = `${d.hostName ?? '나'}와의 궁합 보러올래? 🐢 꼬북점`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: '꼬북점 궁합 초대', text: shareText, url: d.url });
+          setInviteMsg('초대 링크를 공유했어요!');
+        } catch {
+          await navigator.clipboard.writeText(d.url);
+          setInviteMsg('초대 링크를 복사했어요. 친구에게 붙여넣어 보내세요!');
+        }
+      } else {
+        await navigator.clipboard.writeText(d.url);
+        setInviteMsg('초대 링크를 복사했어요. 친구에게 붙여넣어 보내세요!');
+      }
+    } catch (e) {
+      setInviteMsg(
+        e instanceof Error && e.message === 'no_self_profile'
+          ? '먼저 내 사주를 등록해야 초대할 수 있어요.'
+          : '초대 링크 생성에 실패했어요. 다시 시도해주세요.',
+      );
+    } finally {
+      setInviting(false);
+    }
+  }
 
   // Form state
   const [name, setName] = useState('');
@@ -253,17 +286,33 @@ export default function RelationsPage() {
               {summary.pending > 0 ? ` · 생성 대기 ${summary.pending}명` : ''}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setError('');
-              setAdding((v) => !v);
-            }}
-            className="mt-3 shrink-0 rounded-full bg-navy px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]"
-          >
-            {adding ? '취소' : '+ 추가'}
-          </button>
+          <div className="mt-3 flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={inviteFriend}
+              disabled={inviting}
+              className="rounded-full bg-mint px-4 py-2.5 text-xs font-black text-[#163438] shadow-[0_10px_18px_rgba(78,205,196,0.28)] disabled:opacity-60"
+            >
+              {inviting ? '링크 생성 중…' : '🔗 친구 초대'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setAdding((v) => !v);
+              }}
+              className="rounded-full bg-navy px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]"
+            >
+              {adding ? '취소' : '+ 추가'}
+            </button>
+          </div>
         </div>
+
+        {inviteMsg && (
+          <div className="mt-3 rounded-2xl bg-mint/15 border border-mint/30 px-4 py-3 text-xs font-bold text-navy">
+            {inviteMsg}
+          </div>
+        )}
 
         <div className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
           {FILTER_OPTIONS.map((option) => (

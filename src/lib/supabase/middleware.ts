@@ -24,6 +24,7 @@ export async function updateSession(request: NextRequest) {
     path === '/daewoon' ||
     path === '/taegil' ||
     path.startsWith('/preview') ||
+    path.startsWith('/invite') ||
     path.startsWith('/api/preview') ||
     path.startsWith('/_next') ||
     path.startsWith('/icons') ||
