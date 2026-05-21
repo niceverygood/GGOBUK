@@ -333,8 +333,15 @@ function CreditPageInner() {
               ? '카카오페이로 이동 중...'
               : `${recommended.label} 충전하기`}
           </ButtonPrimary>
-          <p className="mt-2 text-[11px] font-bold text-muted text-center">
+          <p className="mt-2 text-[11px] font-bold text-muted text-center leading-relaxed">
             정기결제가 아니며, 충전한 {CREDIT_UNIT}은 계정에 적립돼요.
+            <br />
+            결제 후 7일 이내 미사용분만 환불 가능 (사용 시 청약철회 제한).
+            <br />
+            결제 시{' '}
+            <a href="/terms" className="underline">이용약관</a>
+            {' · '}
+            <a href="/privacy" className="underline">개인정보 처리방침</a>에 동의하게 됩니다.
           </p>
         </BottomActionBar>
       )}

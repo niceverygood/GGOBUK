@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { COMPANY } from '@/lib/company';
 
 export const metadata: Metadata = {
   title: '개인정보 처리방침',
@@ -16,16 +17,16 @@ const sections = [
     body: '입력한 정보는 사주 원국 계산, 운세·궁합·대운·인연지도 생성, AI 상세 풀이, 유료 크레딧 관리, 고객 문의 대응, 부정 이용 방지에 사용됩니다.',
   },
   {
-    title: '보관 및 삭제',
-    body: '회원이 직접 등록한 인물과 인연 정보는 앱 내 삭제 기능으로 삭제할 수 있습니다. 계정 삭제 또는 고객 문의가 접수되면 관계 법령상 보관이 필요한 정보를 제외하고 지체 없이 삭제합니다.',
+    title: '보유 및 이용 기간',
+    body: '회원이 직접 등록한 인물·인연 정보는 앱 내 삭제 기능으로 즉시 삭제할 수 있습니다. 계정 삭제 시 지체 없이 파기하되, 전자상거래법에 따라 결제·계약 기록은 5년, 소비자 불만·분쟁 기록은 3년간 보관 후 파기합니다.',
   },
   {
-    title: '제3자 서비스',
-    body: '로그인에는 Supabase와 카카오 인증이, 결제에는 카카오페이가, AI 생성에는 OpenRouter 또는 OpenAI API가 사용될 수 있습니다. 각 서비스에는 처리 목적에 필요한 최소한의 정보만 전달됩니다.',
+    title: '제3자 서비스 (처리위탁)',
+    body: '로그인·데이터 저장에는 Supabase와 카카오 인증이, 결제에는 카카오페이가, AI 생성에는 OpenRouter 또는 OpenAI API가 사용됩니다. 각 서비스에는 처리 목적에 필요한 최소한의 정보만 전달되며, 위탁 업무 종료 시 관련 정보는 파기됩니다.',
   },
   {
-    title: '문의',
-    body: '개인정보 관련 문의는 서비스 운영자에게 이메일 또는 앱 내 문의 채널로 요청할 수 있습니다. 문의가 접수되면 확인 후 필요한 조치를 안내합니다.',
+    title: '정보주체의 권리',
+    body: '이용자는 언제든지 본인 정보의 열람·정정·삭제·처리정지를 요청할 수 있으며, 앱 내 인원 관리 기능 또는 아래 연락처를 통해 행사할 수 있습니다.',
   },
 ];
 
@@ -58,6 +59,27 @@ export default function PrivacyPage() {
           </section>
         ))}
       </div>
+
+      <section className="rounded-[24px] border border-line bg-white/88 p-6">
+        <h2 className="text-xl font-black">개인정보 보호책임자 / 사업자 정보</h2>
+        <dl className="mt-3 space-y-1.5 text-sm font-semibold text-muted">
+          <Row k="상호" v={COMPANY.name} />
+          <Row k="대표자" v={COMPANY.ceo} />
+          <Row k="보호책임자" v={`${COMPANY.ceo} (${COMPANY.contactEmail})`} />
+          <Row k="사업자등록번호" v={COMPANY.bizRegNo} />
+          <Row k="주소" v={COMPANY.address} />
+          <Row k="문의" v={COMPANY.contactEmail} />
+        </dl>
+      </section>
     </main>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-28 shrink-0 font-black text-ink">{k}</dt>
+      <dd className="flex-1">{v}</dd>
+    </div>
   );
 }
