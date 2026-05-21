@@ -7,6 +7,16 @@ export { computeSinsal } from './sinsal';
 export { computeDaewoon } from './daewoon';
 export { findInteractionsWithinPalja, pairwiseSummary } from './hapchung';
 export { findSolarTermDate, solarLongitude } from './solar_terms';
+export {
+  computeAdvanced,
+  computeUnseong,
+  twelveStage,
+  weightedOhaeng,
+  analyzeRootedness,
+  yukchin,
+  PALACES,
+  TWELVE_STAGES,
+} from './advanced';
 
 import { calculatePalja } from './palja';
 import { computeOhaeng } from './ohaeng';

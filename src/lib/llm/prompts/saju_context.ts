@@ -1,9 +1,12 @@
-import type { SajuResult } from '@/lib/saju/types';
+import type { SajuResult, Sipsung } from '@/lib/saju/types';
 import { analyzeSaju, strongestOhaeng, weakestOhaeng } from '@/lib/saju/analysis';
+import { computeAdvanced, yukchin } from '@/lib/saju/advanced';
 
 export function formatSajuContext(saju: SajuResult, name?: string): string {
   const { palja, ilgan, ohaengCount, sipsung, sinsal, daewoon } = saju;
   const analysis = analyzeSaju(saju);
+  const advanced = computeAdvanced(palja);
+  const gender = saju.input.gender;
   const lines: string[] = [];
 
   if (name) lines.push(`이름: ${name}`);
@@ -40,13 +43,29 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
   );
   const [strong, strongCount] = strongestOhaeng(saju);
   const [weak, weakCount] = weakestOhaeng(saju);
-  lines.push(`강한 기운: ${strong}(${strongCount}) · 부족한 기운: ${weak}(${weakCount})`);
+  lines.push(`표면 개수: 강한 기운 ${strong}(${strongCount}) · 부족한 기운 ${weak}(${weakCount})`);
+  const w = advanced.weighted;
+  lines.push(
+    `지장간 가중 점수(정기·중기·여기 + 월령 보정): 목 ${w.목} / 화 ${w.화} / 토 ${w.토} / 금 ${w.금} / 수 ${w.수}`,
+  );
+  lines.push('→ 실제 강약은 표면 개수보다 가중 점수를 우선해서 판단할 것.');
   lines.push('');
 
-  lines.push('## 십성');
+  lines.push('## 십성 + 육친(六親)');
+  const posLabel: Record<string, string> = {
+    yearGan: '연간', yearJi: '연지', monthGan: '월간', monthJi: '월지',
+    dayJi: '일지', timeGan: '시간', timeJi: '시지',
+  };
   for (const [k, v] of Object.entries(sipsung)) {
-    if (v) lines.push(`${k}: ${v}`);
+    if (v) lines.push(`${posLabel[k] ?? k}: ${v} = ${yukchin(v as Sipsung, gender)}`);
   }
+  lines.push('');
+
+  lines.push('## 십이운성 (十二運星 — 일간이 각 지지에서 갖는 기운 단계)');
+  for (const u of advanced.unseong) {
+    lines.push(`${u.position} ${u.jiji}: ${u.stage} (${u.meaning})`);
+  }
+  lines.push(`→ 일지 십이운성 = ${advanced.dayStage} (자존감·배우자 관계 해석의 핵심)`);
   lines.push('');
 
   // ──── 명리 분석 (코드 계산) ────
@@ -55,6 +74,8 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
     `${analysis.strength.label} · 강도 점수 ${analysis.strength.score}/100`,
   );
   for (const r of analysis.strength.reasons) lines.push(`- ${r}`);
+  lines.push('판정 3요소:');
+  for (const d of advanced.rootedness.detail) lines.push(`- ${d}`);
   lines.push('');
 
   lines.push('## 격국 (格局)');
@@ -88,6 +109,13 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
     for (const s of sinsal) lines.push(`- ${s.name} (${s.position}): ${s.description}`);
     lines.push('');
   }
+
+  lines.push('## 궁위 (宮位 — 자리별 인생 영역)');
+  for (const pal of advanced.palaces) {
+    lines.push(`- ${pal.position}: ${pal.governs} · ${pal.ageRange}`);
+  }
+  lines.push('→ 특정 자리의 글자/십성을 해석할 때 그 자리가 관장하는 영역과 연결할 것.');
+  lines.push('');
 
   lines.push('## 진행 중 흐름');
   if (analysis.currentDaewoon) {
