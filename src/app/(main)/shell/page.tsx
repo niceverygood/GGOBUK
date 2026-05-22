@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
@@ -26,12 +27,20 @@ export default async function ShellPage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
             <p className="text-xs font-extrabold text-muted">나의 만세력</p>
             <h1 className="text-2xl font-black tracking-tight text-navy">등껍질 사주</h1>
           </div>
-          <Badge tone="mint">일간 {palja.day.ganOhaeng}</Badge>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge tone="mint">일간 {palja.day.ganOhaeng}</Badge>
+            <Link
+              href="/more/people?edit=self"
+              className="inline-flex items-center gap-1 rounded-full bg-white border border-navy/10 px-3 py-1.5 text-xs font-extrabold text-navy"
+            >
+              ✎ 사주 수정
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 flex justify-center">

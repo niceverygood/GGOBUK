@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -134,6 +134,22 @@ export default function PeoplePage() {
   useEffect(() => {
     void loadProfiles();
   }, []);
+
+  // Deep-link: /more/people?edit=self auto-opens the self profile's edit form.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current || loading) return;
+    const target = new URLSearchParams(window.location.search).get('edit');
+    if (!target) return;
+    const match =
+      target === 'self'
+        ? profiles.find((p) => p.relation_type === 'self')
+        : profiles.find((p) => p.id === target);
+    if (match) {
+      startEdit(match);
+      autoOpened.current = true;
+    }
+  }, [profiles, loading]);
 
   async function loadProfiles() {
     setLoading(true);
