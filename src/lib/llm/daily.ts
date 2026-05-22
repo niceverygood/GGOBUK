@@ -5,6 +5,35 @@ import { analyzeSaju, iljiRelation } from '@/lib/saju/analysis';
 import { CHEONGAN, JIJI } from '@/lib/saju/constants';
 import type { SajuResult } from '@/lib/saju/types';
 
+const DAILY_MOODS = [
+  'happy',
+  'excited',
+  'surprised',
+  'relaxed',
+  'thinking',
+  'worried',
+] as const;
+
+type DailyMood = (typeof DAILY_MOODS)[number];
+
+const MOOD_ALIASES: Record<string, DailyMood> = {
+  happy: 'happy',
+  excited: 'excited',
+  surprised: 'surprised',
+  relaxed: 'relaxed',
+  thinking: 'thinking',
+  worried: 'worried',
+  calm: 'relaxed',
+  focused: 'thinking',
+  cautious: 'worried',
+  기쁨: 'happy',
+  신남: 'excited',
+  놀람: 'surprised',
+  편안: 'relaxed',
+  고민: 'thinking',
+  걱정: 'worried',
+};
+
 const SYSTEM = `너는 매일의 일진을 개인 사주와 연결해 읽는 꼬북점 상담가다.
 ${PREMIUM_SAJU_GUIDE}
 
@@ -16,7 +45,13 @@ ${PREMIUM_SAJU_GUIDE}
 - 행운 방향: 동/서/남/북/중앙 중 하나
 - 추천 행동 3개는 각각 14-24자, 왜 도움이 되는지 살짝 드러나게
 - 주의 행동 1-2개는 각각 14-24자
-- mood: 'happy'|'calm'|'focused'|'cautious' 중 하나
+- mood: ${DAILY_MOODS.map((m) => `'${m}'`).join('|')} 중 하나
+  - happy: 부드럽게 좋은 흐름
+  - excited: 추진력과 확장감이 강한 흐름
+  - surprised: 예상 밖의 신호나 변수가 있는 흐름
+  - relaxed: 쉬어가며 회복하기 좋은 흐름
+  - thinking: 정리와 판단이 필요한 흐름
+  - worried: 신중한 점검이 필요한 흐름
 JSON으로만 답한다. 다른 텍스트 금지.
 {
   "one_liner": "...",
@@ -35,7 +70,7 @@ export interface DailyFortuneOutput {
   lucky_direction: string;
   recommend: string[];
   avoid: string[];
-  mood: 'happy' | 'calm' | 'focused' | 'cautious';
+  mood: DailyMood;
 }
 
 function cleanJson(text: string): string {
@@ -65,11 +100,7 @@ function normalizeDaily(raw: unknown): DailyFortuneOutput {
         .filter(Boolean)
         .slice(0, 2)
     : [];
-  const mood = ['happy', 'calm', 'focused', 'cautious'].includes(
-    String(value.mood),
-  )
-    ? (value.mood as DailyFortuneOutput['mood'])
-    : 'calm';
+  const mood = MOOD_ALIASES[String(value.mood ?? '').trim()] ?? 'relaxed';
   const luckyNumber =
     typeof value.lucky_number === 'number'
       ? value.lucky_number
@@ -140,7 +171,7 @@ ${context}
 - lucky_color는 용신 또는 부족한 오행에 대응하는 색.
 - recommend 3개는 일진과 본인 사주의 만남에서 실제로 잘 풀릴 행동.
 - avoid는 일진에서 자극되는 약점.
-- mood는 일진×일간 관계와 컨디션을 종합한다.
+- mood는 일진×일간 관계와 컨디션을 종합해 happy, excited, surprised, relaxed, thinking, worried 중 하나로 고른다.
 JSON으로만 응답.`;
   const { text } = await complete({
     tier: 'saju',

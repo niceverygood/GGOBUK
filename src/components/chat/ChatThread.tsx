@@ -68,11 +68,19 @@ export function ChatThread({
   const [rateLimited, setRateLimited] = useState(false);
   const [needsCredit, setNeedsCredit] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const typerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const personaMeta = PERSONAS[persona];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Clear any running typing interval on unmount.
+  useEffect(() => {
+    return () => {
+      if (typerRef.current) clearInterval(typerRef.current);
+    };
+  }, []);
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -87,6 +95,37 @@ export function ChatThread({
     ]);
     setStreaming(true);
 
+    // Typing queue: the network fills `target`, while a steady interval reveals
+    // it a few chars at a time so big SSE chunks don't pop in all at once.
+    const target = { text: '' };
+    let shown = 0;
+    let streamDone = false;
+
+    const stopTyper = () => {
+      if (typerRef.current) {
+        clearInterval(typerRef.current);
+        typerRef.current = null;
+      }
+    };
+
+    typerRef.current = setInterval(() => {
+      if (shown < target.text.length) {
+        const backlog = target.text.length - shown;
+        // mild catch-up: faster when far behind, but never a sudden dump
+        const step = Math.max(1, Math.min(6, Math.ceil(backlog / 15)));
+        shown = Math.min(target.text.length, shown + step);
+        const slice = target.text.slice(0, shown);
+        setMessages((m) => {
+          const cp = m.slice();
+          cp[cp.length - 1] = { role: 'assistant', content: slice };
+          return cp;
+        });
+      } else if (streamDone) {
+        stopTyper();
+        setStreaming(false);
+      }
+    }, 16);
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -94,11 +133,15 @@ export function ChatThread({
         body: JSON.stringify({ sessionId, message: trimmed }),
       });
       if (res.status === 429) {
+        stopTyper();
+        setStreaming(false);
         setRateLimited(true);
         setMessages((m) => m.slice(0, -1));
         return;
       }
       if (res.status === 402) {
+        stopTyper();
+        setStreaming(false);
         setNeedsCredit(true);
         setMessages((m) => m.slice(0, -1));
         return;
@@ -117,20 +160,21 @@ export function ChatThread({
         for (const line of lines) {
           if (!line.startsWith('data:')) continue;
           const payload = JSON.parse(line.slice(5).trim());
-          if (payload.delta) {
-            setMessages((m) => {
-              const cp = m.slice();
-              cp[cp.length - 1] = {
-                role: 'assistant',
-                content: cp[cp.length - 1].content + payload.delta,
-              };
-              return cp;
-            });
-          }
+          // Feed the buffer; the typer reveals it smoothly.
+          if (payload.delta) target.text += payload.delta;
         }
       }
-    } finally {
-      setStreaming(false);
+      streamDone = true;
+      // Let the typer drain the remaining buffer, then it stops itself.
+      // Safety net in case the interval was already cleared.
+      if (!typerRef.current) setStreaming(false);
+    } catch {
+      streamDone = true;
+      // If nothing was received, stop immediately.
+      if (target.text.length === 0) {
+        stopTyper();
+        setStreaming(false);
+      }
     }
   }
 

@@ -113,6 +113,18 @@ export interface ChatMessageRow {
   created_at: string;
 }
 
+export type DailyFortuneMood =
+  | 'happy'
+  | 'excited'
+  | 'surprised'
+  | 'relaxed'
+  | 'thinking'
+  | 'worried'
+  // Legacy values from older daily fortune rows.
+  | 'calm'
+  | 'focused'
+  | 'cautious';
+
 export interface DailyFortuneRow {
   id: string;
   saju_id: string;
@@ -125,7 +137,7 @@ export interface DailyFortuneRow {
   lucky_direction: string | null;
   recommend: string[] | null;
   avoid: string[] | null;
-  mood: 'happy' | 'calm' | 'focused' | 'cautious' | null;
+  mood: DailyFortuneMood | null;
   created_at: string;
 }
 

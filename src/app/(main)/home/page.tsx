@@ -29,13 +29,20 @@ const WEEKDAY = [
 function moodPhrase(mood: string | null): string {
   switch (mood) {
     case 'happy':
-      return '활기차게 풀리는 날';
+      return '기분 좋게 풀리는 날';
+    case 'excited':
+      return '탄력이 확 붙는 날';
+    case 'surprised':
+      return '뜻밖의 신호가 오는 날';
+    case 'relaxed':
     case 'calm':
-      return '느긋하지만 감 좋은 날';
+      return '느긋하게 회복되는 날';
+    case 'thinking':
     case 'focused':
-      return '집중력이 차오르는 날';
+      return '생각을 정리하면 좋은 날';
+    case 'worried':
     case 'cautious':
-      return '한 번 더 점검해야 할 날';
+      return '조심스럽게 다듬는 날';
     default:
       return '평온한 흐름이야';
   }
@@ -46,10 +53,17 @@ function rough길운(daily: { mood: string | null } | null): number {
   switch (daily.mood) {
     case 'happy':
       return 88;
+    case 'excited':
+      return 84;
+    case 'thinking':
     case 'focused':
       return 78;
+    case 'surprised':
+      return 74;
+    case 'relaxed':
     case 'calm':
       return 70;
+    case 'worried':
     case 'cautious':
       return 55;
     default:

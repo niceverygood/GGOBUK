@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils/cn';
-import { KkobukSprite, moodToSprite, type SpriteKey } from './KkobukSprite';
+import { KkobukSprite, moodToSprite, type KkobukMood, type SpriteKey } from './KkobukSprite';
 
 export type KkobukVariant = 'kkobuk' | 'dosa' | 'mudang' | 'bosal';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
@@ -34,7 +34,7 @@ export function KkobukAvatar({
   variant?: KkobukVariant;
   size?: Size;
   className?: string;
-  mood?: 'happy' | 'calm' | 'focused' | 'cautious';
+  mood?: KkobukMood;
 }) {
   const sprite = mood ? moodToSprite(mood, PERSONA_SPRITE[variant]) : PERSONA_SPRITE[variant];
 

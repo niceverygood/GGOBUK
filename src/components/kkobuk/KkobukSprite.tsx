@@ -23,6 +23,24 @@ export type SpriteKey =
   | 'pose-bag'
   | 'pose-sing';
 
+export type KkobukMood =
+  | 'happy'
+  | 'excited'
+  | 'surprised'
+  | 'relaxed'
+  | 'thinking'
+  | 'worried'
+  // Legacy daily-fortune mood values kept for cached rows.
+  | 'calm'
+  | 'focused'
+  | 'cautious'
+  | '기쁨'
+  | '신남'
+  | '고민'
+  | '놀람'
+  | '걱정'
+  | '편안';
+
 interface SpriteAsset {
   src: string;
   w: number;
@@ -105,6 +123,11 @@ export function KkobukSprite({
 // Convenience: map a 'mood' string to a sprite key.
 const MOOD_MAP: Record<string, SpriteKey> = {
   happy: 'mood-기쁨',
+  excited: 'mood-신남',
+  surprised: 'mood-놀람',
+  relaxed: 'mood-편안',
+  thinking: 'mood-고민',
+  worried: 'mood-걱정',
   calm: 'mood-편안',
   focused: 'mood-고민',
   cautious: 'mood-걱정',
