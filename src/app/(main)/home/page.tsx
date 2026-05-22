@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import {
   Archive,
   CalendarCheck,
+  CalendarDays,
   HeartHandshake,
   MessageCircle,
   ScrollText,
@@ -95,6 +96,14 @@ const FEATURE_CARDS = [
     badge: '흐름',
     icon: Waypoints,
     className: 'bg-gradient-to-br from-[#DCEBFF] to-white',
+  },
+  {
+    href: '/calendar',
+    title: '운세 달력',
+    subtitle: '날짜별 일진 길흉 한눈에',
+    badge: '캘린더',
+    icon: CalendarDays,
+    className: 'bg-gradient-to-br from-mint/20 to-white',
   },
   {
     href: '/more/auspicious',
