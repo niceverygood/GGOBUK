@@ -14,6 +14,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { KkobukSprite, moodToSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
 import { LoadingDots } from '@/components/ui/LoadingDots';
+import { EnsureDaily } from '@/components/home/EnsureDaily';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -236,6 +237,7 @@ export default async function HomePage() {
               </>
             )}
           </p>
+          {!daily?.one_liner && <EnsureDaily sajuId={profile.id} />}
         </Card>
 
         <section className="mt-4">

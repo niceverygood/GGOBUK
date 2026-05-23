@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
-import { calculatePalja } from '@/lib/saju/palja';
-import { todayKstIso } from '@/lib/utils/date';
 import { logger } from '@/lib/utils/logger';
 import { grantSignupBonusIfNeeded } from '@/lib/credits/server';
 import { SIGNUP_BONUS_CREDITS } from '@/lib/credits';
@@ -138,35 +136,13 @@ export async function POST(req: Request) {
     await supabase.from('saju_profiles').delete().in('id', duplicateIds);
   }
 
-  const today = todayKstIso();
-  const ilji = calculatePalja({
-    birthDate: today,
-    isLunar: false,
-    gender: 'M',
-  }).day;
-  const { error: dailyError } = await supabase.from('daily_fortunes').upsert(
-    {
-      saju_id: selfProfile.id,
-      date: today,
-      ilji_gan: ilji.gan,
-      ilji_ji: ilji.ji,
-      one_liner:
-        '오늘은 테스트 꼬북이가 실제 서비스 흐름을 함께 둘러보기 좋은 날이야.',
-      lucky_color: '민트',
-      lucky_number: 8,
-      lucky_direction: '동쪽',
-      recommend: [
-        '등껍질 해설 살펴보기',
-        '꼬북도사에게 질문해보기',
-        '페르소나를 바꿔 말투 비교하기',
-      ],
-      avoid: ['미리보기 화면에만 머물기'],
-      mood: 'happy',
-    },
-    { onConflict: 'saju_id,date' },
-  );
-  if (dailyError)
-    return NextResponse.json({ error: dailyError.message }, { status: 500 });
+  // Clear any stale daily_fortunes row (e.g. legacy placeholder from older
+  // bootstrap runs) so the home page re-triggers a real AI-generated one
+  // tailored to the user's saju on next render.
+  await supabase
+    .from('daily_fortunes')
+    .delete()
+    .eq('saju_id', selfProfile.id);
 
   return NextResponse.json({
     ok: true,

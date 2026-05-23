@@ -12,8 +12,14 @@ export function InviteFriendButton() {
     setMsg(null);
     try {
       const res = await fetch('/api/relations/invite', { method: 'POST' });
-      const d = await res.json();
-      if (!res.ok || !d.url) throw new Error(d.error ?? 'invite_failed');
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.url) {
+        const err: Error & { detail?: string } = new Error(
+          d.error ?? 'invite_failed',
+        );
+        if (d.detail) err.detail = d.detail;
+        throw err;
+      }
       const shareText = `${d.hostName ?? '나'}와의 궁합 보러올래? 🐢 꼬북점`;
       if (navigator.share) {
         try {
@@ -32,14 +38,23 @@ export function InviteFriendButton() {
         setMsg('링크를 복사했어요. 친구에게 보내세요!');
       }
     } catch (e) {
-      setMsg(
-        e instanceof Error && e.message === 'no_self_profile'
-          ? '내 사주 먼저 등록해야 초대할 수 있어요.'
-          : '초대 링크 생성 실패. 잠시 후 다시 시도해주세요.',
-      );
+      const code = e instanceof Error ? e.message : '';
+      const detail =
+        e instanceof Error && 'detail' in e
+          ? (e as Error & { detail?: string }).detail
+          : undefined;
+      let m = '초대 링크 생성 실패. 잠시 후 다시 시도해주세요.';
+      if (code === 'no_self_profile')
+        m = '내 사주 먼저 등록해야 초대할 수 있어요.';
+      else if (code === 'migration_missing')
+        m = detail ?? 'DB 마이그레이션이 누락되어 있어요.';
+      else if (code === 'profile_link_missing')
+        m = detail ?? '계정 정보를 확인하지 못했어요. 다시 로그인해주세요.';
+      else if (detail) m = detail;
+      setMsg(m);
     } finally {
       setBusy(false);
-      window.setTimeout(() => setMsg(null), 4000);
+      window.setTimeout(() => setMsg(null), 6000);
     }
   }
 
