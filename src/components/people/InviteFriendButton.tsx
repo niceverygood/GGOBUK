@@ -43,14 +43,15 @@ export function InviteFriendButton() {
         e instanceof Error && 'detail' in e
           ? (e as Error & { detail?: string }).detail
           : undefined;
-      let m = '초대 링크 생성 실패. 잠시 후 다시 시도해주세요.';
+      let m = detail ?? '초대 링크 생성 실패. 잠시 후 다시 시도해주세요.';
       if (code === 'no_self_profile')
         m = '내 사주 먼저 등록해야 초대할 수 있어요.';
-      else if (code === 'migration_missing')
-        m = detail ?? 'DB 마이그레이션이 누락되어 있어요.';
-      else if (code === 'profile_link_missing')
-        m = detail ?? '계정 정보를 확인하지 못했어요. 다시 로그인해주세요.';
-      else if (detail) m = detail;
+      else if (code === 'unauthorized')
+        m = '로그인이 필요해요. 다시 로그인해주세요.';
+      if (!detail && code && code !== 'no_self_profile' && code !== 'unauthorized') {
+        m = `${m} (${code})`;
+      }
+      console.error('[invite]', { code, detail });
       setMsg(m);
     } finally {
       setBusy(false);

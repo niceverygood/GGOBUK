@@ -186,14 +186,17 @@ export default function RelationsPage() {
         e instanceof Error && 'detail' in e
           ? (e as Error & { detail?: string }).detail
           : undefined;
-      let msg = '초대 링크 생성에 실패했어요. 다시 시도해주세요.';
+      // detail from server is the most informative — prefer it if present.
+      let msg = detail ?? '초대 링크 생성에 실패했어요. 다시 시도해주세요.';
       if (code === 'no_self_profile')
         msg = '먼저 내 사주를 등록해야 초대할 수 있어요.';
-      else if (code === 'migration_missing')
-        msg = detail ?? 'DB 마이그레이션이 누락되어 있어요. 관리자에게 알려주세요.';
-      else if (code === 'profile_link_missing')
-        msg = detail ?? '계정 정보를 확인하지 못했어요. 다시 로그인해주세요.';
-      else if (detail) msg = detail;
+      else if (code === 'unauthorized')
+        msg = '로그인이 필요해요. 다시 로그인해주세요.';
+      // Surface raw error code as a last-resort hint for debugging.
+      if (!detail && code && code !== 'no_self_profile' && code !== 'unauthorized') {
+        msg = `${msg} (${code})`;
+      }
+      console.error('[invite]', { code, detail });
       setInviteMsg(msg);
     } finally {
       setInviting(false);

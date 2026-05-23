@@ -8,6 +8,19 @@ export const runtime = 'nodejs';
 
 // Create a 궁합 초대 link tied to the host's self saju.
 export async function POST() {
+  try {
+    return await createInvite();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error('relations/invite', 'unhandled exception', { error: msg });
+    return NextResponse.json(
+      { error: 'server_exception', detail: msg },
+      { status: 500 },
+    );
+  }
+}
+
+async function createInvite() {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -24,11 +37,25 @@ export async function POST() {
 
   // Make sure the public.users row exists (anonymous auth / direct OAuth sign-ups
   // may have an auth.users row without a corresponding public.users row, which
-  // would violate the relation_invites.host_user_id FK).
-  const admin = await createServerClient({ admin: true });
-  await admin
-    .from('users')
-    .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true });
+  // would violate the relation_invites.host_user_id FK). Best-effort — failures
+  // here are logged but don't block the invite creation since the row probably
+  // already exists.
+  try {
+    const admin = await createServerClient({ admin: true });
+    const { error: userUpsertError } = await admin
+      .from('users')
+      .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true });
+    if (userUpsertError) {
+      logger.warn('relations/invite', 'users upsert failed (non-fatal)', {
+        code: userUpsertError.code,
+        message: userUpsertError.message,
+      });
+    }
+  } catch (e) {
+    logger.warn('relations/invite', 'users upsert threw (non-fatal)', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 
   // Reuse a recent pending invite if one exists (avoid token spam).
   const { data: existing, error: lookupError } = await supabase
@@ -58,7 +85,11 @@ export async function POST() {
       );
     }
     return NextResponse.json(
-      { error: lookupError.message ?? 'lookup_failed' },
+      {
+        error: 'lookup_failed',
+        detail: `${lookupError.message ?? '알 수 없는 에러'} (code: ${lookupError.code ?? 'n/a'})`,
+        code: lookupError.code,
+      },
       { status: 500 },
     );
   }
@@ -93,14 +124,29 @@ export async function POST() {
         return NextResponse.json(
           {
             error: 'profile_link_missing',
-            detail:
-              '계정 정보를 확인하지 못했어요. 잠시 후 다시 로그인해주세요.',
+            detail: `계정 정보 연결 실패 (${error.message ?? 'FK violation'}). 다시 로그인 후 시도해주세요.`,
+            code: error.code,
+          },
+          { status: 500 },
+        );
+      }
+      if (error.code === '42501') {
+        // insufficient_privilege — RLS denied
+        return NextResponse.json(
+          {
+            error: 'rls_denied',
+            detail: `RLS 정책으로 거부됨 (${error.message ?? 'permission denied'}). 로그인 상태를 확인해주세요.`,
+            code: error.code,
           },
           { status: 500 },
         );
       }
       return NextResponse.json(
-        { error: error.message ?? 'insert_failed', code: error.code },
+        {
+          error: 'insert_failed',
+          detail: `${error.message ?? '알 수 없는 에러'} (code: ${error.code ?? 'n/a'})`,
+          code: error.code,
+        },
         { status: 500 },
       );
     }
