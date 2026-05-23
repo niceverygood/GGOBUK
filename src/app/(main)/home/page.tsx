@@ -11,14 +11,16 @@ import {
   Waypoints,
 } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
-import { KkobukSprite, moodToSprite } from '@/components/kkobuk/KkobukSprite';
-import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
+import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
+import { Badge, Card } from '@/components/ui/primitives';
 import { LoadingDots } from '@/components/ui/LoadingDots';
 import { EnsureDaily } from '@/components/home/EnsureDaily';
+import { TodayInsight } from '@/components/home/TodayInsight';
+import { WeekStrip } from '@/components/home/WeekStrip';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
-import type { SajuInput } from '@/lib/saju/types';
+import type { Palja, SajuInput } from '@/lib/saju/types';
 
 const WEEKDAY = [
   '일요일',
@@ -29,28 +31,6 @@ const WEEKDAY = [
   '금요일',
   '토요일',
 ];
-
-function moodPhrase(mood: string | null): string {
-  switch (mood) {
-    case 'happy':
-      return '기분 좋게 풀리는 날';
-    case 'excited':
-      return '탄력이 확 붙는 날';
-    case 'surprised':
-      return '뜻밖의 신호가 오는 날';
-    case 'relaxed':
-    case 'calm':
-      return '느긋하게 회복되는 날';
-    case 'thinking':
-    case 'focused':
-      return '생각을 정리하면 좋은 날';
-    case 'worried':
-    case 'cautious':
-      return '조심스럽게 다듬는 날';
-    default:
-      return '평온한 흐름이야';
-  }
-}
 
 function rough길운(daily: { mood: string | null } | null): number {
   if (!daily) return 60;
@@ -167,7 +147,7 @@ export default async function HomePage() {
   const weekday = WEEKDAY[todayDate.getDay()];
 
   const gilun = rough길운(daily);
-  const mood = daily?.mood ?? 'calm';
+  const palja = profile.palja as Palja;
   const calendarInput: SajuInput = {
     birthDate: profile.birth_date,
     birthTime: profile.birth_time ?? undefined,
@@ -209,36 +189,50 @@ export default async function HomePage() {
           <Badge tone="mint">길운 {gilun}</Badge>
         </div>
 
-        <Card className="mt-5 p-5 text-center">
-          <div className="flex justify-center">
-            <KkobukSprite
-              variant={moodToSprite(mood)}
-              size="lg"
-              ariaLabel={`꼬북이 ${mood}`}
-            />
-          </div>
-          <p className="mt-2 text-xs font-extrabold text-muted">
-            오늘의 꼬북이 표정
-          </p>
-          <h2 className="mt-1 text-xl font-black text-navy">
-            {moodPhrase(daily?.mood ?? null)}
-          </h2>
-        </Card>
+        <TodayInsight
+          ilji={ilji}
+          myDay={palja.day}
+          sajuInput={calendarInput}
+          daily={daily ?? null}
+        />
 
-        <Card className="mt-4 p-4">
-          <p className="text-xs font-extrabold text-muted">오늘의 한 줄</p>
-          <p className="mt-1 text-lg font-black text-navy leading-snug">
-            {daily?.one_liner ? (
-              daily.one_liner
-            ) : (
-              <>
-                오늘의 운세를 가져오는 중이야
-                <LoadingDots />
-              </>
-            )}
-          </p>
+        <Card className="mt-3 p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-gold/30 text-navy mt-0.5">
+              💬
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-extrabold text-muted">오늘의 한 줄</p>
+              <p className="mt-0.5 text-base font-black text-navy leading-snug">
+                {daily?.one_liner ? (
+                  daily.one_liner
+                ) : (
+                  <>
+                    오늘의 운세를 가져오는 중이야
+                    <LoadingDots />
+                  </>
+                )}
+              </p>
+              {daily?.recommend && daily.recommend.length > 0 && (
+                <ul className="mt-2 space-y-1 text-[12px] font-bold text-[#3C4650]">
+                  {daily.recommend.slice(0, 3).map((r: string) => (
+                    <li key={r} className="leading-snug">
+                      ✓ {r}
+                    </li>
+                  ))}
+                  {(daily.avoid ?? []).slice(0, 2).map((a: string) => (
+                    <li key={a} className="text-red leading-snug">
+                      ! {a}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
           {!daily?.one_liner && <EnsureDaily sajuId={profile.id} />}
         </Card>
+
+        <WeekStrip sajuInput={calendarInput} />
 
         <section className="mt-4">
           <div className="mb-2 flex items-end justify-between">
@@ -256,42 +250,6 @@ export default async function HomePage() {
           </div>
           <FortuneCalendar input={calendarInput} name={profile.name} />
         </section>
-
-        {daily && (
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            <FortuneChip
-              icon="🤍"
-              label="컬러"
-              value={daily.lucky_color ?? '-'}
-            />
-            <FortuneChip
-              icon={daily.lucky_number ?? '-'}
-              label="숫자"
-              value="행운수"
-            />
-            <FortuneChip
-              icon="↗"
-              label="방향"
-              value={daily.lucky_direction ?? '-'}
-            />
-          </div>
-        )}
-
-        {daily && (
-          <Card className="mt-4 p-4">
-            <p className="text-sm font-black text-navy mb-3">추천 행동</p>
-            <div className="space-y-2 text-sm font-bold text-[#3C4650]">
-              {(daily.recommend ?? []).map((r: string) => (
-                <p key={r}>✓ {r}</p>
-              ))}
-              {(daily.avoid ?? []).map((a: string) => (
-                <p key={a} className="text-red">
-                  ! {a}
-                </p>
-              ))}
-            </div>
-          </Card>
-        )}
 
         <section className="mt-6">
           <div className="flex items-end justify-between gap-3">
