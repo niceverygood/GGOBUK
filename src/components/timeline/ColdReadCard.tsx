@@ -5,6 +5,50 @@ import Link from 'next/link';
 import type { DaewoonPeriod } from '@/lib/saju/types';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeIOS } from '@/lib/utils/platform';
+import {
+  AnalysisLoader,
+  type AnalysisStep,
+} from '@/components/ui/AnalysisLoader';
+
+const DAEWOON_STEPS: AnalysisStep[] = [
+  {
+    at: 0,
+    title: '대운 펼치는 중...',
+    body: '선택한 10년의 천간·지지부터 다시 짚고 있어요.',
+  },
+  {
+    at: 0.16,
+    title: '내 사주와 비교하는 중...',
+    body: '일간·격국·용신과 어떻게 만나는지 보고 있어요.',
+  },
+  {
+    at: 0.34,
+    title: '십성 흐름 잇는 중...',
+    body: '돈·관계·일·자존감 중 무엇이 강해지는지 확인 중.',
+  },
+  {
+    at: 0.52,
+    title: '신살·합충 점검 중...',
+    body: '체감이 큰 사건성 단서를 조심스럽게 추리고 있어요.',
+  },
+  {
+    at: 0.7,
+    title: '세운 연결하는 중...',
+    body: '올해와 다음 해까지 이어지는 결을 맞춰보는 중.',
+  },
+  {
+    at: 0.86,
+    title: '리포트 다듬는 중...',
+    body: '반복되는 사건·기회·조심할 점을 읽기 좋게 정리 중.',
+  },
+  {
+    at: 0.95,
+    title: '거의 다 됐어요...',
+    body: '응답을 받는 대로 바로 카드에 꽂아둘게요.',
+  },
+];
+
+const EXPECTED_DAEWOON_MS = 32_000;
 
 export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
   const [text, setText] = useState<string | null>(null);
@@ -73,11 +117,12 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
         </button>
       )}
       {loading && (
-        <div className="mt-3 rounded-2xl bg-ivory px-4 py-4">
-          <p className="text-sm font-bold leading-relaxed text-muted">
-            선택한 10년을 내 사주와 연결해서 읽는 중이야. 곧 이 시기의 반복되는
-            사건, 기회, 조심할 점을 정리해줄게.
-          </p>
+        <div className="mt-3">
+          <AnalysisLoader
+            steps={DAEWOON_STEPS}
+            expectedMs={EXPECTED_DAEWOON_MS}
+            eyebrow="대운 AI 해설 생성 중"
+          />
         </div>
       )}
       {error && (

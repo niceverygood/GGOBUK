@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Layers3, Sparkles } from "lucide-react";
+import { ArrowRight, Layers3 } from "lucide-react";
 import { InterpretationBody } from "@/components/shell/InterpretationBody";
 import { TalismanPanel } from "@/components/shell/TalismanPanel";
 import { ButtonPrimary } from "@/components/ui/primitives";
+import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { CREDIT_COSTS } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
 import type { InterpretationCategory } from "@/types/db";
@@ -468,32 +469,13 @@ function loadingStepIndex(progress: number) {
 }
 
 function AnalysisLoadingIndicator({ elapsedMs }: { elapsedMs: number }) {
-  const progress = loadingProgress(elapsedMs);
-  const stepIndex = loadingStepIndex(progress);
-  const step = ANALYSIS_STEPS[stepIndex];
-
   return (
-    <div
-      className="rounded-3xl border border-mint/35 bg-gradient-to-br from-mint/14 via-white to-gold/14 p-4 shadow-[0_12px_28px_rgba(44,62,80,0.08)]"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex items-start gap-3">
-        <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-navy text-white">
-          <Sparkles size={20} strokeWidth={2.5} />
-          <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-gold shadow-[0_0_0_4px_rgba(244,208,63,0.22)] animate-pulse" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-black text-mint-dark">
-            AI 상세 분석 업데이트 중
-          </p>
-          <p className="mt-1 text-base font-black text-navy">{step.title}</p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-            {step.body}
-          </p>
-        </div>
-      </div>
-    </div>
+    <AnalysisLoader
+      steps={ANALYSIS_STEPS}
+      expectedMs={EXPECTED_ANALYSIS_MS}
+      eyebrow="AI 상세 분석 업데이트 중"
+      elapsedMs={elapsedMs}
+    />
   );
 }
 

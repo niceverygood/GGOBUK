@@ -10,8 +10,43 @@ import {
 import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
 import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
 import { Badge, Card, Toggle, ButtonPrimary } from '@/components/ui/primitives';
+import { AnalysisLoader, type AnalysisStep } from '@/components/ui/AnalysisLoader';
 import { CREDIT_COSTS } from '@/lib/credits';
 import type { Palja } from '@/lib/saju/types';
+
+const COMPAT_STEPS: AnalysisStep[] = [
+  {
+    at: 0,
+    title: '두 사람 원국 펼치는 중...',
+    body: '서로의 일주·오행을 나란히 놓고 비교하기 시작했어요.',
+  },
+  {
+    at: 0.18,
+    title: '천간·지지 합충 확인 중...',
+    body: '끌어주는 합과 부딪히는 충을 짚어내는 중.',
+  },
+  {
+    at: 0.38,
+    title: '십성·궁위로 연결 강도 재는 중...',
+    body: '돈/관계/일에서 어떻게 만나는지 측정 중.',
+  },
+  {
+    at: 0.58,
+    title: '용신·일지 케미 살피는 중...',
+    body: '서로의 약한 자리를 채워주는지 보고 있어요.',
+  },
+  {
+    at: 0.78,
+    title: '궁합 점수 산출 중...',
+    body: '강한 인연·거리 조절 신호를 한 점수로 묶고 있어요.',
+  },
+  {
+    at: 0.92,
+    title: '리포트 정리 중...',
+    body: '말, 돈, 연애, 함께 갈 방향까지 다듬는 중.',
+  },
+];
+const EXPECTED_COMPAT_MS = 25_000;
 
 interface RelationRow {
   id: string;
@@ -414,9 +449,11 @@ export default function RelationsPage() {
                   : `추가하고 궁합 보기 · ${CREDIT_COSTS.compatibility}꼬북알`}
             </ButtonPrimary>
             {addStatus === 'compat' && (
-              <p className="text-center text-xs font-bold text-muted leading-relaxed">
-                프리미엄 궁합 리포트를 만드는 중이라 20초 정도 걸릴 수 있어.
-              </p>
+              <AnalysisLoader
+                steps={COMPAT_STEPS}
+                expectedMs={EXPECTED_COMPAT_MS}
+                eyebrow="AI 궁합 리포트 생성 중"
+              />
             )}
             {error && (
               <p className="text-center text-xs font-bold text-red leading-relaxed">
