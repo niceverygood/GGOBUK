@@ -72,6 +72,12 @@ export interface CompleteParams {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   maxTokens?: number;
   responseFormat?: 'json_object';
+  /**
+   * Sampling temperature 0..1. Lower = more grounded / deterministic.
+   * For saju content we want low temperature so the model sticks to the
+   * computed indicators rather than generating loose generalities.
+   */
+  temperature?: number;
 }
 
 export async function complete(
@@ -95,6 +101,9 @@ async function anthropicComplete(
     max_tokens: params.maxTokens ?? 2048,
     system: params.system,
     messages: params.messages,
+    ...(typeof params.temperature === 'number'
+      ? { temperature: params.temperature }
+      : {}),
   });
   const text = res.content
     .filter((b): b is Anthropic.TextBlock => b.type === 'text')
@@ -121,6 +130,9 @@ export async function* stream(params: CompleteParams): AsyncIterable<string> {
     max_tokens: params.maxTokens ?? 2048,
     system: params.system,
     messages: params.messages,
+    ...(typeof params.temperature === 'number'
+      ? { temperature: params.temperature }
+      : {}),
   });
   for await (const event of res) {
     if (
@@ -213,9 +225,14 @@ function openRouterBody(
     max_tokens: params.maxTokens ?? 2048,
     stream: streamResponse,
   };
+  if (typeof params.temperature === 'number') {
+    body.temperature = params.temperature;
+  }
   if (params.responseFormat === 'json_object') {
     body.response_format = { type: 'json_object' };
-    body.temperature = 0.2;
+    if (typeof params.temperature !== 'number') {
+      body.temperature = 0.2;
+    }
   }
   return body;
 }

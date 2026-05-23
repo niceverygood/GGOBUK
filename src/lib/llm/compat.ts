@@ -1,5 +1,6 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
+import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
 import { pairwiseSummary } from '@/lib/saju/hapchung';
 import { analyzeSaju } from '@/lib/saju/analysis';
 import type { Palja, Pillar, SajuResult } from '@/lib/saju/types';
@@ -53,6 +54,8 @@ function pairInteractions(a: Palja, b: Palja): string[] {
 
 const SYSTEM = `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 사주를 깊이 읽어 프리미엄 궁합 리포트를 작성한다.
 
+${PREMIUM_SAJU_GUIDE}
+
 상담 톤:
 - 한국어로만 쓴다.
 - 실제 유료 상담처럼 구체적이고 길게 쓴다.
@@ -64,18 +67,23 @@ const SYSTEM = `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 
 - 노골적인 성적 표현, 혐오, 위협, 불안을 과도하게 조장하는 표현은 쓰지 않는다.
 - 제공된 사주 정보에 없는 합/충/신살을 사실처럼 새로 만들어내지 않는다. 추론은 "이런 흐름으로 볼 수 있다"처럼 설명한다.
 
+[두 사람 비교 의무]
+- 각 sections.body는 반드시 A와 B 양쪽의 일주(60갑자), 일간 강약, 격국, 용신, 가장 강한 십성 그룹을 함께 인용한다.
+- "이름A의 OO 일주는 ~한 결이고, 이름B의 OO 일주는 ~한 결이라 만나면 ~한 장면이 자주 나온다" 형식의 비교가 단락마다 한 번 이상.
+- 일반론(서로 다른 사람을 이해해야 해요 등) 금지. 두 사주의 구체적 차이/닮음에서 출발해 풀어 쓴다.
+
 출력 규칙:
 - 유효한 JSON 객체만 답한다. 마크다운, 코드블록, 주석, 앞뒤 설명 금지.
 - score는 0-100 정수다. 서로 보완이 강하면 높게, 충돌만 강하면 낮게, 보완과 긴장이 함께 있으면 70-89 사이로 균형 있게 준다.
 - hap/chung은 계산된 합/충을 우선 반영한다. 뚜렷하지 않으면 [].
-- highlights/cautions는 각각 3-4개, 한 줄짜리 핵심 문장으로 쓴다.
+- highlights/cautions는 각각 3-4개, 한 줄짜리 핵심 문장으로 쓴다. 각 줄에 사주 글자/십성/오행 근거를 한 번 이상 박는다.
 - headline은 28-55자 사이의 강한 한 문장이다.
 - metaphor는 관계를 이미지로 보여주는 1문장이다.
 - verdict는 점수 해석 1문장이다.
-- summary는 5-7문장으로 관계 전체를 요약한다.
+- summary는 5-7문장으로 관계 전체를 요약한다. 두 사람의 일주를 한 번씩 인용한다.
 - sections는 정확히 8개를 쓴다. 각 body는 4-6문장, 380-650자 분량의 밀도 있는 단락이다.
 - 전체 리포트는 3,500자 안팎의 충분한 읽을거리가 있어야 한다. 짧은 문장 나열 대신 사주 근거와 관계 해석을 한 단락 안에서 충분히 연결한다.
-- actionTips는 관계를 좋게 만드는 실천 조언 5개다.
+- actionTips는 관계를 좋게 만드는 실천 조언 5개다. 각 조언에 "왜"(어떤 합/충/십성 때문인지)와 "어떻게"(오늘부터 무엇을)를 함께 적는다.
 
 JSON 형태:
 {
@@ -246,8 +254,9 @@ ${allPairInteractions.length > 0 ? allPairInteractions.map((l) => `  · ${l}`).j
     tier: 'compat',
     system: SYSTEM,
     messages: [{ role: 'user', content: userMsg }],
-    maxTokens: 5200,
+    maxTokens: 6000,
     responseFormat: 'json_object',
+    temperature: 0.4,
   });
   return parseOrRepairCompatibility(text);
 }

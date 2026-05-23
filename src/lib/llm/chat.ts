@@ -38,7 +38,8 @@ ${PREMIUM_SAJU_GUIDE}
       ...params.history,
       { role: 'user', content: params.userMessage },
     ],
-    maxTokens: 1800,
+    maxTokens: 2400,
+    temperature: 0.7,
   })) {
     yield chunk;
   }

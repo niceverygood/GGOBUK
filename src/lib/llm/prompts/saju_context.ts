@@ -1,6 +1,8 @@
 import type { SajuResult, Sipsung } from '@/lib/saju/types';
 import { analyzeSaju, strongestOhaeng, weakestOhaeng } from '@/lib/saju/analysis';
 import { computeAdvanced, yukchin } from '@/lib/saju/advanced';
+import { iljuProfileOf } from '@/lib/saju/ilju_profile';
+import { CHEONGAN_YINYANG, JIJI_YINYANG } from '@/lib/saju/constants';
 
 export function formatSajuContext(saju: SajuResult, name?: string): string {
   const { palja, ilgan, ohaengCount, sipsung, sinsal, daewoon } = saju;
@@ -37,6 +39,38 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
   lines.push(`일간: ${ilgan}`);
   lines.push('');
 
+  // ──── 일주 60갑자 특성 (가장 중요한 단일 자료) ────
+  const ilju = iljuProfileOf(palja.day.ganIdx, palja.day.jiIdx);
+  if (ilju) {
+    lines.push('## 일주 60갑자 명조 (이 사주를 한 줄로 정의하는 자료)');
+    lines.push(`${ilju.name} (${ilju.hanja}) 일주 — 60갑자 중 ${ilju.index + 1}번째`);
+    lines.push(`일간: ${ilju.ganNote}`);
+    lines.push(`일지: ${ilju.jiNote}`);
+    lines.push(`자존감/정체성: ${ilju.ego}`);
+    lines.push(`연애/결혼: ${ilju.love}`);
+    lines.push(`일/재물: ${ilju.career}`);
+    lines.push(`강점: ${ilju.strengths.join(', ')}`);
+    lines.push(`주의/그늘: ${ilju.watch.join(', ')}`);
+    lines.push(`키워드: ${ilju.keywords.join(' · ')}`);
+    lines.push('→ "이 일주가 이래서 OO하다" 식의 인용을 반드시 한 번 이상 활용할 것.');
+    lines.push('');
+  }
+
+  // ──── 음양 비율 ────
+  const allGanIdx = [palja.year.ganIdx, palja.month.ganIdx, palja.day.ganIdx];
+  if (palja.time) allGanIdx.push(palja.time.ganIdx);
+  const allJiIdx = [palja.year.jiIdx, palja.month.jiIdx, palja.day.jiIdx];
+  if (palja.time) allJiIdx.push(palja.time.jiIdx);
+  const yang = allGanIdx.filter((i) => CHEONGAN_YINYANG[i] === 0).length +
+    allJiIdx.filter((i) => JIJI_YINYANG[i] === 0).length;
+  const yin = allGanIdx.length + allJiIdx.length - yang;
+  lines.push(`## 음양 비율: 양 ${yang} · 음 ${yin} ${
+    yang > yin + 2 ? '(양 쏠림 — 외향/활동성 강)' :
+    yin > yang + 2 ? '(음 쏠림 — 내향/수렴성 강)' :
+    '(균형)'
+  }`);
+  lines.push('');
+
   lines.push('## 오행 분포');
   lines.push(
     `목 ${ohaengCount.목}, 화 ${ohaengCount.화}, 토 ${ohaengCount.토}, 금 ${ohaengCount.금}, 수 ${ohaengCount.수}`,
@@ -56,8 +90,42 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
     yearGan: '연간', yearJi: '연지', monthGan: '월간', monthJi: '월지',
     dayJi: '일지', timeGan: '시간', timeJi: '시지',
   };
+  // 십성 카운트 집계 — 강한 십성 그룹이 사주의 핵심 욕구·역할을 보여준다.
+  const sipsungCount: Record<string, number> = {};
   for (const [k, v] of Object.entries(sipsung)) {
-    if (v) lines.push(`${posLabel[k] ?? k}: ${v} = ${yukchin(v as Sipsung, gender)}`);
+    if (v) {
+      lines.push(`${posLabel[k] ?? k}: ${v} = ${yukchin(v as Sipsung, gender)}`);
+      sipsungCount[v] = (sipsungCount[v] ?? 0) + 1;
+    }
+  }
+  // 5대 그룹별 집계 (비겁/식상/재성/관성/인성)
+  const groupOf: Record<string, string> = {
+    비견: '비겁', 겁재: '비겁',
+    식신: '식상', 상관: '식상',
+    편재: '재성', 정재: '재성',
+    편관: '관성', 정관: '관성',
+    편인: '인성', 정인: '인성',
+  };
+  const groupCount: Record<string, number> = {};
+  for (const [s, n] of Object.entries(sipsungCount)) {
+    const g = groupOf[s];
+    if (g) groupCount[g] = (groupCount[g] ?? 0) + n;
+  }
+  const groups = ['비겁', '식상', '재성', '관성', '인성']
+    .map((g) => `${g}${groupCount[g] ?? 0}`)
+    .join(' · ');
+  lines.push(`5대 십성 그룹 카운트: ${groups}`);
+  const sortedGroups = Object.entries(groupCount).sort((a, b) => b[1] - a[1]);
+  if (sortedGroups.length > 0) {
+    const top = sortedGroups[0];
+    const groupHint: Record<string, string> = {
+      비겁: '자존감·독립성·경쟁심이 동력',
+      식상: '표현·창의·생산성이 동력',
+      재성: '돈·결과·현실 감각이 동력',
+      관성: '책임·명예·규범이 동력',
+      인성: '배움·보호·정신적 안정이 동력',
+    };
+    lines.push(`→ 가장 강한 그룹: ${top[0]} (${top[1]}개) — ${groupHint[top[0]]}`);
   }
   lines.push('');
 
