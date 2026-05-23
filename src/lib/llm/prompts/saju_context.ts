@@ -3,6 +3,7 @@ import { analyzeSaju, strongestOhaeng, weakestOhaeng } from '@/lib/saju/analysis
 import { computeAdvanced, yukchin } from '@/lib/saju/advanced';
 import { iljuProfileOf } from '@/lib/saju/ilju_profile';
 import { CHEONGAN_YINYANG, JIJI_YINYANG } from '@/lib/saju/constants';
+import { buildSignatureBehaviors } from '@/lib/saju/signature_behaviors';
 
 export function formatSajuContext(saju: SajuResult, name?: string): string {
   const { palja, ilgan, ohaengCount, sipsung, sinsal, daewoon } = saju;
@@ -205,6 +206,38 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
     lines.push(
       `${d.startAge}세~${d.startAge + 9}세 (${d.startYear}~): ${d.pillar.ganHanja}${d.pillar.jiHanja} (${d.sipsung})`,
     );
+  }
+  lines.push('');
+
+  // ──── Signature behavior 후보군 (소름 효과의 핵심 재료) ────
+  // 이 후보들을 그대로 베끼지 말고 사용자의 다른 지표와 결합해 그 사람만의
+  // micro-observation으로 합성해야 한다. 자세한 사용법은 premium_saju.ts 참조.
+  const topGroup = sortedGroups[0]?.[0] ?? null;
+  const yinYangTilt: 'yang_heavy' | 'yin_heavy' | 'balanced' =
+    yang > yin + 2 ? 'yang_heavy' : yin > yang + 2 ? 'yin_heavy' : 'balanced';
+  const sig = buildSignatureBehaviors({
+    topSipsungGroup: topGroup,
+    iljiStage: advanced.dayStage,
+    yinYangTilt,
+    weakestOhaeng: weak as '목' | '화' | '토' | '금' | '수',
+  });
+  lines.push('## Signature Behavior 후보 (소름 효과 재료 — 절대 그대로 베끼지 말 것)');
+  lines.push('아래 후보들은 이 사주가 통계적으로 fit하는 micro-behavior다. 사용자의 일주·격국·진행 중 대운과 결합해, 사용자가 "어? 이거 진짜 나 그래"라고 무릎 칠 한 줄로 합성한다. 그대로 인용하면 일반론이 된다.');
+  if (sig.fromSipsung.length > 0) {
+    lines.push(`[${topGroup} 1위 그룹]`);
+    for (const s of sig.fromSipsung) lines.push(`- ${s}`);
+  }
+  if (sig.fromIljiStage.length > 0) {
+    lines.push(`[일지 ${advanced.dayStage} 단계]`);
+    for (const s of sig.fromIljiStage) lines.push(`- ${s}`);
+  }
+  if (sig.fromYinYang.length > 0) {
+    lines.push(`[음양 ${yinYangTilt === 'yang_heavy' ? '양 쏠림' : yinYangTilt === 'yin_heavy' ? '음 쏠림' : '균형'}]`);
+    for (const s of sig.fromYinYang) lines.push(`- ${s}`);
+  }
+  if (sig.fromWeakOhaeng.length > 0) {
+    lines.push(`[부족한 오행 ${weak}]`);
+    for (const s of sig.fromWeakOhaeng) lines.push(`- ${s}`);
   }
 
   return lines.join('\n');
