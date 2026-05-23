@@ -35,6 +35,15 @@ export function FortuneCalendar({
     return { y, m };
   });
   const data = useMemo(() => monthFortune(saju, ym.y, ym.m), [saju, ym]);
+  // best/caution 패널과 dot 색을 일치시킨다: bottom-3은 주의로, top-3은 길로 강제.
+  const bestSet = useMemo(
+    () => new Set(data.best.map((d) => d.date)),
+    [data.best],
+  );
+  const cautionSet = useMemo(
+    () => new Set(data.caution.map((d) => d.date)),
+    [data.caution],
+  );
   const [selected, setSelected] = useState<DayFortune | null>(
     () => data.days.find((d) => d.date === today) ?? null,
   );
@@ -91,7 +100,14 @@ export function FortuneCalendar({
         {data.days.map((d) => {
           const isToday = d.date === today;
           const isSel = selected?.date === d.date;
-          const gs = GRADE_STYLE[d.grade];
+          // 하단 best/caution 패널과 일치하도록 grade 보정.
+          // 같은 점수라도 그 달 안에서 상대적으로 가장 낮으면 주의로 표시.
+          const effectiveGrade = cautionSet.has(d.date)
+            ? '주의'
+            : bestSet.has(d.date)
+              ? '길'
+              : d.grade;
+          const gs = GRADE_STYLE[effectiveGrade];
           return (
             <button
               key={d.date}
@@ -150,12 +166,32 @@ export function FortuneCalendar({
                 </span>
               </p>
             </div>
-            <Badge tone={selected.grade === '길' ? 'mint' : selected.grade === '주의' ? 'red' : 'navy'}>
-              {selected.grade} {selected.score}
-            </Badge>
+            {(() => {
+              const sg = cautionSet.has(selected.date)
+                ? '주의'
+                : bestSet.has(selected.date)
+                  ? '길'
+                  : selected.grade;
+              return (
+                <Badge tone={sg === '길' ? 'mint' : sg === '주의' ? 'red' : 'navy'}>
+                  {sg} {selected.score}
+                </Badge>
+              );
+            })()}
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-            <span className={cn('px-2.5 py-1 rounded-full', GRADE_STYLE[selected.grade].chip)}>
+            <span
+              className={cn(
+                'px-2.5 py-1 rounded-full',
+                GRADE_STYLE[
+                  cautionSet.has(selected.date)
+                    ? '주의'
+                    : bestSet.has(selected.date)
+                      ? '길'
+                      : selected.grade
+                ].chip,
+              )}
+            >
               {selected.note}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-navy/5 text-navy">
