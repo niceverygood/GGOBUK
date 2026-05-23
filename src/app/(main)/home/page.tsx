@@ -13,6 +13,7 @@ import {
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukSprite, moodToSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
+import { LoadingDots } from '@/components/ui/LoadingDots';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -226,7 +227,14 @@ export default async function HomePage() {
         <Card className="mt-4 p-4">
           <p className="text-xs font-extrabold text-muted">오늘의 한 줄</p>
           <p className="mt-1 text-lg font-black text-navy leading-snug">
-            {daily?.one_liner ?? '오늘의 운세를 가져오는 중이야...'}
+            {daily?.one_liner ? (
+              daily.one_liner
+            ) : (
+              <>
+                오늘의 운세를 가져오는 중이야
+                <LoadingDots />
+              </>
+            )}
           </p>
         </Card>
 
