@@ -30,7 +30,7 @@ const USAGE_ITEMS = [
   ['대운 AI 해설', CREDIT_COSTS.daewoon],
   ['길일 찾기', CREDIT_COSTS.auspicious],
   ['궁합 리포트', CREDIT_COSTS.compatibility],
-  ['부적 이미지', CREDIT_COSTS.talisman],
+  // ['부적 이미지', CREDIT_COSTS.talisman], // 부적 만들기 — 임시 숨김
   [
     '프리미엄 운세 상품',
     `${Math.min(...PREMIUM_SERVICES.map((s) => s.cost))}-${Math.max(...PREMIUM_SERVICES.map((s) => s.cost))}`,
@@ -40,7 +40,7 @@ const USAGE_ITEMS = [
 const RECOMMENDED_BUNDLES = [
   {
     title: '오늘 궁금증 풀기',
-    body: '정밀 리포트 2개 + 채팅 3회 + 부적 1장',
+    body: '정밀 리포트 2개 + 채팅 5회',
     cost: 12,
   },
   {
@@ -144,8 +144,8 @@ function CreditPageInner() {
                 보고 싶은 운세만 열어봐
               </p>
               <p className="mt-2 text-xs font-bold leading-relaxed text-muted">
-                꼬북알은 AI 정밀 리포트, 궁합, 길일, 부적 이미지에 모두 쓰는
-                꼬북점 전용 포인트예요.
+                꼬북알은 AI 정밀 리포트, 궁합, 길일에 모두 쓰는 꼬북점 전용
+                포인트예요.
               </p>
             </div>
           </div>

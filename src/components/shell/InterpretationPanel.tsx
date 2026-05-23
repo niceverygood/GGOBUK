@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Layers3 } from "lucide-react";
 import { InterpretationBody } from "@/components/shell/InterpretationBody";
-import { TalismanPanel } from "@/components/shell/TalismanPanel";
+// import { TalismanPanel } from "@/components/shell/TalismanPanel"; // 부적 만들기 — 임시 숨김
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { CREDIT_COSTS } from "@/lib/credits";
@@ -675,7 +675,8 @@ export function InterpretationPanel({
       <InterpretationBody text={content} />
       <div className="mt-5 space-y-3">
         {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
-        {!loading && <TalismanPanel category={category} />}
+        {/* 부적 만들기 — 임시 숨김 (v1 출시 후 재오픈 예정) */}
+        {/* {!loading && <TalismanPanel category={category} />} */}
         {!loading && (
           <DeepDivePanel
             category={category}
