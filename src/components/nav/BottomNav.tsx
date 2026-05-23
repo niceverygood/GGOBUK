@@ -3,14 +3,14 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Archive, Home, Hexagon, MessageCircle, Users } from 'lucide-react';
+import { Archive, CalendarDays, Home, Hexagon, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const TABS = [
   { href: '/home', label: '홈', icon: Home },
-  { href: '/people', label: '사람', icon: Users },
+  { href: '/shell', label: '등껍질', icon: Hexagon },
   { href: '/chat', label: '채팅', icon: MessageCircle },
-  { href: '/calendar', label: '달력', icon: Hexagon },
+  { href: '/calendar', label: '달력', icon: CalendarDays },
   { href: '/library', label: '보관함', icon: Archive },
 ];
 

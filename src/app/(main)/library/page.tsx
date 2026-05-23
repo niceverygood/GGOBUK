@@ -4,10 +4,13 @@ import type { ReactNode } from 'react';
 import {
   Archive,
   CalendarCheck,
+  ChevronRight,
   HeartHandshake,
   MessageCircle,
   ScrollText,
   Settings,
+  UserRound,
+  UsersRound,
   Waypoints,
 } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
@@ -54,40 +57,53 @@ export default async function LibraryPage() {
     .maybeSingle();
   if (!profile) redirect('/onboarding/saju');
 
-  const [interpretationsResult, relationsResult, dailyResult, sessionsResult] =
-    await Promise.all([
-      supabase
-        .from('interpretations')
-        .select('category, generated_at')
-        .eq('saju_id', profile.id)
-        .order('generated_at', { ascending: false })
-        .limit(5),
-      supabase
-        .from('relations')
-        .select(
-          'id, created_at, compatibility, saju_b:saju_profiles!relations_saju_b_id_fkey(name, relation_label)',
-        )
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5),
-      supabase
-        .from('daily_fortunes')
-        .select('date, one_liner')
-        .eq('saju_id', profile.id)
-        .order('date', { ascending: false })
-        .limit(3),
-      supabase
-        .from('chat_sessions')
-        .select('id, persona, title, updated_at')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(3),
-    ]);
+  const [
+    interpretationsResult,
+    relationsResult,
+    dailyResult,
+    sessionsResult,
+    peopleResult,
+  ] = await Promise.all([
+    supabase
+      .from('interpretations')
+      .select('category, generated_at')
+      .eq('saju_id', profile.id)
+      .order('generated_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('relations')
+      .select(
+        'id, created_at, compatibility, saju_b:saju_profiles!relations_saju_b_id_fkey(name, relation_label)',
+      )
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('daily_fortunes')
+      .select('date, one_liner')
+      .eq('saju_id', profile.id)
+      .order('date', { ascending: false })
+      .limit(3),
+    supabase
+      .from('chat_sessions')
+      .select('id, persona, title, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(3),
+    supabase
+      .from('saju_profiles')
+      .select('id, relation_type', { count: 'exact' })
+      .eq('owner_id', user.id),
+  ]);
 
   const interpretations = interpretationsResult.data ?? [];
   const relations = relationsResult.data ?? [];
   const daily = dailyResult.data ?? [];
   const sessions = sessionsResult.data ?? [];
+  const peopleRows = peopleResult.data ?? [];
+  const friendCount = peopleRows.filter(
+    (p) => p.relation_type !== 'self',
+  ).length;
 
   return (
     <main className="px-5 pt-8 pb-32 relative">
@@ -116,6 +132,60 @@ export default async function LibraryPage() {
           <Stat label="궁합" value={relations.length} />
           <Stat label="대화" value={sessions.length} />
         </div>
+
+        <Link
+          href="/people"
+          prefetch
+          className="mt-4 block rounded-3xl border border-navy/10 bg-gradient-to-br from-mint/25 via-white to-gold/15 p-4 shadow-[0_10px_24px_rgba(44,62,80,0.06)] transition active:scale-[0.99]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-navy shadow-sm">
+              <UsersRound size={22} strokeWidth={2.6} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-black text-navy">사람 관리</p>
+                <Badge tone="mint" className="px-2 py-1 text-[10px]">
+                  허브
+                </Badge>
+              </div>
+              <p className="mt-1 text-[11px] font-bold leading-relaxed text-muted">
+                내 사주 + 인연 {friendCount}명을 한 곳에서 · 등껍질·궁합·수정 바로가기
+              </p>
+            </div>
+            <ChevronRight
+              size={20}
+              strokeWidth={2.4}
+              className="shrink-0 text-navy/40"
+            />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <span className="rounded-2xl bg-white/80 px-2 py-2 text-[10px] font-black text-navy">
+              <UserRound
+                size={13}
+                strokeWidth={2.6}
+                className="mx-auto mb-0.5"
+              />
+              내 사주
+            </span>
+            <span className="rounded-2xl bg-white/80 px-2 py-2 text-[10px] font-black text-navy">
+              <UsersRound
+                size={13}
+                strokeWidth={2.6}
+                className="mx-auto mb-0.5"
+              />
+              인연 {friendCount}
+            </span>
+            <span className="rounded-2xl bg-white/80 px-2 py-2 text-[10px] font-black text-navy">
+              <HeartHandshake
+                size={13}
+                strokeWidth={2.6}
+                className="mx-auto mb-0.5"
+              />
+              궁합 {relations.length}
+            </span>
+          </div>
+        </Link>
 
         <PremiumServiceStore />
 
