@@ -111,7 +111,7 @@ export function ChatThread({
     typerRef.current = setInterval(() => {
       if (shown < target.text.length) {
         const backlog = target.text.length - shown;
-        // Comfortable reading speed: ~50자/초 평소, backlog 많아도 부드럽게.
+        // Comfortable reading speed: ~40자/초 평소, backlog 많아도 부드럽게.
         // backlog가 200자 미만이면 1자/tick, 그 이상에서만 천천히 catch-up.
         const step =
           backlog > 400 ? 3 : backlog > 200 ? 2 : 1;
@@ -126,7 +126,7 @@ export function ChatThread({
         stopTyper();
         setStreaming(false);
       }
-    }, 22);
+    }, 25);
 
     try {
       const res = await fetch('/api/chat', {
