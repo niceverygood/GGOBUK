@@ -99,17 +99,15 @@ export function KkobukSprite({
   const region = SPRITE_MAP[variant];
   const targetH = SIZE_HEIGHT[size];
   const targetW = Math.round((region.w / region.h) * targetH);
-  const sourceH = Math.min(region.h, targetH * 3);
-  const sourceW = Math.round((region.w / region.h) * sourceH);
 
   return (
     <Image
       src={region.src}
       alt={ariaLabel ?? variant}
-      width={sourceW}
-      height={sourceH}
+      width={region.w}
+      height={region.h}
       sizes={`${targetW}px`}
-      quality={95}
+      unoptimized
       draggable={false}
       className={cn('inline-block shrink-0 object-contain select-none', className)}
       style={{

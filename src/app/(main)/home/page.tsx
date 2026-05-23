@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import {
   Archive,
   CalendarCheck,
-  CalendarDays,
   HeartHandshake,
   MessageCircle,
   ScrollText,
@@ -14,8 +13,10 @@ import {
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukSprite, moodToSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, FortuneChip } from '@/components/ui/primitives';
+import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
+import type { SajuInput } from '@/lib/saju/types';
 
 const WEEKDAY = [
   '일요일',
@@ -106,14 +107,6 @@ const FEATURE_CARDS = [
     className: 'bg-gradient-to-br from-[#DCEBFF] to-white',
   },
   {
-    href: '/calendar',
-    title: '운세 달력',
-    subtitle: '날짜별 일진 길흉 한눈에',
-    badge: '캘린더',
-    icon: CalendarDays,
-    className: 'bg-gradient-to-br from-mint/20 to-white',
-  },
-  {
     href: '/more/auspicious',
     title: '택일 찾기',
     subtitle: '이사 · 계약 · 시작일 추천',
@@ -173,6 +166,13 @@ export default async function HomePage() {
 
   const gilun = rough길운(daily);
   const mood = daily?.mood ?? 'calm';
+  const calendarInput: SajuInput = {
+    birthDate: profile.birth_date,
+    birthTime: profile.birth_time ?? undefined,
+    isLunar: profile.is_lunar,
+    isLeapMonth: profile.is_leap_month,
+    gender: profile.gender,
+  };
   const { count: relationCount } = await supabase
     .from('relations')
     .select('id', { count: 'exact', head: true })
@@ -229,6 +229,23 @@ export default async function HomePage() {
             {daily?.one_liner ?? '오늘의 운세를 가져오는 중이야...'}
           </p>
         </Card>
+
+        <section className="mt-4">
+          <div className="mb-2 flex items-end justify-between">
+            <div>
+              <p className="text-xs font-extrabold text-muted">날짜별 일진 길흉</p>
+              <h2 className="text-lg font-black text-navy">운세 달력</h2>
+            </div>
+            <Link
+              href="/calendar"
+              prefetch
+              className="text-xs font-black text-mint-dark"
+            >
+              크게 보기 →
+            </Link>
+          </div>
+          <FortuneCalendar input={calendarInput} name={profile.name} />
+        </section>
 
         {daily && (
           <div className="grid grid-cols-3 gap-2 mt-4">
