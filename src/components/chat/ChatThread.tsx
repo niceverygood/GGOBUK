@@ -111,8 +111,10 @@ export function ChatThread({
     typerRef.current = setInterval(() => {
       if (shown < target.text.length) {
         const backlog = target.text.length - shown;
-        // mild catch-up: faster when far behind, but never a sudden dump
-        const step = Math.max(1, Math.min(6, Math.ceil(backlog / 15)));
+        // Comfortable reading speed: ~50자/초 평소, backlog 많아도 부드럽게.
+        // backlog가 200자 미만이면 1자/tick, 그 이상에서만 천천히 catch-up.
+        const step =
+          backlog > 400 ? 3 : backlog > 200 ? 2 : 1;
         shown = Math.min(target.text.length, shown + step);
         const slice = target.text.slice(0, shown);
         setMessages((m) => {
@@ -124,7 +126,7 @@ export function ChatThread({
         stopTyper();
         setStreaming(false);
       }
-    }, 16);
+    }, 22);
 
     try {
       const res = await fetch('/api/chat', {
