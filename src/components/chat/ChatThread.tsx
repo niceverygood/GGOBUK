@@ -69,7 +69,14 @@ export function ChatThread({
   const [needsCredit, setNeedsCredit] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const typerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 사용자가 타이핑 중간에 탭하면 true가 되어, 이후로는 받는 텍스트 전부를
+  // 즉시 노출한다 (스트림은 그대로 계속 받음).
+  const skipRef = useRef(false);
   const personaMeta = PERSONAS[persona];
+
+  function skipTyping() {
+    if (streaming) skipRef.current = true;
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,6 +95,7 @@ export function ChatThread({
     setInput('');
     setRateLimited(false);
     setNeedsCredit(false);
+    skipRef.current = false;
     setMessages((m) => [
       ...m,
       { role: 'user', content: trimmed },
@@ -97,6 +105,7 @@ export function ChatThread({
 
     // Typing queue: the network fills `target`, while a steady interval reveals
     // it a few chars at a time so big SSE chunks don't pop in all at once.
+    // If user taps mid-typing (skipRef=true), the queue drains instantly each tick.
     const target = { text: '' };
     let shown = 0;
     let streamDone = false;
@@ -111,10 +120,15 @@ export function ChatThread({
     typerRef.current = setInterval(() => {
       if (shown < target.text.length) {
         const backlog = target.text.length - shown;
-        // Comfortable reading speed: ~40자/초 평소, backlog 많아도 부드럽게.
-        // backlog가 200자 미만이면 1자/tick, 그 이상에서만 천천히 catch-up.
-        const step =
-          backlog > 400 ? 3 : backlog > 200 ? 2 : 1;
+        let step: number;
+        if (skipRef.current) {
+          // 사용자가 화면 탭 → 받은 텍스트 즉시 전체 노출, 이후 들어오는
+          // 청크도 매 tick마다 backlog 전부 흘려보냄.
+          step = backlog;
+        } else {
+          // Comfortable reading speed: ~38자/초 평소, backlog 많아도 부드럽게.
+          step = backlog > 400 ? 3 : backlog > 200 ? 2 : 1;
+        }
         shown = Math.min(target.text.length, shown + step);
         const slice = target.text.slice(0, shown);
         setMessages((m) => {
@@ -126,7 +140,7 @@ export function ChatThread({
         stopTyper();
         setStreaming(false);
       }
-    }, 25);
+    }, 26);
 
     try {
       const res = await fetch('/api/chat', {
@@ -202,7 +216,10 @@ export function ChatThread({
         </Link>
       </header>
 
-      <div className="relative flex-1 overflow-y-auto px-4 pt-4 pb-3">
+      <div
+        className="relative flex-1 overflow-y-auto px-4 pt-4 pb-3"
+        onClick={skipTyping}
+      >
         {messages.length === 0 && (
           <div className="text-center mt-10 space-y-3">
             <div className="inline-flex">
@@ -251,6 +268,11 @@ export function ChatThread({
             persona={persona}
           />
         ))}
+        {streaming && !skipRef.current && (
+          <p className="text-center text-[10px] font-bold text-muted/70 mb-2 select-none">
+            화면을 한 번 탭하면 답변 전체가 즉시 표시돼요
+          </p>
+        )}
         <div ref={endRef} />
       </div>
 
