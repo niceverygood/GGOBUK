@@ -74,6 +74,14 @@ function rough길운(daily: { mood: string | null } | null): number {
 
 const FEATURE_CARDS = [
   {
+    href: '/people',
+    title: '사람 관리',
+    subtitle: '내 사주·인연을 한 화면에서',
+    badge: '허브',
+    icon: UsersRound,
+    className: 'bg-gradient-to-br from-mint/25 via-white to-gold/15',
+  },
+  {
     href: '/shell',
     title: '등껍질 사주',
     subtitle: '총평 · 오행 · 십성 해설',
@@ -83,9 +91,9 @@ const FEATURE_CARDS = [
   },
   {
     href: '/relations',
-    title: '궁합 해설',
-    subtitle: '인연 추가하고 AI 궁합 보기',
-    badge: 'AI',
+    title: '인연 지도',
+    subtitle: '관계 그래프로 한눈에',
+    badge: '관계도',
     icon: HeartHandshake,
     className: 'bg-gradient-to-br from-red/10 to-white',
   },
@@ -312,7 +320,8 @@ export default async function HomePage() {
               </p>
             </div>
             <Link
-              href="/more/people"
+              href="/people"
+              prefetch
               className="shrink-0 rounded-full bg-navy px-3 py-2 text-xs font-black text-white"
             >
               <span className="inline-flex items-center gap-1">

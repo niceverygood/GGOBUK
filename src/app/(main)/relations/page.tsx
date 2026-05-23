@@ -277,7 +277,16 @@ export default function RelationsPage() {
       <div className="relative mx-auto w-full max-w-[560px]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-extrabold text-muted">관계의 합과 충</p>
+            <Link
+              href="/people"
+              prefetch
+              className="text-[11px] font-black text-mint-dark"
+            >
+              ← 사람 관리
+            </Link>
+            <p className="mt-1 text-xs font-extrabold text-muted">
+              관계의 합과 충
+            </p>
             <h1 className="mt-1 text-[34px] font-black tracking-tight text-navy">
               내 인연 지도
             </h1>
