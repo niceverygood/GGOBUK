@@ -566,6 +566,15 @@ export function InterpretationPanel({
   const isRichReport =
     content.includes("##") || content.includes("| 사주 근거 |");
 
+  // Sync local state when the server re-renders with a different initialContent
+  // (e.g. user switched persona mode → cookie-aware page re-fetched a different
+  // cached interpretation). Without this, the panel would show the previous
+  // persona's text until the user manually regenerated.
+  useEffect(() => {
+    setContent(initialContent);
+    setError("");
+  }, [initialContent]);
+
   useEffect(() => {
     const syncTask = () => {
       const task = readTaskSnapshot(category);
