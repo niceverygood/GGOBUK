@@ -54,7 +54,7 @@ export const PERSONAS: Record<string, PersonaProfile> = {
     accessory: 'none',
     accessoryLabel: '맨몸 (기본형)',
     color: '#4ECDC4',
-    card: { src: '/characters/ggobuk/cards/card_basic_friend.png', width: 924, height: 1388 },
+    card: { src: '/characters/ggobuk/cards/hires/card_basic_friend@2x.png', width: 1848, height: 2776 },
     toneLabel: '동글동글 반말 친구 톤',
     backstory:
       '꼬북섬 바닷가에서 태어난 막내 거북이. 호기심이 많고 누구와도 금세 친해진다. 등껍질에 사주가 비치는 걸 처음 알아챈 뒤로, 친구들의 하루를 살짝 미리 봐주는 게 취미가 됐다. 어려운 말은 질색이라 늘 쉽게 풀어 이야기한다.',
@@ -92,7 +92,7 @@ ${SHARED_GUARD}
     accessory: 'beard',
     accessoryLabel: '흰 수염 · 학자 모자 · 지팡이',
     color: '#2C3E50',
-    card: { src: '/characters/ggobuk/cards/card_saju_master.png', width: 1040, height: 1388 },
+    card: { src: '/characters/ggobuk/cards/hires/card_saju_master@2x.png', width: 2080, height: 2776 },
     toneLabel: '흰 수염 한학자 톤',
     backstory:
       '꼬북섬 가장 깊은 산속 동굴에서 3000년을 수행한 거북이 도사. 천간과 지지, 오행의 이치를 모두 꿰뚫었다. 좀처럼 산을 내려오지 않지만, 등껍질에 새겨진 사주를 진지하게 묻는 이에게는 명리의 깊은 결을 차근차근 풀어준다.',
@@ -131,7 +131,7 @@ ${SHARED_GUARD}
     accessory: 'bells',
     accessoryLabel: '빨간 머리띠 · 방울',
     color: '#E74C3C',
-    card: { src: '/characters/ggobuk/cards/card_direct_shaman.png', width: 1104, height: 1388 },
+    card: { src: '/characters/ggobuk/cards/hires/card_direct_shaman@2x.png', width: 2208, height: 2776 },
     toneLabel: '방울 들고 직설 시크 MZ 톤',
     backstory:
       '신기를 타고난 꼬북섬의 MZ 무당 거북이. 방울을 한 번 흔들면 답이 또렷하게 보인다. 빙빙 돌리는 걸 제일 싫어해서, 결론부터 던지고 이유는 한 줄로 붙인다. 시크하지만 사람을 헷갈리게 두지 않는 게 신조.',
@@ -168,7 +168,7 @@ ${SHARED_GUARD}
     accessory: 'beads',
     accessoryLabel: '염주 · 가사',
     color: '#F4D03F',
-    card: { src: '/characters/ggobuk/cards/card_comfort_bodhisattva.png', width: 1160, height: 1388 },
+    card: { src: '/characters/ggobuk/cards/hires/card_comfort_bodhisattva@2x.png', width: 2320, height: 2776 },
     toneLabel: '염주 두른 따뜻한 위로 톤',
     backstory:
       '꼬북섬 작은 암자에서 염주를 굴리며 지내는 자비로운 거북이 보살. 누구의 아픔도 먼저 끌어안는다. 사주를 점치기보다, 지친 마음을 가만히 들어주고 그 사람 안의 빛을 다시 비춰주는 데 마음을 쓴다.',
@@ -204,7 +204,23 @@ ${SHARED_GUARD}
 export type PersonaKey = 'kkobuk' | 'dosa' | 'mudang' | 'bosal';
 export type Persona = PersonaProfile;
 
-export const PERSONA_ORDER: PersonaKey[] = ['kkobuk', 'dosa', 'mudang', 'bosal'];
+// 전문성 그라데이션 순서: 입문(쉬움) → 전문가용(깊음).
+// 꼬북이(가장 쉬움) < 꼬북무당 < 꼬북보살 < 꼬북도사(가장 전문적).
+export const PERSONA_ORDER: PersonaKey[] = ['kkobuk', 'mudang', 'bosal', 'dosa'];
+
+/**
+ * 전문성 레벨 (1=입문 ~ 4=전문가용).
+ * - kkobuk: 사주 지식 없는 일반인도 무리없이 이해
+ * - mudang: 일반인 (술어 등장하면 한 줄 풀이)
+ * - bosal: 사주 어느 정도 아는 사람 (술어 정확, 한자 살짝)
+ * - dosa: 사주 깊은 지식 보유자 (격국·용신·통근 정식 인용, 한자 병기)
+ */
+export const PERSONA_EXPERTISE_LEVEL: Record<PersonaKey, 1 | 2 | 3 | 4> = {
+  kkobuk: 1,
+  mudang: 2,
+  bosal: 3,
+  dosa: 4,
+};
 
 export function isPersonaKey(value: string): value is PersonaKey {
   return value === 'kkobuk' || value === 'dosa' || value === 'mudang' || value === 'bosal';

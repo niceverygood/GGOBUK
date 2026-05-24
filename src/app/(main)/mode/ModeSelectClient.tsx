@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Check, Lock, Sparkles } from 'lucide-react';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
-import { PERSONAS, PERSONA_ORDER, type PersonaKey } from '@/lib/llm/personas';
+import {
+  PERSONAS,
+  PERSONA_ORDER,
+  PERSONA_EXPERTISE_LEVEL,
+  type PersonaKey,
+} from '@/lib/llm/personas';
 import { readPersonaMode, writePersonaMode } from '@/lib/utils/persona-mode';
 import {
   isAnyGenerationLocked,
@@ -13,7 +18,8 @@ import {
 } from '@/lib/utils/generation-lock';
 
 interface InterpStyle {
-  hanja: string;
+  reader: string;
+  jargon: string;
   structure: string;
   length: string;
   endsWith: string;
@@ -21,28 +27,32 @@ interface InterpStyle {
 
 const INTERP_STYLE: Record<PersonaKey, InterpStyle> = {
   kkobuk: {
-    hanja: '한자 거의 없음',
+    reader: '사주 지식 전혀 없는 일반인',
+    jargon: '한자·명리 술어 모두 일상어로 풀이',
     structure: '흐르는 평문 (표·헤딩 ❌)',
     length: '800–1,200자',
-    endsWith: '오늘 해볼 수 있는 작은 행동 한 가지',
-  },
-  dosa: {
-    hanja: '한자(漢字) 정확 병기',
-    structure: '판독 근거 표 + 체크포인트 + 깊은 풀이 + 활용 처방',
-    length: '2,200–3,200자',
-    endsWith: '4-섹션 정식 리포트',
+    endsWith: '오늘 해볼 작은 행동 한 가지',
   },
   mudang: {
-    hanja: '핵심 한 줄 인용만',
-    structure: '짧은 평문 4–5단락',
+    reader: '일반인 · 빠른 진단 원하는 사람',
+    jargon: '핵심 술어만 1회 풀이, 한자 ❌',
+    structure: '짧은 평문 4–5단락, 결단형',
     length: '600–1,000자',
     endsWith: '시점·데드라인 박힌 행동 지시',
   },
   bosal: {
-    hanja: '위로의 배경으로만',
+    reader: '사주 어느 정도 아는 중급자',
+    jargon: '핵심 한자 살짝, 술어는 위로에 녹임',
     structure: '평문 4–5단락 (공감 우선)',
     length: '1,000–1,500자',
     endsWith: '오늘 해볼 작은 친절 한 가지',
+  },
+  dosa: {
+    reader: '명리 깊이 아는 전문가',
+    jargon: '한자(漢字) 정식 병기, 격국·용신·통근·합충',
+    structure: '판독 근거 표 + 체크포인트 + 깊은 풀이 + 활용 처방',
+    length: '2,400–3,400자',
+    endsWith: '4-섹션 정식 리포트',
   },
 };
 
@@ -140,9 +150,30 @@ export function ModeSelectClient() {
             어떤 꼬북이로 풀이받을까?
           </h1>
           <p className="mt-2 text-xs font-bold leading-relaxed text-muted">
-            본체는 같은 거북이지만, 액세서리에 따라 말투와 해석 깊이가 완전히
-            달라져요. 같은 사주도 4가지 다른 풀이로 받아볼 수 있습니다.
+            톤뿐 아니라 <span className="text-navy">해석 깊이</span>도 달라요.
+            앞으로 갈수록 일반인도 쉽게, 뒤로 갈수록 전문 명리 용어로 깊이 있게
+            풀어줍니다.
           </p>
+
+          {/* Expertise gradient legend */}
+          <div className="mt-3 rounded-2xl border border-navy/8 bg-white/85 p-3">
+            <p className="text-[10px] font-extrabold text-muted">
+              전문성 그라데이션
+            </p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="text-[10px] font-black text-mint-dark">쉬움</span>
+              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-gradient-to-r from-mint via-red/70 via-gold to-navy">
+                <span className="sr-only">왼쪽 일반인 → 오른쪽 전문가</span>
+              </div>
+              <span className="text-[10px] font-black text-navy">전문가</span>
+            </div>
+            <div className="mt-1.5 grid grid-cols-4 text-center text-[9px] font-extrabold text-muted">
+              <span>꼬북이</span>
+              <span>꼬북무당</span>
+              <span>꼬북보살</span>
+              <span>꼬북도사</span>
+            </div>
+          </div>
         </div>
 
         {busy && (
@@ -194,6 +225,27 @@ export function ModeSelectClient() {
                         <p className="mt-1 text-[11px] font-extrabold text-mint-dark">
                           {p.toneLabel}
                         </p>
+                        {/* Expertise level meter (★1~4) */}
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <span className="text-[10px] font-extrabold text-muted">
+                            전문성
+                          </span>
+                          <span className="text-[11px] font-black text-navy tracking-wider">
+                            {'★'.repeat(PERSONA_EXPERTISE_LEVEL[key])}
+                            <span className="text-navy/20">
+                              {'★'.repeat(4 - PERSONA_EXPERTISE_LEVEL[key])}
+                            </span>
+                          </span>
+                          <span className="text-[10px] font-extrabold text-muted">
+                            {PERSONA_EXPERTISE_LEVEL[key] === 1
+                              ? '입문'
+                              : PERSONA_EXPERTISE_LEVEL[key] === 2
+                                ? '일반'
+                                : PERSONA_EXPERTISE_LEVEL[key] === 3
+                                  ? '중급'
+                                  : '전문가'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -202,39 +254,49 @@ export function ModeSelectClient() {
                     {p.backstory}
                   </p>
 
-                  {/* 풀이 스타일 4-속성 */}
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  {/* 풀이 스타일 spec grid */}
+                  <div className="mt-4 space-y-2">
                     <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
                       <p className={`text-[10px] font-extrabold ${tone.text}`}>
-                        한자 사용
+                        🎯 누구를 위한 풀이
                       </p>
-                      <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
-                        {style.hanja}
+                      <p className="mt-0.5 text-[11px] font-black text-navy leading-snug">
+                        {style.reader}
                       </p>
                     </div>
                     <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
                       <p className={`text-[10px] font-extrabold ${tone.text}`}>
-                        구조
+                        🈯️ 한자·명리 술어
                       </p>
-                      <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
-                        {style.structure}
-                      </p>
-                    </div>
-                    <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
-                      <p className={`text-[10px] font-extrabold ${tone.text}`}>
-                        분량
-                      </p>
-                      <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
-                        {style.length}
+                      <p className="mt-0.5 text-[11px] font-black text-navy leading-snug">
+                        {style.jargon}
                       </p>
                     </div>
-                    <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
-                      <p className={`text-[10px] font-extrabold ${tone.text}`}>
-                        마무리
-                      </p>
-                      <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
-                        {style.endsWith}
-                      </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
+                        <p className={`text-[10px] font-extrabold ${tone.text}`}>
+                          구조
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
+                          {style.structure}
+                        </p>
+                      </div>
+                      <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
+                        <p className={`text-[10px] font-extrabold ${tone.text}`}>
+                          분량
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
+                          {style.length}
+                        </p>
+                      </div>
+                      <div className={`rounded-2xl ${tone.softBg} p-2.5`}>
+                        <p className={`text-[10px] font-extrabold ${tone.text}`}>
+                          마무리
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-black text-navy leading-tight">
+                          {style.endsWith}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
