@@ -6,6 +6,10 @@ import type { DaewoonPeriod } from '@/lib/saju/types';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeIOS } from '@/lib/utils/platform';
 import {
+  lockGeneration,
+  unlockGeneration,
+} from '@/lib/utils/generation-lock';
+import {
   AnalysisLoader,
   type AnalysisStep,
 } from '@/components/ui/AnalysisLoader';
@@ -113,8 +117,10 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
   const [error, setError] = useState('');
 
   async function generate() {
+    const lockId = `coldread:${period.startYear}`;
     setLoading(true);
     setError('');
+    lockGeneration(lockId);
     try {
       const res = await fetch('/api/timeline/coldread', {
         method: 'POST',
@@ -136,6 +142,7 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
           : '대운 해설을 생성하지 못했어. 잠시 후 다시 시도해줘.',
       );
     } finally {
+      unlockGeneration(lockId);
       setLoading(false);
     }
   }

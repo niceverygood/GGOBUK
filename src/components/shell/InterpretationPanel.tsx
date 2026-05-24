@@ -10,6 +10,10 @@ import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { CREDIT_COSTS } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
 import { readPersonaMode } from "@/lib/utils/persona-mode";
+import {
+  lockGeneration,
+  unlockGeneration,
+} from "@/lib/utils/generation-lock";
 import type { InterpretationCategory } from "@/types/db";
 
 const ANALYSIS_STEPS = [
@@ -428,6 +432,9 @@ function startBackgroundGeneration({
     status: "running",
   };
 
+  const lockId = `interp:${category}`;
+  lockGeneration(lockId);
+
   task.promise = fetch("/api/interpretations/regenerate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -449,6 +456,7 @@ function startBackgroundGeneration({
       task.error = error instanceof Error ? error.message : "unknown";
     })
     .finally(() => {
+      unlockGeneration(lockId);
       setTaskSnapshot(task);
     });
 

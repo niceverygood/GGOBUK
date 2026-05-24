@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  lockGeneration,
+  unlockGeneration,
+} from '@/lib/utils/generation-lock';
 
 /**
  * Mounted on /home when there is no `daily_fortunes` row for today.
@@ -24,6 +28,8 @@ export function EnsureDaily({ sajuId }: { sajuId: string }) {
     fired.current = true;
 
     let cancelled = false;
+    const lockId = `daily:${sajuId}`;
+    lockGeneration(lockId);
     (async () => {
       try {
         const res = await fetch(
@@ -39,11 +45,14 @@ export function EnsureDaily({ sajuId }: { sajuId: string }) {
         }
       } catch {
         // Network error — silently swallow. The user can pull-to-refresh.
+      } finally {
+        unlockGeneration(lockId);
       }
     })();
 
     return () => {
       cancelled = true;
+      unlockGeneration(lockId);
     };
   }, [sajuId, router]);
 

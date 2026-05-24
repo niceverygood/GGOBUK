@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Lock, Sparkles } from 'lucide-react';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
 import { PERSONAS, PERSONA_ORDER, type PersonaKey } from '@/lib/llm/personas';
 import { readPersonaMode, writePersonaMode } from '@/lib/utils/persona-mode';
+import {
+  isAnyGenerationLocked,
+  subscribeGenerationLock,
+} from '@/lib/utils/generation-lock';
 
 interface InterpStyle {
   hanja: string;
@@ -93,12 +97,19 @@ export function ModeSelectClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [current, setCurrent] = useState<PersonaKey>('dosa');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setCurrent(readPersonaMode());
   }, []);
 
+  useEffect(() => {
+    setBusy(isAnyGenerationLocked());
+    return subscribeGenerationLock(() => setBusy(isAnyGenerationLocked()));
+  }, []);
+
   function pick(key: PersonaKey) {
+    if (busy) return; // hard guard — buttons are also disabled
     setCurrent(key);
     writePersonaMode(key);
     // 어디서 왔는지 명시적 from 파라미터가 있으면 그 곳으로, 아니면 뒤로.
@@ -133,6 +144,16 @@ export function ModeSelectClient() {
             달라져요. 같은 사주도 4가지 다른 풀이로 받아볼 수 있습니다.
           </p>
         </div>
+
+        {busy && (
+          <div className="mt-4 rounded-2xl bg-gold/25 border border-gold/40 px-4 py-3 text-xs font-black text-[#5A4A20]">
+            <span className="inline-flex items-center gap-1.5">
+              <Lock size={13} strokeWidth={3} />
+              리포트 생성 중이라 지금은 모드를 바꿀 수 없어요. 생성이 끝난 뒤
+              다시 시도해주세요.
+            </span>
+          </div>
+        )}
 
         <div className="mt-5 space-y-4">
           {PERSONA_ORDER.map((key) => {
@@ -267,16 +288,23 @@ export function ModeSelectClient() {
                   <button
                     type="button"
                     onClick={() => pick(key)}
-                    disabled={isOn}
+                    disabled={isOn || busy}
                     className={`mt-5 inline-flex w-full items-center justify-center gap-1 rounded-2xl py-3.5 text-sm font-black shadow-[0_10px_22px_rgba(44,62,80,0.12)] transition active:scale-[0.98] ${
                       isOn
                         ? 'bg-white border border-navy/10 text-muted'
-                        : tone.button
+                        : busy
+                          ? 'bg-white border border-navy/10 text-muted opacity-60 cursor-not-allowed'
+                          : tone.button
                     }`}
                   >
                     {isOn ? (
                       <>
                         <Check size={15} strokeWidth={3} />이 모드 사용 중
+                      </>
+                    ) : busy ? (
+                      <>
+                        <Lock size={15} strokeWidth={2.6} />
+                        생성 중 — 잠시 후 시도
                       </>
                     ) : (
                       <>

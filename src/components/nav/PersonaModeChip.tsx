@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Loader2, Lock } from 'lucide-react';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { readPersonaMode } from '@/lib/utils/persona-mode';
+import {
+  isAnyGenerationLocked,
+  subscribeGenerationLock,
+} from '@/lib/utils/generation-lock';
 import type { PersonaKey } from '@/lib/llm/personas';
 
 const SPRITE: Record<
@@ -34,6 +38,8 @@ export function PersonaModeChip() {
   const router = useRouter();
   const pathname = usePathname();
   const [persona, setPersona] = useState<PersonaKey>('dosa');
+  const [busy, setBusy] = useState(false);
+  const [showLockHint, setShowLockHint] = useState(false);
 
   useEffect(() => {
     setPersona(readPersonaMode());
@@ -50,9 +56,24 @@ export function PersonaModeChip() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Track in-flight LLM generations across the app. While any are running,
+  // disable the chip so the user can't swap mode mid-generation (which would
+  // orphan the request and produce mode-mismatched output in the cache).
+  useEffect(() => {
+    setBusy(isAnyGenerationLocked());
+    return subscribeGenerationLock(() => {
+      setBusy(isAnyGenerationLocked());
+    });
+  }, []);
+
   function openSelector() {
+    if (busy) {
+      // Surface a brief inline hint so the user knows why nothing happened.
+      setShowLockHint(true);
+      window.setTimeout(() => setShowLockHint(false), 2400);
+      return;
+    }
     // 현재 경로를 from에 실어 보내 선택 후 돌아오게 한다.
-    // /mode 자체에서는 칩이 그대로 보이되 클릭은 의미 없게 만들 필요 없음 — 그대로 두면 새로고침.
     router.push(`/mode?from=${encodeURIComponent(pathname ?? '/home')}`);
   }
 
@@ -60,19 +81,48 @@ export function PersonaModeChip() {
   if (pathname === '/mode') return null;
 
   return (
-    <button
-      type="button"
-      onClick={openSelector}
-      aria-label={`현재 모드. 탭하여 변경.`}
-      className={`fixed right-3 top-[calc(env(safe-area-inset-top)+8px)] z-40 grid h-9 w-9 place-items-center rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] transition active:scale-95 ${ACCENT[persona]}`}
-    >
-      <KkobukSprite variant={SPRITE[persona]} size="xs" ariaLabel="현재 모드" />
-      <span
-        className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-navy text-white shadow-sm"
-        aria-hidden
+    <>
+      <button
+        type="button"
+        onClick={openSelector}
+        aria-disabled={busy}
+        aria-label={
+          busy
+            ? '리포트 생성 중이라 모드를 바꿀 수 없어요'
+            : '현재 모드. 탭하여 변경.'
+        }
+        className={`fixed right-3 top-[calc(env(safe-area-inset-top)+8px)] z-40 grid h-9 w-9 place-items-center rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] transition active:scale-95 ${ACCENT[persona]} ${
+          busy ? 'opacity-60 cursor-not-allowed' : ''
+        }`}
       >
-        <ChevronRight size={9} strokeWidth={3.5} />
-      </span>
-    </button>
+        <KkobukSprite
+          variant={SPRITE[persona]}
+          size="xs"
+          ariaLabel="현재 모드"
+        />
+        <span
+          className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-navy text-white shadow-sm"
+          aria-hidden
+        >
+          {busy ? (
+            <Loader2 size={9} strokeWidth={3.5} className="animate-spin" />
+          ) : (
+            <ChevronRight size={9} strokeWidth={3.5} />
+          )}
+        </span>
+      </button>
+
+      {showLockHint && (
+        <div
+          role="status"
+          className="fixed right-3 top-[calc(env(safe-area-inset-top)+52px)] z-40 max-w-[78vw] rounded-2xl bg-navy px-3 py-2 text-[11px] font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.24)]"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Lock size={11} strokeWidth={3} />
+            리포트 생성 중이라 모드를 바꿀 수 없어요
+          </span>
+        </div>
+      )}
+    </>
   );
 }

@@ -11,6 +11,10 @@ import { RelationDeleteButton } from '@/components/relations/RelationDeleteButto
 import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
 import { Badge, Card, Toggle, ButtonPrimary } from '@/components/ui/primitives';
 import { AnalysisLoader, type AnalysisStep } from '@/components/ui/AnalysisLoader';
+import {
+  lockGeneration,
+  unlockGeneration,
+} from '@/lib/utils/generation-lock';
 import { CREDIT_COSTS } from '@/lib/credits';
 import type { Palja } from '@/lib/saju/types';
 
@@ -237,6 +241,8 @@ export default function RelationsPage() {
       return;
     }
 
+    const lockId = `compat:add:${Date.now()}`;
+    lockGeneration(lockId);
     try {
       setAddStatus('saving');
       const res = await fetch('/api/saju/calculate', {
@@ -284,6 +290,7 @@ export default function RelationsPage() {
     } catch (e) {
       setError(errorMessage(e instanceof Error ? e.message : ''));
     } finally {
+      unlockGeneration(lockId);
       setAddStatus('idle');
     }
   }
