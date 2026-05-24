@@ -55,30 +55,52 @@ const EXPECTED_DAEWOON_MS = 32_000;
  *
  * The LLM is instructed to output plain text only, but past responses saved
  * in DB might contain ###, **, ---, leading -. We strip those at render time
- * so old content still looks clean. We also normalize multiple blank lines
- * and collapse "--- newline" separators into paragraph breaks so the
- * subsequent split-on-\\n{2,} renders correct paragraphs.
+ * so old content still looks clean.
+ *
+ * Critically: the LLM sometimes jams everything onto one line, so markdown
+ * separators like `--- ### 2.` show up INLINE (not at line start). We handle
+ * both inline and line-start positions, converting structural markers
+ * (headings, horizontal rules) into paragraph breaks before stripping their
+ * symbols so the final split-on-\n{2,} produces clean paragraphs.
  */
 function stripMarkdown(raw: string): string {
   let s = raw;
-  // ATX headings: '#' to '######' followed by space → keep the title text but
-  // promote to its own paragraph (so split picks it up as a block).
-  s = s.replace(/^#{1,6}\s+/gm, '');
-  // Bold/italic: **bold** *italic* __bold__ _italic_ → strip markers
+
+  // Step 1: promote structural markers to paragraph breaks regardless of
+  // whether they're at line start or inline.
+  //
+  // ATX headings: `# ` … `###### ` — preserve heading text, prefix newlines.
+  s = s.replace(/(^|\s)#{1,6}\s+([^\n]*?)(?=\s+(?:---|#{1,6}\s|$)|$)/g,
+    (_m, _pre, title) => `\n\n${title.trim()}\n\n`);
+  // Catch any remaining # markers (e.g. mid-line ones we didn't catch above)
+  s = s.replace(/(^|\s)#{1,6}\s+/g, '\n\n');
+  // Horizontal rules: `---`, `***`, `___` (3+ in a row), either inline or
+  // on their own line.
+  s = s.replace(/(^|\s)[-*_]{3,}(?=\s|$)/g, '\n\n');
+
+  // Step 2: strip remaining markdown markers (text content preserved).
+  // Bold: **bold**, __bold__
   s = s.replace(/\*\*(.+?)\*\*/g, '$1');
   s = s.replace(/__(.+?)__/g, '$1');
-  s = s.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '$1');
-  // Horizontal rules: a line of --- or *** or ___ → paragraph break
-  s = s.replace(/^[-*_]{3,}\s*$/gm, '');
-  // Block quotes: lines starting with > → strip the marker, keep text
+  // Italic: *italic*, _italic_
+  s = s.replace(/(?<![*\w])\*(?!\*)([^*\n]+?)(?<!\*)\*(?![*\w])/g, '$1');
+  s = s.replace(/(?<![_\w])_(?!_)([^_\n]+?)(?<!_)_(?![_\w])/g, '$1');
+  // Block quotes (line start)
   s = s.replace(/^>\s?/gm, '');
-  // Leading bullet/numbered markers at line start → strip the marker only
+  // Leading bullet/numbered markers at line start
   s = s.replace(/^\s*[-*+]\s+/gm, '');
   s = s.replace(/^\s*\d+[.)]\s+/gm, '');
   // Inline backticks
   s = s.replace(/`([^`]+)`/g, '$1');
+
+  // Step 3: normalize whitespace
   // Collapse 3+ consecutive newlines into 2 (= paragraph break)
   s = s.replace(/\n{3,}/g, '\n\n');
+  // Trim trailing/leading whitespace on each line
+  s = s
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n');
   return s.trim();
 }
 
