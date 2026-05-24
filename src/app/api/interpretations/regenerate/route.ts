@@ -20,6 +20,7 @@ import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
 const Body = z.object({
   category: z.string(),
   focus: z.string().max(300).optional(),
+  persona: z.enum(['kkobuk', 'dosa', 'mudang', 'bosal']).optional(),
 });
 
 export const runtime = 'nodejs';
@@ -37,7 +38,8 @@ export async function POST(req: Request) {
   if (!rl.allowed)
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
-  const { category, focus } = Body.parse(await req.json());
+  const { category, focus, persona: personaInput } = Body.parse(await req.json());
+  const persona = personaInput ?? 'dosa';
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
   if (!cat)
     return NextResponse.json({ error: 'unknown_category' }, { status: 400 });
@@ -89,6 +91,7 @@ export async function POST(req: Request) {
       category as InterpretationCategory,
       profile.name,
       focus,
+      persona,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
@@ -132,12 +135,13 @@ export async function POST(req: Request) {
     {
       saju_id: profile.id,
       category,
+      persona,
       content: result.content,
       model: result.model,
       tokens_used: result.tokensUsed,
       generated_at: new Date().toISOString(),
     },
-    { onConflict: 'saju_id,category' },
+    { onConflict: 'saju_id,category,persona' },
   );
   if (error) {
     logger.error('interpretations/regenerate', 'cache save failed', {

@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase/server';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
@@ -9,6 +10,8 @@ import {
   type InterpretationEvidenceProfile,
 } from '@/components/shell/InterpretationEvidence';
 import { InterpretationPanel } from '@/components/shell/InterpretationPanel';
+import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
+import { isPersonaKey } from '@/lib/utils/persona-mode';
 import type { InterpretationCategory } from '@/types/db';
 
 interface PageProps {
@@ -34,11 +37,16 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
     .maybeSingle<InterpretationEvidenceProfile & { id: string }>();
   if (!profile) redirect('/onboarding/saju');
 
+  const cookieStore = await cookies();
+  const personaRaw = cookieStore.get('ggobuk_persona_mode')?.value ?? 'dosa';
+  const persona: PersonaKey = isPersonaKey(personaRaw) ? personaRaw : 'dosa';
+
   const { data: cached } = await supabase
     .from('interpretations')
     .select('content')
     .eq('saju_id', profile.id)
     .eq('category', category)
+    .eq('persona', persona)
     .maybeSingle();
 
   return (
@@ -52,13 +60,13 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         <div className="flex items-start justify-between mt-2">
           <div>
             <p className="text-xs font-extrabold text-muted">
-              꼬북도사의 정밀 리포트
+              {PERSONAS[persona].displayName}의 풀이 · {PERSONAS[persona].toneLabel}
             </p>
             <h1 className="text-2xl font-black tracking-tight text-navy">
               {cat.title}
             </h1>
           </div>
-          <KkobukAvatar variant="dosa" size="md" />
+          <KkobukAvatar variant={persona} size="md" />
         </div>
 
         <InterpretationEvidence
@@ -78,7 +86,7 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
           prefetch
           className="mt-6 block w-full rounded-2xl bg-navy text-white text-center py-4 font-black shadow-[0_14px_26px_rgba(44,62,80,0.22)] active:scale-[0.99] transition"
         >
-          꼬북도사에게 더 물어보기
+          {PERSONAS[persona].displayName}에게 더 물어보기
         </Link>
       </div>
     </main>

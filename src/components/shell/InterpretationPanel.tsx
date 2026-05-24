@@ -9,6 +9,7 @@ import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { CREDIT_COSTS } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
+import { readPersonaMode } from "@/lib/utils/persona-mode";
 import type { InterpretationCategory } from "@/types/db";
 
 const ANALYSIS_STEPS = [
@@ -411,9 +412,11 @@ function clearTaskSnapshot(category: InterpretationCategory) {
 function startBackgroundGeneration({
   category,
   focus,
+  persona,
 }: {
   category: InterpretationCategory;
   focus?: string;
+  persona?: string;
 }) {
   const existing = backgroundTasks.get(category);
   if (existing?.status === "running") return existing;
@@ -428,7 +431,7 @@ function startBackgroundGeneration({
   task.promise = fetch("/api/interpretations/regenerate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ category, focus }),
+    body: JSON.stringify({ category, focus, persona }),
   })
     .then(async (res) => {
       const data = await res.json().catch(() => ({}));
@@ -616,7 +619,8 @@ export function InterpretationPanel({
   }, [category, loading]);
 
   function generate(focus?: string) {
-    const task = startBackgroundGeneration({ category, focus });
+    const persona = readPersonaMode();
+    const task = startBackgroundGeneration({ category, focus, persona });
     setLoading(true);
     setElapsedMs(Math.max(0, Date.now() - task.startedAt));
     setActiveFocus(task.focus);

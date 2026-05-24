@@ -17,6 +17,7 @@ import { LoadingDots } from '@/components/ui/LoadingDots';
 import { EnsureDaily } from '@/components/home/EnsureDaily';
 import { TodayInsight } from '@/components/home/TodayInsight';
 import { WeekStrip } from '@/components/home/WeekStrip';
+import { ModePicker } from '@/components/home/ModePicker';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -195,6 +196,8 @@ export default async function HomePage() {
           sajuInput={calendarInput}
           daily={daily ?? null}
         />
+
+        <ModePicker />
 
         <Card className="mt-3 p-4">
           <div className="flex items-start gap-3">
