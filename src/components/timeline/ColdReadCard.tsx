@@ -50,6 +50,38 @@ const DAEWOON_STEPS: AnalysisStep[] = [
 
 const EXPECTED_DAEWOON_MS = 32_000;
 
+/**
+ * Defensive markdown stripper for cold-read text.
+ *
+ * The LLM is instructed to output plain text only, but past responses saved
+ * in DB might contain ###, **, ---, leading -. We strip those at render time
+ * so old content still looks clean. We also normalize multiple blank lines
+ * and collapse "--- newline" separators into paragraph breaks so the
+ * subsequent split-on-\\n{2,} renders correct paragraphs.
+ */
+function stripMarkdown(raw: string): string {
+  let s = raw;
+  // ATX headings: '#' to '######' followed by space → keep the title text but
+  // promote to its own paragraph (so split picks it up as a block).
+  s = s.replace(/^#{1,6}\s+/gm, '');
+  // Bold/italic: **bold** *italic* __bold__ _italic_ → strip markers
+  s = s.replace(/\*\*(.+?)\*\*/g, '$1');
+  s = s.replace(/__(.+?)__/g, '$1');
+  s = s.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '$1');
+  // Horizontal rules: a line of --- or *** or ___ → paragraph break
+  s = s.replace(/^[-*_]{3,}\s*$/gm, '');
+  // Block quotes: lines starting with > → strip the marker, keep text
+  s = s.replace(/^>\s?/gm, '');
+  // Leading bullet/numbered markers at line start → strip the marker only
+  s = s.replace(/^\s*[-*+]\s+/gm, '');
+  s = s.replace(/^\s*\d+[.)]\s+/gm, '');
+  // Inline backticks
+  s = s.replace(/`([^`]+)`/g, '$1');
+  // Collapse 3+ consecutive newlines into 2 (= paragraph break)
+  s = s.replace(/\n{3,}/g, '\n\n');
+  return s.trim();
+}
+
 export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
   const [text, setText] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<
@@ -135,7 +167,19 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
           )}
         </div>
       )}
-      {text && <p className="mt-2 leading-relaxed text-[15px]">{text}</p>}
+      {text && (
+        <div className="mt-2 space-y-3 text-[15px] leading-relaxed">
+          {stripMarkdown(text)
+            .split(/\n{2,}/)
+            .map((para) => para.trim())
+            .filter(Boolean)
+            .map((para, i) => (
+              <p key={i} className="whitespace-pre-wrap">
+                {para}
+              </p>
+            ))}
+        </div>
+      )}
       {text && (
         <div className="mt-4 flex gap-2">
           <button
