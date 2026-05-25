@@ -417,10 +417,15 @@ function startBackgroundGeneration({
   category,
   focus,
   persona,
+  appendTo,
 }: {
   category: InterpretationCategory;
   focus?: string;
   persona?: string;
+  /** 기존 본문이 있어 새 응답을 그 뒤에 이어 붙이고 싶을 때 전달.
+   *  서버는 이 값을 받으면 (1) LLM에 supplement-only 지시를 주고
+   *  (2) 응답을 appendTo + divider + 새 응답으로 합쳐 저장한다. */
+  appendTo?: string;
 }) {
   const existing = backgroundTasks.get(category);
   if (existing?.status === "running") return existing;
@@ -438,7 +443,7 @@ function startBackgroundGeneration({
   task.promise = fetch("/api/interpretations/regenerate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ category, focus, persona }),
+    body: JSON.stringify({ category, focus, persona, appendTo }),
   })
     .then(async (res) => {
       const data = await res.json().catch(() => ({}));
@@ -546,15 +551,6 @@ function DeepDivePanel({
           </button>
         ))}
       </div>
-
-      {!isNativeIOS() && (
-        <Link
-          href="/more/pro"
-          className="mt-3 block rounded-2xl bg-navy px-4 py-3 text-center text-sm font-black text-white"
-        >
-          꼬북알 충전하고 계속 보기
-        </Link>
-      )}
     </div>
   );
 }
@@ -637,7 +633,15 @@ export function InterpretationPanel({
 
   function generate(focus?: string) {
     const persona = readPersonaMode();
-    const task = startBackgroundGeneration({ category, focus, persona });
+    // Deep-dive(focus) 요청은 기존 본문에 이어붙이는 supplement 모드로 처리.
+    // 그 외(초기 생성)는 일반 fresh 생성.
+    const appendTo = focus && content ? content : undefined;
+    const task = startBackgroundGeneration({
+      category,
+      focus,
+      persona,
+      appendTo,
+    });
     setLoading(true);
     setElapsedMs(Math.max(0, Date.now() - task.startedAt));
     setActiveFocus(task.focus);
@@ -701,22 +705,10 @@ export function InterpretationPanel({
         {!loading && (
           <DeepDivePanel
             category={category}
-            onSelect={generate}
+            onSelect={(focus) => generate(focus)}
             disabled={loading}
           />
         )}
-        <ButtonPrimary
-          tone="mint"
-          onClick={() => generate()}
-          disabled={loading}
-        >
-          {loading
-            ? activeFocus
-              ? "심화 초점으로 다시 읽는 중..."
-              : ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))]
-                  .title
-            : `${CREDIT_COSTS.interpretation}꼬북알로 정밀 리포트 생성`}
-        </ButtonPrimary>
         {error && (
           <p className="mt-2 text-center text-xs font-bold text-red">{error}</p>
         )}

@@ -459,12 +459,30 @@ export async function generateInterpretation(
   name?: string,
   focus?: string,
   persona: PersonaKey = 'dosa',
+  /** Supplement-only mode. true면 LLM이 이미 본 본문 뒤에 이어붙일
+   *  심화 섹션만 생성한다 (전체 4-섹션 구조 다시 안 씀). */
+  supplementMode: boolean = false,
 ): Promise<{ content: string; tokensUsed: number; model: string }> {
   const cat = INTERPRETATION_CATEGORIES.find((c) => c.key === category);
   if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
   const context = formatSajuContext(saju, name);
   const anchorLines = cat.anchors.map((a) => `- ${a}`).join('\n');
   const extraContext = categoryExtraContext(saju, category);
+
+  const supplementDirective = supplementMode
+    ? `
+
+## 보충 응답 모드 (매우 중요)
+- 사용자는 이미 이 카테고리의 정식 풀이를 화면에 보고 있다. 이번 응답은 그 뒤에 이어 붙일 "심화: ${focus}" 섹션이다.
+- "한 줄 결론:"으로 시작하지 마라.
+- 4-섹션 정식 리포트 구조(판독 근거 표 / 체감 체크포인트 / 깊은 풀이 / 활용 처방)를 다시 쓰지 마라.
+- 응답 구조 (페르소나 스타일은 유지하되 분량·구조는 다음에 맞춤):
+  · 첫 줄: "## 심화 — ${focus ?? '추가 풀이'}" (마크다운 H2 헤딩) — 도사 모드만 사용. 그 외 페르소나는 평문 한 줄 헤드라인.
+  · 본문 2-4 단락 (각 4-6 문장). 초점에만 집중해 사주 근거 → 작용 방식 → 현실 장면 → 처방을 한 흐름으로.
+  · 끝에 짧은 실행 팁 2-3개 (도사 모드는 마크다운 표 OK, 다른 모드는 평문).
+- 전체 분량은 700-1,200자 안팎. 짧고 밀도 있게.`
+    : '';
+
   const userMsg = `다음 사주를 "${cat.title}" 관점에서 깊이 풀이해줘. 현재 모드는 ${persona}.
 
 ${context}
@@ -474,18 +492,20 @@ ${extraContext ? `\n${extraContext}\n` : ''}
 이 카테고리에서 반드시 인용해야 하는 명리 근거(앵커):
 ${anchorLines}
 
-${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반론보다 더 구체적인 판독 근거, 위험 신호, 실전 처방을 강화해줘.\n` : ''}
+${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반론보다 더 구체적인 판독 근거, 위험 신호, 실전 처방을 강화해줘.\n` : ''}${supplementDirective}
 작성 요구:
-- 페르소나 스타일 가이드의 구조(${persona === 'dosa' ? '4섹션 표 포함' : '마크다운 없는 평문'})와 말투를 정확히 지킨다.
+- 페르소나 스타일 가이드의 ${supplementMode ? '말투(어미·한자·술어 사용 정도)' : '구조와 말투'}를 정확히 지킨다.
 - 단락마다 위 앵커 중 최소 하나를 실제로 인용하되, 페르소나 톤에 맞게 풀어 쓴다.
 - "왜 이 풀이가 나오는지"가 매 단락에서 느껴져야 한다.
-- 사용자가 체감으로 검증할 수 있는 행동/감정 장면을 최소 3개 포함한다.
+- 사용자가 체감으로 검증할 수 있는 행동/감정 장면을 ${supplementMode ? '최소 2개' : '최소 3개'} 포함한다.
 - 컨텍스트에 없는 글자/합·충·신살은 만들어내지 않는다.${extraContext ? '\n- 위 "## 가족 관계 핵심 신호"의 ⚠️ 신호는 반드시 본문에서 풀어준다.' : ''}`;
   return complete({
     tier: 'saju',
     system: buildSystem(persona),
     messages: [{ role: 'user', content: userMsg }],
-    maxTokens: PERSONA_MAX_TOKENS[persona],
+    maxTokens: supplementMode
+      ? Math.min(2400, PERSONA_MAX_TOKENS[persona])
+      : PERSONA_MAX_TOKENS[persona],
     temperature: persona === 'kkobuk' || persona === 'bosal' ? 0.6 : 0.45,
   }).then((r) => ({
     content: r.text,

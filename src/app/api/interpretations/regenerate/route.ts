@@ -21,6 +21,9 @@ const Body = z.object({
   category: z.string(),
   focus: z.string().max(300).optional(),
   persona: z.enum(['kkobuk', 'dosa', 'mudang', 'bosal']).optional(),
+  /** Deep-dive 보충 모드. 사용자가 이미 본문을 보고 있을 때, 그 본문 뒤에
+   *  '심화: focus' 섹션을 이어붙여 저장한다. */
+  appendTo: z.string().max(60000).optional(),
 });
 
 export const runtime = 'nodejs';
@@ -38,8 +41,11 @@ export async function POST(req: Request) {
   if (!rl.allowed)
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
-  const { category, focus, persona: personaInput } = Body.parse(await req.json());
+  const { category, focus, persona: personaInput, appendTo } = Body.parse(
+    await req.json(),
+  );
   const persona = personaInput ?? 'dosa';
+  const isAppend = Boolean(appendTo && focus);
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
   if (!cat)
     return NextResponse.json({ error: 'unknown_category' }, { status: 400 });
@@ -92,6 +98,7 @@ export async function POST(req: Request) {
       profile.name,
       focus,
       persona,
+      isAppend,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
@@ -130,13 +137,18 @@ export async function POST(req: Request) {
     }
   }
 
+  // Supplement append: 기존 본문 + 구분선 + 새 심화 섹션 합쳐 저장.
+  const mergedContent = isAppend && appendTo
+    ? `${appendTo.trim()}\n\n---\n\n${result.content.trim()}`
+    : result.content;
+
   const admin = await createServerClient({ admin: true });
   const { error } = await admin.from('interpretations').upsert(
     {
       saju_id: profile.id,
       category,
       persona,
-      content: result.content,
+      content: mergedContent,
       model: result.model,
       tokens_used: result.tokensUsed,
       generated_at: new Date().toISOString(),
@@ -160,7 +172,7 @@ export async function POST(req: Request) {
     }).catch(() => undefined);
 
   return NextResponse.json({
-    content: result.content,
+    content: mergedContent,
     cached: !error,
     model: result.model,
   });
