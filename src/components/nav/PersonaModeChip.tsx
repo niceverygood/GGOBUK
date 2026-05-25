@@ -79,9 +79,15 @@ export function PersonaModeChip() {
 
   // 칩을 숨기는 경로:
   // - /mode: 선택지가 본문에 있으므로 중복
-  // - /chat/*: 채팅엔 자체 '변신' 버튼이 있고, 사주풀이 모드와 다른 축이라
-  //   같은 화면에 두면 사용자가 헷갈림
-  if (pathname === '/mode' || pathname?.startsWith('/chat')) return null;
+  // - /chat/*: 채팅엔 자체 '변신' 버튼이 있음
+  // - /persona*: 채팅 페르소나 선택 페이지. 사주풀이 톤과 다른 축이라
+  //   같은 화면에 두면 사용자가 혼동
+  if (
+    pathname === '/mode' ||
+    pathname?.startsWith('/chat') ||
+    pathname?.startsWith('/persona')
+  )
+    return null;
 
   return (
     <>
