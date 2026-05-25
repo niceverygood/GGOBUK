@@ -14,6 +14,10 @@ import {
   lockGeneration,
   unlockGeneration,
 } from "@/lib/utils/generation-lock";
+import {
+  PERSONA_LOADER_STEPS,
+  loaderEyebrowFor,
+} from "@/lib/llm/persona_loader_steps";
 import type { InterpretationCategory } from "@/types/db";
 
 const ANALYSIS_STEPS = [
@@ -489,11 +493,13 @@ function loadingStepIndex(progress: number) {
 }
 
 function AnalysisLoadingIndicator({ elapsedMs }: { elapsedMs: number }) {
+  // 페르소나별로 다른 캐릭터 액션 멘트로 대기시간을 즐겁게.
+  const persona = readPersonaMode();
   return (
     <AnalysisLoader
-      steps={ANALYSIS_STEPS}
+      steps={PERSONA_LOADER_STEPS[persona]}
       expectedMs={EXPECTED_ANALYSIS_MS}
-      eyebrow="AI 상세 분석 업데이트 중"
+      eyebrow={loaderEyebrowFor(persona)}
       elapsedMs={elapsedMs}
     />
   );

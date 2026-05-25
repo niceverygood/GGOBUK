@@ -9,48 +9,12 @@ import {
   lockGeneration,
   unlockGeneration,
 } from '@/lib/utils/generation-lock';
+import { AnalysisLoader } from '@/components/ui/AnalysisLoader';
 import {
-  AnalysisLoader,
-  type AnalysisStep,
-} from '@/components/ui/AnalysisLoader';
-
-const DAEWOON_STEPS: AnalysisStep[] = [
-  {
-    at: 0,
-    title: '대운 펼치는 중...',
-    body: '선택한 10년의 천간·지지부터 다시 짚고 있어요.',
-  },
-  {
-    at: 0.16,
-    title: '내 사주와 비교하는 중...',
-    body: '일간·격국·용신과 어떻게 만나는지 보고 있어요.',
-  },
-  {
-    at: 0.34,
-    title: '십성 흐름 잇는 중...',
-    body: '돈·관계·일·자존감 중 무엇이 강해지는지 확인 중.',
-  },
-  {
-    at: 0.52,
-    title: '신살·합충 점검 중...',
-    body: '체감이 큰 사건성 단서를 조심스럽게 추리고 있어요.',
-  },
-  {
-    at: 0.7,
-    title: '세운 연결하는 중...',
-    body: '올해와 다음 해까지 이어지는 결을 맞춰보는 중.',
-  },
-  {
-    at: 0.86,
-    title: '리포트 다듬는 중...',
-    body: '반복되는 사건·기회·조심할 점을 읽기 좋게 정리 중.',
-  },
-  {
-    at: 0.95,
-    title: '거의 다 됐어요...',
-    body: '응답을 받는 대로 바로 카드에 꽂아둘게요.',
-  },
-];
+  PERSONA_LOADER_STEPS,
+  loaderEyebrowFor,
+} from '@/lib/llm/persona_loader_steps';
+import { readPersonaMode } from '@/lib/utils/persona-mode';
 
 const EXPECTED_DAEWOON_MS = 32_000;
 
@@ -177,15 +141,18 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
           {CREDIT_COSTS.daewoon}꼬북알로 대운 AI 해설 보기
         </button>
       )}
-      {loading && (
-        <div className="mt-3">
-          <AnalysisLoader
-            steps={DAEWOON_STEPS}
-            expectedMs={EXPECTED_DAEWOON_MS}
-            eyebrow="대운 AI 해설 생성 중"
-          />
-        </div>
-      )}
+      {loading && (() => {
+        const p = readPersonaMode();
+        return (
+          <div className="mt-3">
+            <AnalysisLoader
+              steps={PERSONA_LOADER_STEPS[p]}
+              expectedMs={EXPECTED_DAEWOON_MS}
+              eyebrow={loaderEyebrowFor(p)}
+            />
+          </div>
+        );
+      })()}
       {error && (
         <div className="mt-3 rounded-2xl bg-red/10 px-4 py-3 text-sm font-bold text-red">
           {error}{' '}

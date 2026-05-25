@@ -20,6 +20,7 @@ import { WeekStrip } from '@/components/home/WeekStrip';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
+import { USE_CASES, USE_CASE_ORDER } from '@/lib/saju/use_cases';
 import type { Palja, SajuInput } from '@/lib/saju/types';
 
 const WEEKDAY = [
@@ -234,7 +235,53 @@ export default async function HomePage() {
 
         <WeekStrip sajuInput={calendarInput} />
 
-        <section className="mt-4">
+        {/* 🎯 Use-case 진입점 — 사용자가 실제로 가진 질문 6개로 좁혀 풀이 시작 */}
+        <section className="mt-5">
+          <div className="mb-2 flex items-end justify-between">
+            <div>
+              <p className="text-xs font-extrabold text-muted">
+                🎯 이번 주 이 질문에 답받기
+              </p>
+              <h2 className="text-lg font-black text-navy">포커스 풀이</h2>
+            </div>
+            <Link
+              href="/shell"
+              className="text-xs font-black text-mint-dark"
+            >
+              전체 12풀이 →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {USE_CASE_ORDER.map((key) => {
+              const uc = USE_CASES[key];
+              return (
+                <Link
+                  key={key}
+                  href={`/use-case/${key}`}
+                  prefetch
+                  className={`min-h-[112px] rounded-3xl border p-3 shadow-[0_8px_18px_rgba(44,62,80,0.06)] transition active:scale-[0.99] ${uc.cardClass}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <span className="text-3xl leading-none">{uc.emoji}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-black ${uc.accentChipClass}`}
+                    >
+                      포커스
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[15px] font-black text-navy">
+                    {uc.title}
+                  </p>
+                  <p className="mt-1 text-[10px] font-bold leading-snug text-navy/75">
+                    {uc.question}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-5">
           <div className="mb-2 flex items-end justify-between">
             <div>
               <p className="text-xs font-extrabold text-muted">날짜별 일진 길흉</p>
