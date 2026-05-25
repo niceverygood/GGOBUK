@@ -3,11 +3,16 @@
 import { useState } from 'react';
 import { LifeRoad } from '@/components/timeline/LifeRoad';
 import { ColdReadCard } from '@/components/timeline/ColdReadCard';
+import { LifeCurve } from '@/components/timeline/LifeCurve';
+import { SewoonStrip } from '@/components/timeline/SewoonStrip';
+import { EventMarkers } from '@/components/timeline/EventMarkers';
+import { CurrentDaewoonProgress } from '@/components/timeline/CurrentDaewoonProgress';
+import { CompareWithPrev } from '@/components/timeline/CompareWithPrev';
 import { Badge, Card } from '@/components/ui/primitives';
-import type { DaewoonPeriod } from '@/lib/saju/types';
+import type { DaewoonPeriod, SajuResult } from '@/lib/saju/types';
 
 interface TimelineClientProps {
-  daewoon: DaewoonPeriod[];
+  saju: SajuResult;
 }
 
 const SIPSUNG_META: Record<
@@ -103,7 +108,8 @@ function getMeta(period: DaewoonPeriod) {
   );
 }
 
-export function TimelineClient({ daewoon }: TimelineClientProps) {
+export function TimelineClient({ saju }: TimelineClientProps) {
+  const daewoon = saju.daewoon;
   const currentYear = new Date().getFullYear();
   const currentPeriod =
     daewoon.find(
@@ -124,7 +130,7 @@ export function TimelineClient({ daewoon }: TimelineClientProps) {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pr-28">
           <div>
             <p className="text-xs font-extrabold text-muted">
               10년 단위 인생 흐름
@@ -136,32 +142,21 @@ export function TimelineClient({ daewoon }: TimelineClientProps) {
           <Badge tone="mint">현재 {currentAge}세</Badge>
         </div>
 
-        <Card soft className="mt-4 p-4">
-          <p className="text-sm font-black text-navy">
-            대운은 10년짜리 인생 날씨야
-          </p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-            매일의 운세가 오늘의 날씨라면, 대운은 10년 동안 깔리는 큰 계절이야.
-            아래 지도에서 지금 위치와 다음 흐름, 조심할 점을 눌러 확인할 수
-            있어.
-          </p>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            {[
-              ['현재 위치', '지금 왜 이런 일이 잦은지'],
-              ['다음 10년', '미리 준비할 방향'],
-              ['꼬북 해설', '내 사주와 연결한 풀이'],
-            ].map(([title, body]) => (
-              <div key={title} className="rounded-2xl bg-white/75 px-2 py-3">
-                <p className="text-[11px] font-black text-navy">{title}</p>
-                <p className="mt-1 text-[10px] font-bold leading-snug text-muted">
-                  {body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        {/* 현재 대운 progress + 점수 + 다음 대운 D-day */}
+        <CurrentDaewoonProgress saju={saju} daewoon={daewoon} />
 
-        <Card className="mt-5 px-3 py-4">
+        {/* 인생 운세 곡선 — 8 대운 점수를 한눈에 */}
+        <div className="mt-3">
+          <LifeCurve
+            saju={saju}
+            daewoon={daewoon}
+            currentYear={currentYear}
+            selectedStartYear={selected?.startYear ?? null}
+            onSelect={setSelected}
+          />
+        </div>
+
+        <Card className="mt-3 px-3 py-4">
           {selected && selectedMeta && (
             <div className="px-1">
               <p className="text-[11px] font-black text-mint-dark">
@@ -181,40 +176,32 @@ export function TimelineClient({ daewoon }: TimelineClientProps) {
                     {selected.startAge}–{selected.startAge + 9}세
                   </p>
                 </div>
-                <Badge
-                  tone="gold"
-                  className="max-w-[128px] shrink-0 justify-center text-center leading-tight"
-                >
-                  핵심 {selected.sipsung}
-                </Badge>
               </div>
             </div>
           )}
           <LifeRoad
+            saju={saju}
             periods={daewoon}
             currentYear={currentYear}
             selectedStartYear={selected?.startYear ?? null}
             onSelect={setSelected}
           />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-mint/10 px-3 py-3">
-              <p className="text-[11px] font-black text-mint-dark">실선</p>
-              <p className="mt-1 text-[11px] font-bold leading-snug text-muted">
-                지나온 흐름과 지금 이어지는 구간
-              </p>
+          <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+            <div className="rounded-xl bg-mint/15 px-2 py-1.5">
+              <p className="text-[10px] font-black text-[#16706B]">길 ≥72</p>
             </div>
-            <div className="rounded-2xl bg-gold/20 px-3 py-3">
-              <p className="text-[11px] font-black text-[#6B5A24]">흐린 칸</p>
-              <p className="mt-1 text-[11px] font-bold leading-snug text-muted">
-                앞으로 준비할 다음 10년
-              </p>
+            <div className="rounded-xl bg-gold/22 px-2 py-1.5">
+              <p className="text-[10px] font-black text-[#7C5A0E]">평 50–71</p>
+            </div>
+            <div className="rounded-xl bg-red/12 px-2 py-1.5">
+              <p className="text-[10px] font-black text-red">주의 &lt;50</p>
             </div>
           </div>
         </Card>
 
         {selected && selectedMeta && (
           <>
-            <Card className="mt-4 p-4">
+            <Card className="mt-3 p-4">
               <p className="text-[11px] font-black text-muted">
                 이 구간에서 보는 것
               </p>
@@ -240,10 +227,22 @@ export function TimelineClient({ daewoon }: TimelineClientProps) {
                   </p>
                 </div>
               </div>
+              <CompareWithPrev
+                saju={saju}
+                daewoon={daewoon}
+                selected={selected}
+              />
             </Card>
+
+            {/* 세운 스트립 — 이 대운 안의 10년치 */}
+            <SewoonStrip saju={saju} period={selected} />
+
             <ColdReadCard key={selected.startYear} period={selected} />
           </>
         )}
+
+        {/* 자동 추정 인생 이벤트 마커 */}
+        <EventMarkers saju={saju} />
       </div>
     </main>
   );

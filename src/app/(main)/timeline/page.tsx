@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { TimelineClient } from './TimelineClient';
-import type { DaewoonPeriod } from '@/lib/saju/types';
+import { buildSajuResult } from '@/lib/saju';
+import type { SajuInput } from '@/lib/saju/types';
 
 export default async function TimelinePage() {
   const supabase = await createServerClient();
@@ -12,14 +13,21 @@ export default async function TimelinePage() {
 
   const { data: profile } = await supabase
     .from('saju_profiles')
-    .select('daewoon')
+    .select('birth_date,birth_time,is_lunar,is_leap_month,gender')
     .eq('owner_id', user.id)
     .eq('relation_type', 'self')
     .maybeSingle();
 
   if (!profile) redirect('/onboarding/saju');
 
-  return (
-    <TimelineClient daewoon={(profile.daewoon ?? []) as DaewoonPeriod[]} />
-  );
+  const sajuInput: SajuInput = {
+    birthDate: profile.birth_date,
+    birthTime: profile.birth_time ?? undefined,
+    isLunar: profile.is_lunar,
+    isLeapMonth: profile.is_leap_month,
+    gender: profile.gender,
+  };
+  const saju = buildSajuResult(sajuInput);
+
+  return <TimelineClient saju={saju} />;
 }

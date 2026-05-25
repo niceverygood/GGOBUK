@@ -197,6 +197,7 @@ export default function PreviewResultPage() {
             대운 타임라인
           </p>
           <LifeRoad
+            saju={saju}
             periods={saju.daewoon}
             currentYear={currentYear}
             selectedStartYear={selectedPeriod?.startYear ?? null}
