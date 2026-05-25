@@ -462,6 +462,9 @@ export async function generateInterpretation(
   /** Supplement-only mode. true면 LLM이 이미 본 본문 뒤에 이어붙일
    *  심화 섹션만 생성한다 (전체 4-섹션 구조 다시 안 씀). */
   supplementMode: boolean = false,
+  /** Supplement 항목의 짧은 제목. 시작 헤딩으로 박아두면 클라이언트가 본문에서
+   *  소비된 항목을 식별할 수 있다. */
+  supplementTitle?: string,
 ): Promise<{ content: string; tokensUsed: number; model: string }> {
   const cat = INTERPRETATION_CATEGORIES.find((c) => c.key === category);
   if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
@@ -469,18 +472,23 @@ export async function generateInterpretation(
   const anchorLines = cat.anchors.map((a) => `- ${a}`).join('\n');
   const extraContext = categoryExtraContext(saju, category);
 
+  const headingTitle = supplementTitle ?? '추가 풀이';
   const supplementDirective = supplementMode
     ? `
 
 ## 보충 응답 모드 (매우 중요)
-- 사용자는 이미 이 카테고리의 정식 풀이를 화면에 보고 있다. 이번 응답은 그 뒤에 이어 붙일 "심화: ${focus}" 섹션이다.
+- 사용자는 이미 이 카테고리의 정식 풀이를 화면에 보고 있다. 이번 응답은 그 뒤에 이어 붙일 "심화" 섹션이다.
+- ⚠️ 응답의 정확히 첫 줄은 다음과 같이 시작해야 한다(글자 그대로):
+    ## 심화 — ${headingTitle}
+  이 헤딩은 페르소나 모드에 관계없이 반드시 마크다운 H2(##)로 쓴다. 변형하지 마라. 줄 앞뒤에 다른 글자를 추가하지 마라.
 - "한 줄 결론:"으로 시작하지 마라.
 - 4-섹션 정식 리포트 구조(판독 근거 표 / 체감 체크포인트 / 깊은 풀이 / 활용 처방)를 다시 쓰지 마라.
 - 응답 구조 (페르소나 스타일은 유지하되 분량·구조는 다음에 맞춤):
-  · 첫 줄: "## 심화 — ${focus ?? '추가 풀이'}" (마크다운 H2 헤딩) — 도사 모드만 사용. 그 외 페르소나는 평문 한 줄 헤드라인.
+  · 위 H2 헤딩 다음 빈 줄.
   · 본문 2-4 단락 (각 4-6 문장). 초점에만 집중해 사주 근거 → 작용 방식 → 현실 장면 → 처방을 한 흐름으로.
   · 끝에 짧은 실행 팁 2-3개 (도사 모드는 마크다운 표 OK, 다른 모드는 평문).
-- 전체 분량은 700-1,200자 안팎. 짧고 밀도 있게.`
+- 전체 분량은 700-1,200자 안팎. 짧고 밀도 있게.
+- 심화 초점(사용자 질문의 의도): ${focus ?? '추가 깊이'}`
     : '';
 
   const userMsg = `다음 사주를 "${cat.title}" 관점에서 깊이 풀이해줘. 현재 모드는 ${persona}.

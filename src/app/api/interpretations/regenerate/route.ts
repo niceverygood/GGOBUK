@@ -24,6 +24,9 @@ const Body = z.object({
   /** Deep-dive 보충 모드. 사용자가 이미 본문을 보고 있을 때, 그 본문 뒤에
    *  '심화: focus' 섹션을 이어붙여 저장한다. */
   appendTo: z.string().max(60000).optional(),
+  /** Deep-dive 항목의 짧은 제목. LLM이 응답 첫 줄에 '## 심화 — {title}'로
+   *  박아두면 클라이언트가 본문에서 grep해 소비된 항목을 식별할 수 있다. */
+  title: z.string().max(100).optional(),
 });
 
 export const runtime = 'nodejs';
@@ -41,9 +44,8 @@ export async function POST(req: Request) {
   if (!rl.allowed)
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
-  const { category, focus, persona: personaInput, appendTo } = Body.parse(
-    await req.json(),
-  );
+  const { category, focus, persona: personaInput, appendTo, title } =
+    Body.parse(await req.json());
   const persona = personaInput ?? 'dosa';
   const isAppend = Boolean(appendTo && focus);
   const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
@@ -99,6 +101,7 @@ export async function POST(req: Request) {
       focus,
       persona,
       isAppend,
+      isAppend ? title : undefined,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';

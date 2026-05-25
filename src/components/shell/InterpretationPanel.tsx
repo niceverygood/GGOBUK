@@ -418,6 +418,7 @@ function startBackgroundGeneration({
   focus,
   persona,
   appendTo,
+  title,
 }: {
   category: InterpretationCategory;
   focus?: string;
@@ -426,6 +427,9 @@ function startBackgroundGeneration({
    *  서버는 이 값을 받으면 (1) LLM에 supplement-only 지시를 주고
    *  (2) 응답을 appendTo + divider + 새 응답으로 합쳐 저장한다. */
   appendTo?: string;
+  /** Deep-dive 항목의 짧은 title — LLM이 응답 첫 줄에 '## 심화 — {title}'
+   *  헤딩으로 박아두면 클라이언트가 본문에서 grep해 소비된 항목을 식별할 수 있다. */
+  title?: string;
 }) {
   const existing = backgroundTasks.get(category);
   if (existing?.status === "running") return existing;
@@ -443,7 +447,7 @@ function startBackgroundGeneration({
   task.promise = fetch("/api/interpretations/regenerate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ category, focus, persona, appendTo }),
+    body: JSON.stringify({ category, focus, persona, appendTo, title }),
   })
     .then(async (res) => {
       const data = await res.json().catch(() => ({}));
@@ -499,12 +503,20 @@ function DeepDivePanel({
   category,
   onSelect,
   disabled,
+  consumedTitles,
 }: {
   category: InterpretationCategory;
-  onSelect: (focus: string) => void;
+  onSelect: (focus: string, title: string) => void;
   disabled: boolean;
+  consumedTitles: Set<string>;
 }) {
-  const options = CATEGORY_DEEP_DIVES[category] ?? DEFAULT_DEEP_DIVES;
+  const allOptions = CATEGORY_DEEP_DIVES[category] ?? DEFAULT_DEEP_DIVES;
+  const options = allOptions.filter(
+    (option) => !consumedTitles.has(option.title),
+  );
+
+  // 모든 심화를 다 본 상태면 패널 자체를 숨김.
+  if (options.length === 0) return null;
 
   return (
     <div className="rounded-3xl border border-navy/10 bg-white/80 p-4 shadow-[0_10px_24px_rgba(44,62,80,0.06)]">
@@ -529,7 +541,7 @@ function DeepDivePanel({
             key={option.title}
             type="button"
             disabled={disabled}
-            onClick={() => onSelect(option.focus)}
+            onClick={() => onSelect(option.focus, option.title)}
             className="flex w-full items-center gap-3 rounded-2xl border border-navy/10 bg-ivory/70 px-3 py-3 text-left transition active:scale-[0.99] disabled:opacity-60"
           >
             <span className="min-w-0 flex-1">
@@ -569,6 +581,20 @@ export function InterpretationPanel({
   const [error, setError] = useState("");
   const isRichReport =
     content.includes("##") || content.includes("| 사주 근거 |");
+
+  // 본문에서 이미 소비된 deep-dive 항목들을 식별 — LLM이 supplement 생성 시
+  // 첫 줄에 "## 심화 — {title}" 헤딩을 박아두므로 그 문자열을 grep한다.
+  const consumedTitles = (() => {
+    const allOptions = CATEGORY_DEEP_DIVES[category] ?? DEFAULT_DEEP_DIVES;
+    const set = new Set<string>();
+    for (const o of allOptions) {
+      if (content.includes(`## 심화 — ${o.title}`) ||
+          content.includes(`심화 — ${o.title}`)) {
+        set.add(o.title);
+      }
+    }
+    return set;
+  })();
 
   // Sync local state when the server re-renders with a different initialContent
   // (e.g. user switched persona mode → cookie-aware page re-fetched a different
@@ -631,7 +657,7 @@ export function InterpretationPanel({
     return () => window.clearInterval(timer);
   }, [category, loading]);
 
-  function generate(focus?: string) {
+  function generate(focus?: string, title?: string) {
     const persona = readPersonaMode();
     // Deep-dive(focus) 요청은 기존 본문에 이어붙이는 supplement 모드로 처리.
     // 그 외(초기 생성)는 일반 fresh 생성.
@@ -641,6 +667,7 @@ export function InterpretationPanel({
       focus,
       persona,
       appendTo,
+      title,
     });
     setLoading(true);
     setElapsedMs(Math.max(0, Date.now() - task.startedAt));
@@ -705,8 +732,9 @@ export function InterpretationPanel({
         {!loading && (
           <DeepDivePanel
             category={category}
-            onSelect={(focus) => generate(focus)}
+            onSelect={(focus, title) => generate(focus, title)}
             disabled={loading}
+            consumedTitles={consumedTitles}
           />
         )}
         {error && (
