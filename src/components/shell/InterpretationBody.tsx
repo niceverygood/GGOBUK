@@ -71,38 +71,50 @@ function InterpretationBlock({ block }: { block: Block }) {
   }
 
   if (block.type === "table") {
+    // Mobile-first: render each row as a stacked card. The first column
+    // (typically "사주 근거" or "상황") becomes the card title; remaining
+    // columns become labeled key-value rows. This avoids horizontal scrolling
+    // entirely on phone widths where a 3-col table can't fit.
+    const [titleHeader, ...detailHeaders] = block.headers;
     return (
-      <div className="overflow-hidden rounded-2xl border border-navy/10 bg-white/80">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[420px] border-collapse text-left text-[12px]">
-            <thead>
-              <tr className="bg-navy text-white">
-                {block.headers.map((header) => (
-                  <th key={header} className="px-3 py-2.5 font-black">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {block.rows.map((row, rowIndex) => (
-                <tr
-                  key={`${row.join("-")}-${rowIndex}`}
-                  className="border-t border-navy/10 odd:bg-ivory/45"
-                >
-                  {block.headers.map((_, cellIndex) => (
-                    <td
-                      key={cellIndex}
-                      className="px-3 py-2.5 align-top font-semibold leading-relaxed text-[#3C4650]"
+      <div className="space-y-2">
+        {block.rows.map((row, rowIndex) => {
+          const [titleCell, ...detailCells] = row;
+          return (
+            <div
+              key={`${row.join("-")}-${rowIndex}`}
+              className="rounded-2xl border border-navy/10 bg-white/85 p-3 shadow-[0_6px_14px_rgba(44,62,80,0.04)]"
+            >
+              {titleHeader && (
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 inline-flex shrink-0 rounded-full bg-navy px-2 py-0.5 text-[10px] font-black text-white">
+                    {titleHeader}
+                  </span>
+                  <p className="text-[13px] font-black leading-snug text-navy">
+                    {renderHighlights(titleCell ?? "")}
+                  </p>
+                </div>
+              )}
+              {detailHeaders.length > 0 && (
+                <dl className="mt-2 space-y-1.5">
+                  {detailHeaders.map((header, idx) => (
+                    <div
+                      key={header + idx}
+                      className="grid grid-cols-[68px_1fr] gap-2 items-start"
                     >
-                      {renderHighlights(row[cellIndex] ?? "")}
-                    </td>
+                      <dt className="text-[10px] font-extrabold uppercase tracking-wide text-mint-dark pt-0.5">
+                        {header}
+                      </dt>
+                      <dd className="text-[12.5px] font-semibold leading-snug text-[#3C4650]">
+                        {renderHighlights(detailCells[idx] ?? "")}
+                      </dd>
+                    </div>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </dl>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
