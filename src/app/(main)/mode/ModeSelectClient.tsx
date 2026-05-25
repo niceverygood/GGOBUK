@@ -118,12 +118,34 @@ export function ModeSelectClient() {
     return subscribeGenerationLock(() => setBusy(isAnyGenerationLocked()));
   }, []);
 
-  function pick(key: PersonaKey) {
+  async function pick(key: PersonaKey) {
     if (busy) return; // hard guard — buttons are also disabled
     setCurrent(key);
     writePersonaMode(key);
-    // 어디서 왔는지 명시적 from 파라미터가 있으면 그 곳으로, 아니면 뒤로.
     const from = searchParams.get('from');
+
+    // 채팅에서 왔다면 새 페르소나로 새 채팅 세션을 만들어 거기로 이동.
+    // 기존 세션은 그 세션의 persona 그대로 두고, 모드 변경은 "지금부터 다른
+    // 캐릭터와 새 대화"로 자연스럽게 연결되게 한다.
+    if (from && from.startsWith('/chat')) {
+      try {
+        const res = await fetch('/api/chat/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ persona: key }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (d?.session?.id) {
+          router.replace(`/chat/${d.session.id}`);
+          return;
+        }
+      } catch {
+        // 실패 시 그냥 /chat 으로 (fallback)
+      }
+      router.replace('/chat');
+      return;
+    }
+
     if (from && from.startsWith('/')) {
       router.replace(from);
     } else {

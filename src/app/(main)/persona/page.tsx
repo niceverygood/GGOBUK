@@ -2,12 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { KkobukSprite, type SpriteKey } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card, ButtonPrimary } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
+import {
+  readPersonaMode,
+  writePersonaMode,
+} from '@/lib/utils/persona-mode';
 
 const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
   kkobuk: 'persona-kkobuk',
@@ -17,10 +21,10 @@ const PERSONA_SPRITE: Record<PersonaKey, SpriteKey> = {
 };
 
 const PERSONA_CARD: Record<PersonaKey, { src: string; width: number; height: number }> = {
-  kkobuk: { src: '/characters/ggobuk/cards/card_basic_friend.png', width: 924, height: 1388 },
-  dosa: { src: '/characters/ggobuk/cards/card_saju_master.png', width: 1040, height: 1388 },
-  mudang: { src: '/characters/ggobuk/cards/card_direct_shaman.png', width: 1104, height: 1388 },
-  bosal: { src: '/characters/ggobuk/cards/card_comfort_bodhisattva.png', width: 1160, height: 1388 },
+  kkobuk: { src: '/characters/ggobuk/cards/hires/card_basic_friend@2x.png', width: 1848, height: 2776 },
+  dosa: { src: '/characters/ggobuk/cards/hires/card_saju_master@2x.png', width: 2080, height: 2776 },
+  mudang: { src: '/characters/ggobuk/cards/hires/card_direct_shaman@2x.png', width: 2208, height: 2776 },
+  bosal: { src: '/characters/ggobuk/cards/hires/card_comfort_bodhisattva@2x.png', width: 2320, height: 2776 },
 };
 import { cn } from '@/lib/utils/cn';
 
@@ -35,6 +39,19 @@ export default function PersonaSelectionPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<PersonaKey>('dosa');
   const [loading, setLoading] = useState(false);
+
+  // 페이지 진입 시 cookie/localStorage에 저장된 mode를 가져와 초기 선택.
+  // 사용자가 '꼬북무당' 선택하고 채팅 가는 동안 cookie도 함께 갱신해
+  // 다음에 사주풀이 들어가면 같은 페르소나로 자동 적용된다 (혼동 제거).
+  useEffect(() => {
+    setSelected(readPersonaMode());
+  }, []);
+
+  function pickPersona(key: PersonaKey) {
+    setSelected(key);
+    // 채팅 페르소나 선택은 사주풀이 모드와 동기화 (단일 페르소나 컨셉).
+    writePersonaMode(key);
+  }
   const selectedCard = PERSONA_CARD[selected];
   const selectedCardHeight = 384;
   const selectedCardWidth = Math.round(
@@ -81,7 +98,7 @@ export default function PersonaSelectionPage() {
                 )}
               >
                 <button
-                  onClick={() => setSelected(k)}
+                  onClick={() => pickPersona(k)}
                   className="flex items-center gap-4 flex-1 min-w-0 text-left"
                 >
                   <div className="w-16 h-16 rounded-2xl bg-mint/20 flex items-center justify-center overflow-hidden shrink-0">
@@ -111,7 +128,7 @@ export default function PersonaSelectionPage() {
               width={selectedCardWidth}
               height={selectedCardHeight}
               sizes={`${Math.round((selectedCardWidth / selectedCardHeight) * 128)}px`}
-              quality={95}
+              unoptimized
               className="h-32 w-auto shrink-0 rounded-xl object-contain"
             />
             <div>

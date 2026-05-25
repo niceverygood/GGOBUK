@@ -190,6 +190,9 @@ export default async function HomePage() {
           <Badge tone="mint">길운 {gilun}</Badge>
         </div>
 
+        {/* ════════════════ 🌅 오늘 ════════════════ */}
+        <SectionDivider emoji="🌅" label="오늘" />
+
         <TodayInsight
           ilji={ilji}
           myDay={palja.day}
@@ -233,10 +236,13 @@ export default async function HomePage() {
           {!daily?.one_liner && <EnsureDaily sajuId={profile.id} />}
         </Card>
 
+        {/* ════════════════ 📅 이번 주 ════════════════ */}
+        <SectionDivider emoji="📅" label="이번 주" />
+
         <WeekStrip sajuInput={calendarInput} />
 
         {/* 🎯 Use-case 진입점 — 사용자가 실제로 가진 질문 6개로 좁혀 풀이 시작 */}
-        <section className="mt-5">
+        <section className="mt-3">
           <div className="mb-2 flex items-end justify-between">
             <div>
               <p className="text-xs font-extrabold text-muted">
@@ -281,7 +287,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="mt-5">
+        {/* ════════════════ 🗓 이번 달 ════════════════ */}
+        <SectionDivider emoji="🗓" label="이번 달" />
+
+        <section className="mt-3">
           <div className="mb-2 flex items-end justify-between">
             <div>
               <p className="text-xs font-extrabold text-muted">날짜별 일진 길흉</p>
@@ -298,7 +307,10 @@ export default async function HomePage() {
           <FortuneCalendar input={calendarInput} name={profile.name} />
         </section>
 
-        <section className="mt-6">
+        {/* ════════════════ 🎯 추가 풀이 ════════════════ */}
+        <SectionDivider emoji="🎯" label="추가 풀이" />
+
+        <section className="mt-3">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-xs font-extrabold text-muted">
@@ -384,5 +396,18 @@ export default async function HomePage() {
         />
       </Link>
     </main>
+  );
+}
+
+/** 큰 시간 단위 섹션 헤더 (오늘 / 이번 주 / 이번 달 / 추가 풀이). */
+function SectionDivider({ emoji, label }: { emoji: string; label: string }) {
+  return (
+    <div className="mt-6 mb-2 flex items-center gap-2.5">
+      <span className="text-xl leading-none">{emoji}</span>
+      <span className="text-[18px] font-black tracking-tight text-navy">
+        {label}
+      </span>
+      <span className="ml-2 flex-1 h-px bg-gradient-to-r from-navy/15 via-navy/8 to-transparent" />
+    </div>
   );
 }

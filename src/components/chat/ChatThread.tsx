@@ -211,7 +211,7 @@ export function ChatThread({
             </div>
           </div>
         </div>
-        <Link href="/persona" className="inline-flex">
+        <Link href="/mode?from=/chat" className="inline-flex">
           <Badge tone="mint">변신</Badge>
         </Link>
       </header>

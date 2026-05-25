@@ -1,5 +1,6 @@
 // Render a long-form interpretation paragraph with .highlight underlines on hanja tokens.
 // Flat block rendering — headings, paragraphs, conclusion, lists, quotes, tables — in document order.
+// Special-case: "## 한눈에" + following bullet list = TLDR callout card with 키워드/실천/조심.
 
 import React from "react";
 
@@ -11,10 +12,13 @@ type Block =
   | { type: "conclusion"; text: string }
   | { type: "list"; items: string[] }
   | { type: "quote"; text: string }
-  | { type: "table"; headers: string[]; rows: string[][] };
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "tldr"; keyword?: string; doThis?: string; watch?: string };
 
 export function InterpretationBody({ text }: { text: string }) {
-  const blocks = parseBlocks(text);
+  const raw = parseBlocks(text);
+  // 한눈에 헤딩 다음 list 블록을 TLDR로 합쳐서 special card로 변환.
+  const blocks = collapseTldr(raw);
   return (
     <div className="space-y-4">
       {blocks.map((block, i) => (
@@ -24,7 +28,101 @@ export function InterpretationBody({ text }: { text: string }) {
   );
 }
 
+// "## 한눈에" 헤딩 + 다음 list를 TLDR 블록으로 묶음.
+function collapseTldr(blocks: Block[]): Block[] {
+  const out: Block[] = [];
+  for (let i = 0; i < blocks.length; i += 1) {
+    const b = blocks[i];
+    if (
+      b.type === "heading" &&
+      /^한\s*눈에$/.test(b.text.trim()) &&
+      i + 1 < blocks.length &&
+      blocks[i + 1].type === "list"
+    ) {
+      const list = blocks[i + 1] as { type: "list"; items: string[] };
+      const tldr: Extract<Block, { type: "tldr" }> = { type: "tldr" };
+      for (const item of list.items) {
+        // 시작 마커로 라우팅
+        if (/^(🔑|키워드[:：])/.test(item)) {
+          tldr.keyword = item.replace(/^🔑\s*/, '').replace(/^키워드[:：]\s*/, '').trim();
+        } else if (/^(✅|이렇게\s*해봐|이렇게\s*해보시면)/.test(item)) {
+          tldr.doThis = item.replace(/^✅\s*/, '').replace(/^이렇게\s*해봐[:：]?\s*/, '').replace(/^이렇게\s*해보시면[:：]?\s*/, '').trim();
+        } else if (/^(⚠️|이건\s*조심|조심할\s*점)/.test(item)) {
+          tldr.watch = item.replace(/^⚠️\s*/, '').replace(/^이건\s*조심[:：]?\s*/, '').replace(/^조심할\s*점[:：]?\s*/, '').trim();
+        }
+      }
+      out.push(tldr);
+      i += 1; // skip the list block
+      continue;
+    }
+    out.push(b);
+  }
+  return out;
+}
+
 function InterpretationBlock({ block }: { block: Block }) {
+  if (block.type === "tldr") {
+    return (
+      <div className="rounded-3xl border border-mint/35 bg-gradient-to-br from-mint/12 via-white to-gold/10 p-4 shadow-[0_8px_18px_rgba(44,62,80,0.06)]">
+        <div className="flex items-center gap-1.5">
+          <span className="rounded-full bg-navy text-white px-2 py-0.5 text-[10px] font-black">
+            한눈에
+          </span>
+          <span className="text-[11px] font-extrabold text-muted">
+            본문 안 읽어도 핵심만
+          </span>
+        </div>
+        <div className="mt-3 space-y-2.5">
+          {block.keyword && (
+            <div className="flex items-start gap-2">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-navy/8 text-base">
+                🔑
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-extrabold text-mint-dark">
+                  핵심 키워드
+                </p>
+                <p className="mt-0.5 text-[14px] font-black leading-snug text-navy">
+                  {renderHighlights(block.keyword)}
+                </p>
+              </div>
+            </div>
+          )}
+          {block.doThis && (
+            <div className="flex items-start gap-2 rounded-2xl bg-mint/12 p-2.5">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-mint/30 text-base">
+                ✅
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-extrabold text-mint-dark">
+                  이렇게 해봐
+                </p>
+                <p className="mt-0.5 text-[14px] font-bold leading-snug text-navy">
+                  {renderHighlights(block.doThis)}
+                </p>
+              </div>
+            </div>
+          )}
+          {block.watch && (
+            <div className="flex items-start gap-2 rounded-2xl bg-red/10 p-2.5">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-red/20 text-base">
+                ⚠️
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-extrabold text-red">
+                  이건 조심
+                </p>
+                <p className="mt-0.5 text-[14px] font-bold leading-snug text-navy">
+                  {renderHighlights(block.watch)}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (block.type === "heading") {
     return (
       <h2 className="pt-2 text-lg font-black leading-tight text-navy">
