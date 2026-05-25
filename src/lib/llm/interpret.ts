@@ -1,6 +1,7 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { analyzeSaju } from '@/lib/saju/analysis';
 import type { PersonaKey } from './personas';
 import type { SajuResult } from '@/lib/saju/types';
 import type { InterpretationCategory } from '@/types/db';
@@ -243,8 +244,22 @@ export const INTERPRETATION_CATEGORIES: Array<{
     key: 'family',
     title: '가족 관계',
     prompt:
-      '연주(부모궁)·인성·정관·비겁의 흐름으로 부모/형제/자녀와의 거리감, 가족 안 역할을 설명한다.',
-    anchors: ['연주(부모궁 육친)', '월주(부모·형제궁)', '인성=어머니', '편재=아버지', '비겁=형제', '시주(자녀궁)'],
+      '가족 관계는 두 lens를 반드시 함께 본다: (1) 궁위(자리) — 연주=조상·부모·초년, 월주=부모·형제·사회, 일지=배우자, 시주=자녀·말년. (2) 육친(십성, 성별 의존) — [남자] 정인=어머니, 편인=계모, 편재=아버지, 정재=아내, 비견=형제, 겁재=자매·이복형제, 정관=딸, 편관=아들. [여자] 정인=어머니, 편인=계모·시어머니, 정관=남편, 편관=정관 외 인연, 비견=형제·자매, 식신=딸, 상관=아들. 두 lens를 교차해 부모/형제/배우자/자녀 각각의 인연 깊이와 갈등을 짚어준다. 핵심 신호: 재성 부재(남=父 인연 박함, 여=재물·세속), 인성 부재(母 인연 박함·자기 정서 결핍), 관성 부재(남=자녀 인연·여=남편 인연 약함), 식상 부재(여=자녀 인연 약함). 연-월·월-일·일-시 자리 간 충/형/공망은 그 자리가 관장하는 가족 영역의 갈등으로 해석한다.',
+    anchors: [
+      '연주(부모·조상궁) + 그 자리 육친',
+      '월주(부모·형제·사회궁) + 그 자리 육친',
+      '일지(배우자궁) + 십이운성',
+      '시주(자녀·말년궁) + 그 자리 육친',
+      '인성(母)의 존재·강약·통근',
+      '재성(남=父, 여=자기 재물)의 존재·강약',
+      '관성(남=자녀, 여=남편)의 존재·강약',
+      '식상(여=자녀)의 존재·강약',
+      '비겁의 양 — 형제·자매·동료의 수와 관계 패턴',
+      '자리 간 합/충/형 — 연월충(부모-자식 갈등) / 월일충(가족-자기) / 일시충(자기-자녀)',
+      '공망 — 연주공망(부모 인연 박함) / 시주공망(자녀 인연 약함)',
+      '신살 — 화개(가족과 정신적 거리), 양인(부모 마찰), 백호(가족 중 환난)',
+      '진행 중 대운/세운이 가족 영역에 들어오는지',
+    ],
   },
   {
     key: 'friends',
@@ -345,6 +360,99 @@ ${PREMIUM_SAJU_GUIDE}
 - 페르소나 스타일 가이드의 분량·구조·말투를 절대 어기지 마라. 카테고리는 주제일 뿐이고, 톤은 페르소나가 결정한다.`;
 }
 
+/**
+ * 카테고리별 사전 계산된 핵심 신호. LLM이 놓치기 쉬운 결정적 데이터를
+ * userMsg 안에 미리 못박아 넣는다. 현재는 family에 집중 — 무재 사주,
+ * 인성/관성 부재, 비겁 개수, 자리 간 충 같은 결정적 신호.
+ */
+function categoryExtraContext(
+  saju: SajuResult,
+  category: InterpretationCategory,
+): string {
+  if (category !== 'family') return '';
+
+  const gender = saju.input.gender;
+  const sipsung = saju.sipsung;
+  const allValues = Object.values(sipsung).filter(Boolean) as string[];
+  const countOf = (...names: string[]) =>
+    allValues.filter((v) => names.includes(v)).length;
+
+  const inseong = countOf('정인', '편인'); // 인성 — 어머니
+  const jaeseong = countOf('정재', '편재'); // 재성 — 남자=父
+  const gwanseong = countOf('정관', '편관'); // 관성 — 남자=자녀 / 여자=남편
+  const sikSang = countOf('식신', '상관'); // 식상 — 여자=자녀
+  const bigeop = countOf('비견', '겁재'); // 비겁 — 형제
+
+  const lines: string[] = [
+    '## 가족 관계 핵심 신호 (사전 계산)',
+    `- 사용자 성별: ${gender === 'M' ? '남성' : '여성'}`,
+    `- 인성(어머니) ${inseong}개${inseong === 0 ? ' — 母 인연 박함/정서적 결핍 신호' : ''}`,
+  ];
+
+  if (gender === 'M') {
+    lines.push(
+      `- 재성(아버지) ${jaeseong}개${jaeseong === 0 ? ' — ⚠️ 무재 사주: 父와 인연 박함, 일찍 독립 또는 부친 정서적 거리 가능성 높음' : ''}`,
+      `- 관성(자녀) ${gwanseong}개${gwanseong === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
+    );
+  } else {
+    lines.push(
+      `- 관성(남편) ${gwanseong}개${gwanseong === 0 ? ' — ⚠️ 무관 사주: 남편 인연 박함 또는 늦은 결혼/독신 경향' : ''}`,
+      `- 식상(자녀) ${sikSang}개${sikSang === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
+      `- 재성(개인 재물·자기 가치) ${jaeseong}개`,
+    );
+  }
+
+  lines.push(
+    `- 비겁(형제·동료) ${bigeop}개${bigeop >= 3 ? ' — ⚠️ 비겁 과다: 형제·동료가 많거나 재물 나누는 구도(군겁쟁재 위험)' : ''}`,
+  );
+
+  // 자리 간 충/형 (가족 영역 갈등 신호) — interactions에서 추출.
+  const analysis = analyzeSaju(saju);
+  const familyPositionsAxis: Array<[string, string, string]> = [
+    ['연주', '월주', '부모-자식 갈등'],
+    ['월주', '일주', '가족 환경 vs 자기 갈등'],
+    ['일주', '시주', '자기 vs 자녀 갈등'],
+    ['연주', '일주', '조상 영향 vs 자기 갈등'],
+    ['연주', '시주', '부모 vs 자녀(초년·말년 가치관 차이)'],
+    ['월주', '시주', '사회·형제 vs 자녀'],
+  ];
+  const conflicts: string[] = [];
+  for (const inter of analysis.interactions) {
+    // 가족 갈등은 충/형/파 계열만 보고, 합은 결속 신호라 별도로 봄.
+    if (!inter.type.includes('충') && !inter.type.includes('형') && !inter.type.includes('파')) continue;
+    for (const [a, b, label] of familyPositionsAxis) {
+      const hasA = inter.positions.some((p) => p.includes(a.replace('주', '')));
+      const hasB = inter.positions.some((p) => p.includes(b.replace('주', '')));
+      if (hasA && hasB) {
+        conflicts.push(`${a}-${b} ${inter.type} (${label}): ${inter.detail}`);
+        break;
+      }
+    }
+  }
+  if (conflicts.length > 0) {
+    lines.push('- 자리 간 충/형 (가족 영역 갈등 신호):');
+    for (const c of conflicts) lines.push(`  · ${c}`);
+  }
+
+  // 공망 — sinsal에서 찾기
+  const gongmang = saju.sinsal.filter((s) => s.name?.includes('공망'));
+  if (gongmang.length > 0) {
+    lines.push(
+      `- 공망: ${gongmang.map((s) => `${s.position}(${s.description ?? ''})`).join(', ')}`,
+    );
+    lines.push(
+      '  · 연주 공망 → 부모 인연 박함 / 월주 공망 → 형제·사회 인연 박함 / 시주 공망 → 자녀 인연 약함',
+    );
+  }
+
+  lines.push(
+    '',
+    '→ 위 신호들을 반드시 본문에서 인용해 풀어준다. 특히 ⚠️ 표시된 신호는 가족 풀이의 가장 결정적인 신호이므로 빠뜨리지 마라.',
+  );
+
+  return lines.join('\n');
+}
+
 export async function generateInterpretation(
   saju: SajuResult,
   category: InterpretationCategory,
@@ -356,10 +464,11 @@ export async function generateInterpretation(
   if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
   const context = formatSajuContext(saju, name);
   const anchorLines = cat.anchors.map((a) => `- ${a}`).join('\n');
+  const extraContext = categoryExtraContext(saju, category);
   const userMsg = `다음 사주를 "${cat.title}" 관점에서 깊이 풀이해줘. 현재 모드는 ${persona}.
 
 ${context}
-
+${extraContext ? `\n${extraContext}\n` : ''}
 중점: ${cat.prompt}
 
 이 카테고리에서 반드시 인용해야 하는 명리 근거(앵커):
@@ -371,7 +480,7 @@ ${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반�
 - 단락마다 위 앵커 중 최소 하나를 실제로 인용하되, 페르소나 톤에 맞게 풀어 쓴다.
 - "왜 이 풀이가 나오는지"가 매 단락에서 느껴져야 한다.
 - 사용자가 체감으로 검증할 수 있는 행동/감정 장면을 최소 3개 포함한다.
-- 컨텍스트에 없는 글자/합·충·신살은 만들어내지 않는다.`;
+- 컨텍스트에 없는 글자/합·충·신살은 만들어내지 않는다.${extraContext ? '\n- 위 "## 가족 관계 핵심 신호"의 ⚠️ 신호는 반드시 본문에서 풀어준다.' : ''}`;
   return complete({
     tier: 'saju',
     system: buildSystem(persona),
