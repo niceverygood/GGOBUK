@@ -335,7 +335,7 @@ export default function RelationsPage() {
     <main className="px-5 pt-8 pb-40 relative overflow-x-hidden">
       <div className="hanji-overlay" />
       <div className="relative mx-auto w-full max-w-[560px]">
-        <div className="flex items-start justify-between gap-3 pr-12">
+        <div className="flex items-start justify-between gap-3 pr-28">
           <div>
             <Link
               href="/people"

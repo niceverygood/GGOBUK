@@ -146,7 +146,7 @@ export default async function PeoplePage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-start justify-between gap-2 pr-12">
+        <div className="flex items-start justify-between gap-2 pr-28">
           <div className="min-w-0">
             <p className="text-xs font-extrabold text-muted">사람 중심으로 보는 사주</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-navy">사람 관리</h1>

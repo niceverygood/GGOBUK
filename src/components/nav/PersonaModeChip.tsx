@@ -89,19 +89,22 @@ export function PersonaModeChip() {
         aria-label={
           busy
             ? '리포트 생성 중이라 모드를 바꿀 수 없어요'
-            : '현재 모드. 탭하여 변경.'
+            : '모드 선택. 탭하여 변경.'
         }
-        className={`fixed right-3 top-[calc(env(safe-area-inset-top)+8px)] z-40 grid h-9 w-9 place-items-center rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] transition active:scale-95 ${ACCENT[persona]} ${
+        className={`fixed right-3 top-[calc(env(safe-area-inset-top)+8px)] z-40 inline-flex items-center gap-1.5 rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] pl-1 pr-2.5 py-1 transition active:scale-95 ${ACCENT[persona]} ${
           busy ? 'opacity-60 cursor-not-allowed' : ''
         }`}
       >
-        <KkobukSprite
-          variant={SPRITE[persona]}
-          size="xs"
-          ariaLabel="현재 모드"
-        />
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/85">
+          <KkobukSprite
+            variant={SPRITE[persona]}
+            size="xs"
+            ariaLabel="현재 모드"
+          />
+        </span>
+        <span className="text-[11px] font-black text-navy">모드 선택</span>
         <span
-          className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-navy text-white shadow-sm"
+          className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-navy text-white shadow-sm"
           aria-hidden
         >
           {busy ? (

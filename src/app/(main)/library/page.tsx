@@ -109,7 +109,7 @@ export default async function LibraryPage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-start justify-between gap-3 pr-12">
+        <div className="flex items-start justify-between gap-3 pr-28">
           <div>
             <p className="text-xs font-extrabold text-muted">
               {profile.name}님의 기록

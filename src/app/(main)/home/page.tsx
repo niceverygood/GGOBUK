@@ -172,7 +172,7 @@ export default async function HomePage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between pr-12">
+        <div className="flex items-center justify-between pr-28">
           <div>
             <p className="text-xs font-extrabold text-muted">
               {formatKoreanDate(today)} {weekday}

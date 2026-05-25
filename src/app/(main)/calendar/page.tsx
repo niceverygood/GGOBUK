@@ -31,7 +31,7 @@ export default async function CalendarPage() {
   return (
     <main className="px-5 pt-8 pb-28 relative">
       <div className="hanji-overlay" />
-      <div className="relative pr-12">
+      <div className="relative pr-28">
         <p className="text-xs font-extrabold text-muted">날짜별 일진 길흉</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-navy">운세 달력</h1>
         <p className="mt-1 text-xs font-bold text-muted">

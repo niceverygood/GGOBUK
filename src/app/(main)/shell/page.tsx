@@ -29,7 +29,7 @@ export default async function ShellPage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between gap-2 pr-12">
+        <div className="flex items-center justify-between gap-2 pr-28">
           <div className="min-w-0">
             <p className="text-xs font-extrabold text-muted">나의 만세력</p>
             <h1 className="text-2xl font-black tracking-tight text-navy">등껍질 사주</h1>
