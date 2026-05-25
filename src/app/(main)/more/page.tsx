@@ -15,6 +15,7 @@ import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
 import { CREDIT_UNIT } from '@/lib/credits';
 import { MoreStoreLink } from '@/components/nav/MoreStoreLink';
+import { LogoutButton } from '@/components/nav/LogoutButton';
 
 export default async function MorePage() {
   const supabase = await createServerClient();
@@ -88,6 +89,8 @@ export default async function MorePage() {
             }
           />
         </div>
+
+        <LogoutButton />
       </div>
     </main>
   );
