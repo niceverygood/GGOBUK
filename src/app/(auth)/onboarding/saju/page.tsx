@@ -44,11 +44,18 @@ export default function SajuOnboardingPage() {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j.error ?? '계산에 실패했어');
+        const code = typeof j.error === 'string' ? j.error : '';
+        const detail = typeof j.detail === 'string' ? j.detail : '';
+        console.error('[onboarding/saju]', { status: res.status, code, detail });
+        // detail이 더 구체적이면 우선 노출
+        const msg = detail || code || '계산에 실패했어';
+        throw new Error(msg);
       }
       router.push('/onboarding/result');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '오류가 났어');
+      const m = e instanceof Error ? e.message : '오류가 났어';
+      // 너무 긴 detail은 잘라서 표시
+      setErr(m.length > 200 ? m.slice(0, 200) + '…' : m);
     } finally {
       setLoading(false);
     }

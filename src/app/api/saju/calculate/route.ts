@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
+import { logger } from '@/lib/utils/logger';
 
 const Body = z.object({
   name: z.string().min(1),
@@ -22,6 +23,19 @@ const Body = z.object({
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  try {
+    return await handleCalculate(req);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error('saju/calculate', 'unhandled exception', { error: msg });
+    return NextResponse.json(
+      { error: 'server_exception', detail: msg },
+      { status: 500 },
+    );
+  }
+}
+
+async function handleCalculate(req: Request) {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -39,16 +53,75 @@ export async function POST(req: Request) {
     );
   }
 
+  // 카카오 OAuth 또는 anonymous 로그인으로 막 가입한 사용자는 auth.users는
+  // 있어도 public.users 행이 아직 없을 수 있다. saju_profiles.owner_id가
+  // public.users(id)를 참조하므로 먼저 보장. 이미 있으면 no-op.
+  try {
+    const admin = await createServerClient({ admin: true });
+    const { error: userUpsertError } = await admin
+      .from('users')
+      .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true });
+    if (userUpsertError) {
+      logger.warn('saju/calculate', 'users upsert failed (non-fatal)', {
+        code: userUpsertError.code,
+        message: userUpsertError.message,
+      });
+    }
+  } catch (e) {
+    logger.warn('saju/calculate', 'users upsert threw (non-fatal)', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  let payload;
+  try {
+    payload = buildSajuProfilePayload(body);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error('saju/calculate', 'buildSajuProfilePayload failed', {
+      message: msg,
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      isLunar: body.isLunar,
+    });
+    return NextResponse.json(
+      {
+        error: 'saju_calc_failed',
+        detail: `사주 계산 실패: ${msg}`,
+      },
+      { status: 400 },
+    );
+  }
+
   const { data, error } = await supabase
     .from('saju_profiles')
     .insert({
       owner_id: user.id,
-      ...buildSajuProfilePayload(body),
+      ...payload,
     })
     .select()
     .single();
 
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    logger.error('saju/calculate', 'insert failed', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      userId: user.id,
+    });
+    if (error.code === '23503') {
+      return NextResponse.json(
+        {
+          error: 'profile_link_missing',
+          detail: '계정 정보를 확인하지 못했어요. 다시 로그인해주세요.',
+        },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json(
+      { error: 'insert_failed', detail: error.message, code: error.code },
+      { status: 500 },
+    );
+  }
   return NextResponse.json({ saju: data });
 }
