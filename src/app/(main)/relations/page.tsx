@@ -269,12 +269,16 @@ export default function RelationsPage() {
         body: JSON.stringify({ saju_b_id: d.saju.id, relation_label: label }),
       });
       const compatData = await compatRes.json().catch(() => ({}));
-      if (!compatRes.ok)
-        throw new Error(
-          typeof compatData.error === 'string'
-            ? compatData.error
-            : 'compat failed',
-        );
+      if (!compatRes.ok) {
+        const code =
+          typeof compatData.error === 'string' ? compatData.error : 'compat failed';
+        const detail =
+          typeof compatData.detail === 'string' ? compatData.detail : '';
+        console.error('[compat]', { code, detail, status: compatRes.status });
+        const err: Error & { detail?: string } = new Error(code);
+        if (detail) err.detail = detail;
+        throw err;
+      }
 
       setAdding(false);
       setName('');
@@ -288,7 +292,17 @@ export default function RelationsPage() {
         router.push(`/relations/${compatData.relationId}`);
       }
     } catch (e) {
-      setError(errorMessage(e instanceof Error ? e.message : ''));
+      const code = e instanceof Error ? e.message : '';
+      const detail =
+        e instanceof Error && 'detail' in e
+          ? (e as Error & { detail?: string }).detail
+          : undefined;
+      // detail이 있으면 그게 가장 정확한 에러 — 우선 노출
+      let msg = errorMessage(code);
+      if (detail && code === 'compat_failed') {
+        msg = `궁합 생성 실패: ${detail.slice(0, 140)}`;
+      }
+      setError(msg);
     } finally {
       unlockGeneration(lockId);
       setAddStatus('idle');
