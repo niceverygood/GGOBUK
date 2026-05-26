@@ -29,6 +29,13 @@ export function supabaseServiceKey(): string {
   return nonEmpty(process.env.SUPABASE_SERVICE_ROLE_KEY) ?? supabasePublicKey();
 }
 
+/** True only when a real service-role key is configured. Use this guard when a
+ *  code path requires service_role privileges (e.g. calling SECURITY DEFINER
+ *  functions like spend_credits/add_credits/grant_signup_bonus). */
+export function hasServiceRoleKey(): boolean {
+  return Boolean(nonEmpty(process.env.SUPABASE_SERVICE_ROLE_KEY));
+}
+
 export function isSupabaseConfigured(): boolean {
   return (
     !!nonEmpty(process.env.NEXT_PUBLIC_SUPABASE_URL) &&

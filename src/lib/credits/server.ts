@@ -1,10 +1,20 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { hasServiceRoleKey } from '@/lib/supabase/env';
 import { logger } from '@/lib/utils/logger';
 
 export class InsufficientCreditsError extends Error {
   constructor() {
     super('insufficient_credits');
     this.name = 'InsufficientCreditsError';
+  }
+}
+
+export class ServiceRoleMissingError extends Error {
+  constructor(funcName: string) {
+    super(
+      `SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않아 ${funcName} 함수를 호출할 수 없어요. Vercel Project Settings → Environment Variables에 추가 후 재배포해주세요.`,
+    );
+    this.name = 'ServiceRoleMissingError';
   }
 }
 
@@ -25,6 +35,13 @@ export async function spendCredits(params: {
   reason: string;
   referenceId?: string;
 }): Promise<number> {
+  if (!hasServiceRoleKey()) {
+    logger.error('credits', 'spend_credits called without SUPABASE_SERVICE_ROLE_KEY', {
+      userId: params.userId,
+      amount: params.amount,
+    });
+    throw new ServiceRoleMissingError('spend_credits');
+  }
   const admin = await createServerClient({ admin: true });
   const { data, error } = await admin.rpc('spend_credits', {
     p_user_id: params.userId,
@@ -36,6 +53,10 @@ export async function spendCredits(params: {
   if (error) {
     if (isInsufficientMessage(error.message))
       throw new InsufficientCreditsError();
+    // 'permission denied for function spend_credits' 형태 → 명확한 에러로 승격
+    if (error.message?.includes('permission denied')) {
+      throw new ServiceRoleMissingError('spend_credits');
+    }
     throw new Error(error.message);
   }
 
@@ -52,6 +73,9 @@ export async function addCredits(params: {
   packageId?: string;
   priceKrw?: number;
 }): Promise<number> {
+  if (!hasServiceRoleKey()) {
+    throw new ServiceRoleMissingError('add_credits');
+  }
   const admin = await createServerClient({ admin: true });
   const { data, error } = await admin.rpc('add_credits', {
     p_user_id: params.userId,
@@ -64,7 +88,12 @@ export async function addCredits(params: {
     p_price_krw: params.priceKrw ?? null,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message?.includes('permission denied')) {
+      throw new ServiceRoleMissingError('add_credits');
+    }
+    throw new Error(error.message);
+  }
   return Number(data ?? 0);
 }
 
