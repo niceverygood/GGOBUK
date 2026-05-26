@@ -245,8 +245,11 @@ export function sewoonFortune(
   };
 }
 
+/** korean-lunar-calendar 패키지가 지원하는 마지막 해. 이후는 사주 계산 불가. */
+const SOLAR_TERMS_MAX_YEAR = 2050;
+
 /**
- * 대운 안의 10년치 세운 한 번에 계산.
+ * 대운 안의 10년치 세운 한 번에 계산. 라이브러리 미지원 연도는 스킵.
  */
 export function sewoonOfDaewoon(
   saju: SajuResult,
@@ -254,7 +257,13 @@ export function sewoonOfDaewoon(
 ): SewoonFortune[] {
   const years: SewoonFortune[] = [];
   for (let y = period.startYear; y < period.startYear + 10; y += 1) {
-    years.push(sewoonFortune(saju, y, period));
+    if (y > SOLAR_TERMS_MAX_YEAR) break;
+    try {
+      years.push(sewoonFortune(saju, y, period));
+    } catch {
+      // Library 범위 밖이면 그 해는 건너뛴다.
+      break;
+    }
   }
   return years;
 }
@@ -306,8 +315,9 @@ const EVENT_EMOJI: Record<EventMarkerType, string> = {
  */
 export function lifeEventMarkers(saju: SajuResult): EventMarker[] {
   const markers: EventMarker[] = [];
-  const ilganIdx = saju.palja.day.ganIdx;
-  const ilganYinyang = CHEONGAN_YINYANG[ilganIdx];
+  // ilganIdx/ilganYinyang는 향후 일지 합 정밀 계산용으로 남겨둠.
+  // const ilganIdx = saju.palja.day.ganIdx;
+  // const ilganYinyang = CHEONGAN_YINYANG[ilganIdx];
   const isMale = saju.input.gender === 'M';
   const birthYear = Number(saju.input.birthDate.slice(0, 4));
 
@@ -325,6 +335,7 @@ export function lifeEventMarkers(saju: SajuResult): EventMarker[] {
 
     // 결혼: 배우자성 대운 진입 + 그 안의 일지 합 세운
     if (marriageSipsung.includes(d.sipsung)) {
+      // sewoonOfDaewoon 자체가 라이브러리 범위 초과를 안전하게 처리
       const sewoon = sewoonOfDaewoon(saju, d);
       const candidate = sewoon.find((y) => y.hap && y.score >= 60);
       if (candidate) {

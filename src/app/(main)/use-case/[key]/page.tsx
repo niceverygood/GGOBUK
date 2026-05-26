@@ -73,15 +73,22 @@ export default async function UseCasePage({ params }: PageProps) {
     saju.daewoon.find(
       (d) => currentYear >= d.startYear && currentYear <= d.startYear + 9,
     ) ?? null;
-  const daewoonF = currentDaewoon
-    ? daewoonFortune(saju, currentDaewoon)
-    : null;
-  const sewoonF = currentDaewoon
-    ? sewoonFortune(saju, currentYear, currentDaewoon)
-    : null;
-
-  // 이 use case 관련 이벤트 마커만 필터
-  const allMarkers = lifeEventMarkers(saju);
+  // 모든 saju 도메인 호출을 defensive하게 래핑 — 라이브러리 범위 초과,
+  // 손상된 사주 데이터 등으로 throw해도 페이지는 살아남게.
+  let daewoonF: ReturnType<typeof daewoonFortune> | null = null;
+  let sewoonF: ReturnType<typeof sewoonFortune> | null = null;
+  let allMarkers: ReturnType<typeof lifeEventMarkers> = [];
+  try {
+    daewoonF = currentDaewoon ? daewoonFortune(saju, currentDaewoon) : null;
+  } catch {}
+  try {
+    sewoonF = currentDaewoon
+      ? sewoonFortune(saju, currentYear, currentDaewoon)
+      : null;
+  } catch {}
+  try {
+    allMarkers = lifeEventMarkers(saju);
+  } catch {}
   const relatedMarkers = allMarkers
     .filter((m) => useCase.eventTypes.includes(m.type))
     .sort((a, b) => {
