@@ -20,6 +20,10 @@ import { UseCaseClient } from './UseCaseClient';
 import type { InterpretationCategory } from '@/types/db';
 import type { SajuInput } from '@/lib/saju/types';
 
+// Cookie-aware (persona-mode) — RSC 캐시가 모드 변경 후에도 옛 콘텐츠를
+// 들고있지 않게 매 요청마다 fresh render.
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ key: string }>;
 }

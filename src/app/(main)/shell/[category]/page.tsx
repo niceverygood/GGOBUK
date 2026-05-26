@@ -82,6 +82,10 @@ const PERSONA_BG: Record<PersonaKey, string> = {
   dosa: 'from-navy/10 via-white to-mint/10 border-navy/25',
 };
 
+// Cookie-driven persona mode 결정 + supabase 인증 사용자별 캐시 — 반드시
+// 매 요청마다 fresh render. RSC 캐시가 옛 persona 콘텐츠를 들고있지 않게.
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ category: string }>;
 }

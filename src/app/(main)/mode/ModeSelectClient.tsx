@@ -151,6 +151,10 @@ export function ModeSelectClient() {
     } else {
       router.back();
     }
+    // RSC 캐시 무효화 — replace만 호출하면 Next.js가 캐시된 페이지를 그대로
+    // 서빙해 cookie-aware 서버 컴포넌트(/shell/[category] 등)가 옛 persona로
+    // 렌더된 채 보임. refresh로 강제 재요청.
+    router.refresh();
   }
 
   return (
