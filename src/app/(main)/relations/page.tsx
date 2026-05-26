@@ -92,15 +92,20 @@ const RELATION_TYPE_OPTIONS: Array<{ value: RelationType; label: string }> = [
 
 function errorMessage(error: string): string {
   if (error === 'unauthorized') return '로그인이 필요해. 다시 로그인해줘.';
-  if (error === 'no self profile')
+  if (error === 'no self profile' || error === 'no_self_profile')
     return '내 사주가 먼저 필요해. 등껍질을 만들고 나면 궁합을 볼 수 있어.';
-  if (error === 'other not found')
+  if (error === 'other not found' || error === 'other_not_found')
     return '방금 추가한 인연을 찾지 못했어. 다시 시도해줘.';
   if (error === 'llm_not_configured') return 'AI 키 설정이 아직 안 되어 있어.';
   if (error === 'insufficient_credits')
     return '꼬북알이 부족해. 충전 후 다시 시도해줘.';
   if (error === 'invalid_body') return '입력값을 다시 확인해줘.';
-  return error || '궁합 생성에 실패했어. 잠시 후 다시 시도해줘.';
+  if (error === 'compat_failed' || error === 'compat failed')
+    return '궁합 생성 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.';
+  if (error === 'server_exception')
+    return '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
+  // 알 수 없는 에러는 그대로 노출하지 말고 generic message + 코드만 작게
+  return `궁합 생성 실패 — ${error}`;
 }
 
 function scoreLabel(score: number | null): string {
@@ -299,8 +304,8 @@ export default function RelationsPage() {
           : undefined;
       // detail이 있으면 그게 가장 정확한 에러 — 우선 노출
       let msg = errorMessage(code);
-      if (detail && code === 'compat_failed') {
-        msg = `궁합 생성 실패: ${detail.slice(0, 140)}`;
+      if (detail) {
+        msg = `${msg}\n원인: ${detail.slice(0, 180)}`;
       }
       setError(msg);
     } finally {
@@ -495,7 +500,7 @@ export default function RelationsPage() {
               />
             )}
             {error && (
-              <p className="text-center text-xs font-bold text-red leading-relaxed">
+              <p className="whitespace-pre-line text-center text-xs font-bold text-red leading-relaxed">
                 {error}
               </p>
             )}
