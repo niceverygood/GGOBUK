@@ -63,6 +63,8 @@ export default async function LibraryPage() {
     dailyResult,
     sessionsResult,
     peopleResult,
+    comicsResult,
+    sharesResult,
   ] = await Promise.all([
     supabase
       .from('interpretations')
@@ -94,10 +96,26 @@ export default async function LibraryPage() {
       .from('saju_profiles')
       .select('id, relation_type', { count: 'exact' })
       .eq('owner_id', user.id),
+    // 사주 웹툰 (high-margin 콘텐츠 갤러리)
+    supabase
+      .from('interpretation_comics')
+      .select('id, category, persona, title, image_url, generated_at')
+      .eq('user_id', user.id)
+      .order('generated_at', { ascending: false })
+      .limit(12),
+    // 내가 만든 공유 링크
+    supabase
+      .from('saju_shares')
+      .select('token, title, kind, category, view_count, created_at, expires_at')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(8),
   ]);
 
   const interpretations = interpretationsResult.data ?? [];
   const relations = relationsResult.data ?? [];
+  const comics = comicsResult.data ?? [];
+  const shares = sharesResult.data ?? [];
   const daily = dailyResult.data ?? [];
   const sessions = sessionsResult.data ?? [];
   const peopleRows = peopleResult.data ?? [];
@@ -253,6 +271,114 @@ export default async function LibraryPage() {
             />
           ))}
         </LibrarySection>
+
+        {/* 사주 웹툰 갤러리 — high-margin 콘텐츠 다시 보기 + 자랑하기 */}
+        {comics.length > 0 && (
+          <section className="mt-5">
+            <div className="mb-2 flex items-end justify-between">
+              <div>
+                <p className="text-[11px] font-extrabold text-muted">
+                  내가 만든 4컷 웹툰
+                </p>
+                <h2 className="text-base font-black text-navy">사주 웹툰 갤러리</h2>
+              </div>
+              <span className="text-[11px] font-extrabold text-mint-dark">
+                {comics.length}장
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {comics.map((c) => (
+                <a
+                  key={c.id}
+                  href={c.image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-[0_8px_18px_rgba(44,62,80,0.06)] active:scale-[0.99]"
+                >
+                  {/* aspect 2:3 (1024x1536 비례) */}
+                  <div className="aspect-[2/3] w-full overflow-hidden bg-ivory">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={c.image_url}
+                      alt={c.title || '사주 웹툰'}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 via-navy/55 to-transparent p-2.5">
+                    <p className="text-[10px] font-extrabold text-white/85 leading-none">
+                      {CATEGORY_TITLE[c.category as InterpretationCategory] ?? c.category}
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold text-white/70 leading-none">
+                      {formatDate(c.generated_at)}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 내가 만든 공유 링크 */}
+        {shares.length > 0 && (
+          <section className="mt-5">
+            <div className="mb-2 flex items-end justify-between">
+              <div>
+                <p className="text-[11px] font-extrabold text-muted">
+                  친구한테 보낸 풀이
+                </p>
+                <h2 className="text-base font-black text-navy">공유 링크</h2>
+              </div>
+              <span className="text-[11px] font-extrabold text-mint-dark">
+                {shares.length}건
+              </span>
+            </div>
+            <div className="space-y-2">
+              {shares.map((s) => {
+                const expired = s.expires_at
+                  ? new Date(s.expires_at).getTime() < Date.now()
+                  : false;
+                return (
+                  <a
+                    key={s.token}
+                    href={`/share/${s.token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`block rounded-2xl border bg-white p-3 active:scale-[0.99] ${
+                      expired
+                        ? 'border-navy/8 opacity-60'
+                        : 'border-mint/30'
+                    }`}
+                  >
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-sm font-black text-navy truncate">
+                        {s.title ?? '사주 풀이'}
+                      </p>
+                      <span
+                        className={`text-[10px] font-extrabold ${
+                          expired ? 'text-muted' : 'text-mint-dark'
+                        }`}
+                      >
+                        {expired ? '만료' : `${s.view_count ?? 0}회 조회`}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] font-bold text-muted">
+                      {formatDate(s.created_at)} 공유
+                      {!expired && s.expires_at &&
+                        ` · ${Math.max(
+                          0,
+                          Math.ceil(
+                            (new Date(s.expires_at).getTime() - Date.now()) /
+                              (1000 * 60 * 60 * 24),
+                          ),
+                        )}일 남음`}
+                    </p>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section className="mt-5 grid grid-cols-2 gap-3">
           <QuickBox

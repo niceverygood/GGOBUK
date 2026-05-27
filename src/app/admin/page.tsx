@@ -115,6 +115,42 @@ export default async function AdminPage() {
     .limit(15)
     .returns<SignupRow[]>();
 
+  // ── Conversion funnel + high-margin contents ──
+  // 가입 -> 사주 등록 -> 첫 풀이 -> 첫 결제 단계별 도달률.
+  // distinct user_id 카운트는 별도 쿼리로 측정 (overview에는 row count만 있음).
+  const [
+    { count: usersWithProfile },
+    { count: usersWithInterp },
+    { count: usersWithComic },
+    { count: activeShares },
+  ] = await Promise.all([
+    admin
+      .from('saju_profiles')
+      .select('owner_id', { count: 'exact', head: true })
+      .eq('relation_type', 'self'),
+    admin
+      .from('interpretations')
+      .select('id', { count: 'exact', head: true }),
+    admin
+      .from('interpretation_comics')
+      .select('id', { count: 'exact', head: true }),
+    admin
+      .from('saju_shares')
+      .select('id', { count: 'exact', head: true })
+      .gt('expires_at', new Date().toISOString()),
+  ]);
+
+  // 정확한 distinct 카운트는 별도 쿼리 (paid_count로 결제는 covered, 풀이/웹툰은
+  // 위 row count로 근사). 가입자 분모 기준 conversion% 계산.
+  const totalUsers = Number(ov.users_total ?? 0) || 1; // 0 division 방지
+  const profileConv = (Number(usersWithProfile ?? 0) / totalUsers) * 100;
+  const interpConv = (Number(usersWithInterp ?? 0) / totalUsers) * 100;
+  const paidConv = (Number(ov.paid_count ?? 0) / totalUsers) * 100;
+  const arpPaid =
+    Number(ov.paid_count ?? 0) > 0
+      ? Number(ov.revenue_krw ?? 0) / Number(ov.paid_count ?? 0)
+      : 0;
+
   const kpis: Array<{ label: string; value: string; sub?: string }> = [
     { label: '총 회원', value: num(ov.users_total), sub: `오늘 +${num(ov.users_today)} · 7일 +${num(ov.users_7d)}` },
     { label: '누적 매출', value: `₩${num(ov.revenue_krw)}`, sub: `오늘 ₩${num(ov.revenue_today_krw)}` },
@@ -148,6 +184,84 @@ export default async function AdminPage() {
             {k.sub && <div className="mt-0.5 text-[11px] font-bold text-muted">{k.sub}</div>}
           </div>
         ))}
+      </section>
+
+      {/* Conversion Funnel */}
+      <section className="mt-8">
+        <h2 className="text-sm font-black text-navy mb-3">결제 conversion 깔때기</h2>
+        <div className="rounded-2xl border border-navy/10 bg-white p-5">
+          <FunnelRow
+            label="가입자"
+            count={Number(ov.users_total ?? 0)}
+            pct={100}
+            color="bg-navy"
+          />
+          <FunnelRow
+            label="사주 등록 완료"
+            count={Number(usersWithProfile ?? 0)}
+            pct={profileConv}
+            color="bg-mint-dark"
+          />
+          <FunnelRow
+            label="정밀 풀이 1개 이상"
+            count={Number(usersWithInterp ?? 0)}
+            pct={interpConv}
+            color="bg-gold/80"
+          />
+          <FunnelRow
+            label="첫 결제 완료"
+            count={Number(ov.paid_count ?? 0)}
+            pct={paidConv}
+            color="bg-red"
+            isLast
+          />
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-xl bg-paper p-3">
+              <p className="text-[10px] font-extrabold text-muted">전체 paid conversion</p>
+              <p className="mt-1 text-lg font-black text-navy tabular-nums">{paidConv.toFixed(2)}%</p>
+            </div>
+            <div className="rounded-xl bg-paper p-3">
+              <p className="text-[10px] font-extrabold text-muted">유료자 1인 평균 결제</p>
+              <p className="mt-1 text-lg font-black text-navy tabular-nums">
+                ₩{num(arpPaid)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* High-margin content stats */}
+      <section className="mt-6">
+        <h2 className="text-sm font-black text-navy mb-3">고마진 콘텐츠 · 바이럴</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-gradient-to-br from-gold/15 via-white to-mint/8 border border-gold/35 p-4">
+            <p className="text-[10px] font-extrabold text-[#B58A00]">사주 웹툰</p>
+            <p className="mt-1 text-2xl font-black text-navy tabular-nums">
+              {num(usersWithComic)}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-muted">총 생성장</p>
+          </div>
+          <div className="rounded-2xl bg-gradient-to-br from-mint/15 via-white to-navy/8 border border-mint/35 p-4">
+            <p className="text-[10px] font-extrabold text-mint-dark">활성 공유 링크</p>
+            <p className="mt-1 text-2xl font-black text-navy tabular-nums">
+              {num(activeShares)}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-muted">만료 전</p>
+          </div>
+          <div className="rounded-2xl bg-white border border-navy/10 p-4">
+            <p className="text-[10px] font-extrabold text-muted">소진/발행 비율</p>
+            <p className="mt-1 text-2xl font-black text-navy tabular-nums">
+              {Number(ov.credits_issued ?? 0) > 0
+                ? `${Math.round(
+                    (Number(ov.credits_spent ?? 0) /
+                      Number(ov.credits_issued ?? 1)) *
+                      100,
+                  )}%`
+                : '—'}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-muted">유저 engagement 척도</p>
+          </div>
+        </div>
       </section>
 
       {/* Recent payments */}
@@ -223,5 +337,38 @@ export default async function AdminPage() {
         로그인: {email ?? userId} · 데이터는 실시간 (RLS 우회, service_role)
       </p>
     </main>
+  );
+}
+
+/** Funnel 한 단계 — 가로 막대 + label/count/pct. */
+function FunnelRow({
+  label,
+  count,
+  pct,
+  color,
+  isLast,
+}: {
+  label: string;
+  count: number;
+  pct: number;
+  color: string;
+  isLast?: boolean;
+}) {
+  const pctClamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className={isLast ? '' : 'mb-3'}>
+      <div className="flex items-baseline justify-between mb-1">
+        <span className="text-[12px] font-extrabold text-navy">{label}</span>
+        <span className="text-[11px] font-bold text-muted tabular-nums">
+          {new Intl.NumberFormat('ko-KR').format(count)}명 · {pctClamped.toFixed(1)}%
+        </span>
+      </div>
+      <div className="relative h-3 rounded-full bg-navy/8 overflow-hidden">
+        <div
+          className={`absolute inset-y-0 left-0 ${color} rounded-full transition-all`}
+          style={{ width: `${pctClamped}%` }}
+        />
+      </div>
+    </div>
   );
 }

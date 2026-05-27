@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Layers3 } from "lucide-react";
 import { InterpretationBody } from "@/components/shell/InterpretationBody";
 import { ComicPanel } from "@/components/shell/ComicPanel";
+import { ShareInterpretationButton } from "@/components/shell/ShareInterpretationButton";
 // import { TalismanPanel } from "@/components/shell/TalismanPanel"; // 부적 만들기 — 임시 숨김
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
@@ -736,6 +737,12 @@ export function InterpretationPanel({
         {!loading && <ComicPanel category={category} content={content} />}
         {/* 부적 만들기 — 임시 숨김 (v1 출시 후 재오픈 예정) */}
         {/* {!loading && <TalismanPanel category={category} />} */}
+        {!loading && content.length > 0 && (
+          <ShareInterpretationButton
+            category={category}
+            persona={readPersonaMode()}
+          />
+        )}
         {!loading && (
           <DeepDivePanel
             category={category}
