@@ -85,3 +85,47 @@ body {
   color: var(--color-navy);
   text-shadow: 0 3px 0 rgba(78, 205, 196, 0.22);
 }
+
+.kkobuk-loading-sprite {
+  --kkobuk-loader-size: 58px;
+  --kkobuk-loader-sheet-width: 464px;
+  --kkobuk-loader-offset: -464px;
+  display: inline-block;
+  width: var(--kkobuk-loader-size);
+  height: var(--kkobuk-loader-size);
+  background-image: url('/characters/ggobuk/animations/report-loading-sprite.png');
+  background-repeat: no-repeat;
+  background-size: var(--kkobuk-loader-sheet-width) var(--kkobuk-loader-size);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.18));
+  animation:
+    kkobuk-loading-frames 960ms steps(8) infinite,
+    kkobuk-loading-bob 1800ms ease-in-out infinite;
+}
+
+@keyframes kkobuk-loading-frames {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: var(--kkobuk-loader-offset) 0;
+  }
+}
+
+@keyframes kkobuk-loading-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-2px) rotate(1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kkobuk-loading-sprite {
+    animation: none;
+    background-position: 0 0;
+  }
+}

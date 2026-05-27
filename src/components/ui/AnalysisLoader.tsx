@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { KkobukLoadingSprite } from '@/components/kkobuk/KkobukLoadingSprite';
 
 export interface AnalysisStep {
   /** 0–1 ratio at which this step starts being the current step */
@@ -76,8 +76,8 @@ export function AnalysisLoader({
       className={`rounded-3xl border border-mint/35 bg-gradient-to-br from-mint/14 via-white to-gold/14 p-4 shadow-[0_12px_28px_rgba(44,62,80,0.08)] ${className ?? ''}`}
     >
       <div className="flex items-start gap-3">
-        <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-navy text-white">
-          <Sparkles size={20} strokeWidth={2.5} />
+        <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-navy text-white shadow-inner shadow-black/10">
+          <KkobukLoadingSprite size={50} />
           <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-gold shadow-[0_0_0_4px_rgba(244,208,63,0.22)] animate-pulse" />
         </div>
         <div className="min-w-0 flex-1">

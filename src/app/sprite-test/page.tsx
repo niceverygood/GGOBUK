@@ -1,8 +1,26 @@
 'use client';
 
 import { KkobukSprite, SPRITE_MAP, type SpriteKey } from '@/components/kkobuk/KkobukSprite';
+import { AnalysisLoader, type AnalysisStep } from '@/components/ui/AnalysisLoader';
 
 const ALL: SpriteKey[] = Object.keys(SPRITE_MAP) as SpriteKey[];
+const LOADING_STEPS: AnalysisStep[] = [
+  {
+    at: 0,
+    title: '꼬북이가 사주판 펴는 중',
+    body: '원국 근거와 체감 포인트를 차곡차곡 맞춰보고 있어요.',
+  },
+  {
+    at: 0.35,
+    title: '흐름을 고르는 중',
+    body: '오늘 읽기 좋은 문단 순서로 정리하고 있어요.',
+  },
+  {
+    at: 0.7,
+    title: '거의 다 했어!',
+    body: '곧 보여줄게요.',
+  },
+];
 
 export default function SpriteTestPage() {
   return (
@@ -11,6 +29,10 @@ export default function SpriteTestPage() {
       <p className="text-xs font-bold text-muted mb-6">
         Each cell shows one extracted character asset and its source PNG dimensions.
       </p>
+      <section className="mb-8 max-w-xl">
+        <h2 className="mb-3 text-lg font-black text-navy">Loading sprite</h2>
+        <AnalysisLoader steps={LOADING_STEPS} expectedMs={42000} elapsedMs={38000} />
+      </section>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {ALL.map((key) => {
           const r = SPRITE_MAP[key];
@@ -36,6 +58,12 @@ export default function SpriteTestPage() {
           className="block p-4 text-sm font-bold text-navy underline underline-offset-4"
         >
           /characters/ggobuk/manifest.json
+        </a>
+        <a
+          href="/characters/ggobuk/hires-manifest.json"
+          className="block border-t border-navy/10 p-4 text-sm font-bold text-navy underline underline-offset-4"
+        >
+          /characters/ggobuk/hires-manifest.json
         </a>
       </div>
     </main>

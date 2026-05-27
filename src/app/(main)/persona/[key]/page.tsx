@@ -63,7 +63,7 @@ export default function PersonaIntroPage() {
             alt={p.displayName}
             width={cardW}
             height={cardH}
-            quality={95}
+            unoptimized
             priority
             className="h-[280px] w-auto rounded-2xl object-contain drop-shadow"
           />

@@ -50,29 +50,29 @@ interface SpriteAsset {
 const BASE = '/characters/ggobuk';
 
 export const SPRITE_MAP: Record<SpriteKey, SpriteAsset> = {
-  hero: { src: `${BASE}/characters/main_waving.png`, w: 1280, h: 1488 },
+  hero: { src: `${BASE}/characters/hires/main_waving@2x.png`, w: 2560, h: 2976 },
 
-  front: { src: `${BASE}/characters/turnaround_front.png`, w: 704, h: 972 },
-  side: { src: `${BASE}/characters/turnaround_side.png`, w: 632, h: 968 },
-  back: { src: `${BASE}/characters/turnaround_back.png`, w: 708, h: 968 },
+  front: { src: `${BASE}/characters/hires/turnaround_front@2x.png`, w: 1408, h: 1944 },
+  side: { src: `${BASE}/characters/hires/turnaround_side@2x.png`, w: 1264, h: 1936 },
+  back: { src: `${BASE}/characters/hires/turnaround_back@2x.png`, w: 1416, h: 1936 },
 
-  'persona-kkobuk': { src: `${BASE}/characters/basic_friend_waving.png`, w: 720, h: 864 },
-  'persona-dosa': { src: `${BASE}/characters/saju_master_staff.png`, w: 844, h: 1004 },
-  'persona-mudang': { src: `${BASE}/characters/direct_shaman_bell.png`, w: 864, h: 928 },
-  'persona-bosal': { src: `${BASE}/characters/comfort_bodhisattva_beads.png`, w: 732, h: 928 },
+  'persona-kkobuk': { src: `${BASE}/characters/hires/basic_friend_waving@2x.png`, w: 1440, h: 1728 },
+  'persona-dosa': { src: `${BASE}/characters/hires/saju_master_staff@2x.png`, w: 1688, h: 2008 },
+  'persona-mudang': { src: `${BASE}/characters/hires/direct_shaman_bell@2x.png`, w: 1728, h: 1856 },
+  'persona-bosal': { src: `${BASE}/characters/hires/comfort_bodhisattva_beads@2x.png`, w: 1464, h: 1856 },
 
-  'mood-기쁨': { src: `${BASE}/expressions/expr_happy.png`, w: 392, h: 372 },
-  'mood-신남': { src: `${BASE}/expressions/expr_excited.png`, w: 404, h: 372 },
-  'mood-고민': { src: `${BASE}/expressions/expr_thinking.png`, w: 404, h: 372 },
-  'mood-놀람': { src: `${BASE}/expressions/expr_surprised.png`, w: 392, h: 372 },
-  'mood-걱정': { src: `${BASE}/expressions/expr_worried.png`, w: 400, h: 372 },
-  'mood-편안': { src: `${BASE}/expressions/expr_relaxed.png`, w: 404, h: 372 },
+  'mood-기쁨': { src: `${BASE}/expressions/hires/expr_happy@3x.png`, w: 1176, h: 1116 },
+  'mood-신남': { src: `${BASE}/expressions/hires/expr_excited@3x.png`, w: 1212, h: 1116 },
+  'mood-고민': { src: `${BASE}/expressions/hires/expr_thinking@3x.png`, w: 1212, h: 1116 },
+  'mood-놀람': { src: `${BASE}/expressions/hires/expr_surprised@3x.png`, w: 1176, h: 1116 },
+  'mood-걱정': { src: `${BASE}/expressions/hires/expr_worried@3x.png`, w: 1200, h: 1116 },
+  'mood-편안': { src: `${BASE}/expressions/hires/expr_relaxed@3x.png`, w: 1212, h: 1116 },
 
-  'pose-book': { src: `${BASE}/poses/pose_reading_book.png`, w: 416, h: 424 },
-  'pose-meditate': { src: `${BASE}/poses/pose_fortune_board.png`, w: 512, h: 456 },
-  'pose-drink': { src: `${BASE}/poses/pose_holding_tea.png`, w: 464, h: 456 },
-  'pose-bag': { src: `${BASE}/poses/pose_walking_bag.png`, w: 404, h: 456 },
-  'pose-sing': { src: `${BASE}/poses/pose_singing.png`, w: 536, h: 460 },
+  'pose-book': { src: `${BASE}/poses/hires/pose_reading_book@3x.png`, w: 1248, h: 1272 },
+  'pose-meditate': { src: `${BASE}/poses/hires/pose_fortune_board@3x.png`, w: 1536, h: 1368 },
+  'pose-drink': { src: `${BASE}/poses/hires/pose_holding_tea@3x.png`, w: 1392, h: 1368 },
+  'pose-bag': { src: `${BASE}/poses/hires/pose_walking_bag@3x.png`, w: 1212, h: 1368 },
+  'pose-sing': { src: `${BASE}/poses/hires/pose_singing@3x.png`, w: 1608, h: 1380 },
 };
 
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';

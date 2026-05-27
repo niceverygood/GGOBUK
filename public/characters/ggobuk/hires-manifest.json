@@ -1,0 +1,176 @@
+{
+  "baseUrl": "/characters/ggobuk",
+  "description": "High-resolution Kkobuk character asset pack generated from the approved source artwork.",
+  "generatedAt": "2026-05-24T08:27:50.033Z",
+  "assetCount": 28,
+  "assets": [
+    {
+      "group": "characters",
+      "name": "basic_friend_waving",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/basic_friend_waving@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "comfort_bodhisattva_beads",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/comfort_bodhisattva_beads@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "direct_shaman_bell",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/direct_shaman_bell@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "main_waving",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/main_waving@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "saju_master_staff",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/saju_master_staff@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_back",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/turnaround_back@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_front",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/turnaround_front@2x.png"
+    },
+    {
+      "group": "characters",
+      "name": "turnaround_side",
+      "scale": 2,
+      "src": "/characters/ggobuk/characters/hires/turnaround_side@2x.png"
+    },
+    {
+      "group": "poses",
+      "name": "pose_fortune_board",
+      "scale": 3,
+      "src": "/characters/ggobuk/poses/hires/pose_fortune_board@3x.png"
+    },
+    {
+      "group": "poses",
+      "name": "pose_holding_tea",
+      "scale": 3,
+      "src": "/characters/ggobuk/poses/hires/pose_holding_tea@3x.png"
+    },
+    {
+      "group": "poses",
+      "name": "pose_reading_book",
+      "scale": 3,
+      "src": "/characters/ggobuk/poses/hires/pose_reading_book@3x.png"
+    },
+    {
+      "group": "poses",
+      "name": "pose_singing",
+      "scale": 3,
+      "src": "/characters/ggobuk/poses/hires/pose_singing@3x.png"
+    },
+    {
+      "group": "poses",
+      "name": "pose_walking_bag",
+      "scale": 3,
+      "src": "/characters/ggobuk/poses/hires/pose_walking_bag@3x.png"
+    },
+    {
+      "group": "icons",
+      "name": "icon_beads",
+      "scale": 3,
+      "src": "/characters/ggobuk/icons/hires/icon_beads@3x.png"
+    },
+    {
+      "group": "icons",
+      "name": "icon_bell",
+      "scale": 3,
+      "src": "/characters/ggobuk/icons/hires/icon_bell@3x.png"
+    },
+    {
+      "group": "icons",
+      "name": "icon_cloud",
+      "scale": 3,
+      "src": "/characters/ggobuk/icons/hires/icon_cloud@3x.png"
+    },
+    {
+      "group": "icons",
+      "name": "icon_scroll",
+      "scale": 3,
+      "src": "/characters/ggobuk/icons/hires/icon_scroll@3x.png"
+    },
+    {
+      "group": "icons",
+      "name": "icon_wave",
+      "scale": 3,
+      "src": "/characters/ggobuk/icons/hires/icon_wave@3x.png"
+    },
+    {
+      "group": "cards",
+      "name": "card_basic_friend",
+      "scale": 2,
+      "src": "/characters/ggobuk/cards/hires/card_basic_friend@2x.png"
+    },
+    {
+      "group": "cards",
+      "name": "card_comfort_bodhisattva",
+      "scale": 2,
+      "src": "/characters/ggobuk/cards/hires/card_comfort_bodhisattva@2x.png"
+    },
+    {
+      "group": "cards",
+      "name": "card_direct_shaman",
+      "scale": 2,
+      "src": "/characters/ggobuk/cards/hires/card_direct_shaman@2x.png"
+    },
+    {
+      "group": "cards",
+      "name": "card_saju_master",
+      "scale": 2,
+      "src": "/characters/ggobuk/cards/hires/card_saju_master@2x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_excited",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_excited@3x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_happy",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_happy@3x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_relaxed",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_relaxed@3x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_surprised",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_surprised@3x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_thinking",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_thinking@3x.png"
+    },
+    {
+      "group": "expressions",
+      "name": "expr_worried",
+      "scale": 3,
+      "src": "/characters/ggobuk/expressions/hires/expr_worried@3x.png"
+    }
+  ]
+}
