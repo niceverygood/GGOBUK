@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>꼬북점 수익 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, 'Pretendard', sans-serif; }
+  input[type=range] { accent-color: #4ECDC4; }
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="bg-[#FDFAF3] text-[#2C3E50] min-h-screen">
+
+<header class="px-6 pt-8 pb-4 max-w-7xl mx-auto">
+  <h1 class="text-3xl font-black tracking-tight">꼬북점 수익 시뮬레이터</h1>
+  <p class="mt-1 text-sm font-bold text-[#82786D]">충전제(v1) + Pro 구독(v2) 조합으로 월간/연간 P&amp;L, LTV, CAC, BEP 즉시 비교.</p>
+
+  <div class="mt-5 flex flex-wrap gap-2">
+    <button id="preset-conservative" class="preset-btn rounded-2xl bg-white border border-[#2C3E50]/15 px-4 py-2 text-sm font-extrabold">😬 보수 (MAU 1천)</button>
+    <button id="preset-realistic"    class="preset-btn rounded-2xl bg-[#4ECDC4]/22 border border-[#4ECDC4]/40 px-4 py-2 text-sm font-extrabold">🎯 현실 (MAU 5천)</button>
+    <button id="preset-optimistic"   class="preset-btn rounded-2xl bg-[#F4D03F]/22 border border-[#F4D03F]/60 px-4 py-2 text-sm font-extrabold">🚀 낙관 (MAU 3만)</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 pb-24 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
+
+  <!-- ────────────── INPUT PANEL ────────────── -->
+  <aside class="bg-white rounded-3xl border border-[#2C3E50]/10 p-5 shadow-[0_10px_24px_rgba(44,62,80,0.05)] space-y-5">
+    <h2 class="text-base font-black">입력 변수</h2>
+
+    <!-- USER -->
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">유저</h3>
+      <div class="slider-row" data-id="mau"      data-label="MAU (월간 활성 유저)" data-min="100"  data-max="100000" data-step="100" data-default="5000" data-unit="명"></div>
+      <div class="slider-row" data-id="growthPct" data-label="월 MAU 성장률" data-min="0" data-max="30" data-step="0.5" data-default="8" data-unit="%"></div>
+    </section>
+
+    <!-- REVENUE -->
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">매출 (충전제 v1)</h3>
+      <div class="slider-row" data-id="convPct"  data-label="유료 전환률 (충전)" data-min="0.1" data-max="15" data-step="0.1" data-default="2.5" data-unit="%"></div>
+      <div class="slider-row" data-id="arpu"     data-label="유료자 1인 월 충전액" data-min="2000" data-max="60000" data-step="500" data-default="18000" data-unit="원"></div>
+    </section>
+
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">매출 (Pro 구독 v2)</h3>
+      <div class="slider-row" data-id="subConvPct" data-label="구독 전환률" data-min="0" data-max="10" data-step="0.1" data-default="1.0" data-unit="%"></div>
+      <div class="slider-row" data-id="subPrice"  data-label="Pro 월 구독료" data-min="0" data-max="20000" data-step="500" data-default="7900" data-unit="원"></div>
+    </section>
+
+    <!-- COST -->
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">변동비 (LLM/이미지)</h3>
+      <div class="slider-row" data-id="callsPerPayer" data-label="유료자 LLM 호출/월" data-min="1" data-max="100" data-step="1" data-default="12" data-unit="회"></div>
+      <div class="slider-row" data-id="costPerCall"   data-label="LLM 평균 비용/회" data-min="10" data-max="500" data-step="5" data-default="60" data-unit="원"></div>
+      <div class="slider-row" data-id="imgRatio" data-label="이미지(부적·웹툰) 비율" data-min="0" data-max="100" data-step="1" data-default="8" data-unit="%"></div>
+      <div class="slider-row" data-id="imgCost"  data-label="이미지 비용/장" data-min="20" data-max="300" data-step="5" data-default="100" data-unit="원"></div>
+    </section>
+
+    <!-- FIXED + RETENTION -->
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">고정비 / 리텐션</h3>
+      <div class="slider-row" data-id="infraKrw" data-label="월 고정 인프라 (Vercel/Supabase)" data-min="0" data-max="500000" data-step="10000" data-default="60000" data-unit="원"></div>
+      <div class="slider-row" data-id="churnPct" data-label="월 churn (유료자)" data-min="1" data-max="40" data-step="0.5" data-default="12" data-unit="%"></div>
+      <div class="slider-row" data-id="pgPct"    data-label="PG 수수료" data-min="0" data-max="6" data-step="0.1" data-default="3.0" data-unit="%"></div>
+    </section>
+
+    <!-- MARKETING -->
+    <section class="space-y-3">
+      <h3 class="text-xs font-extrabold text-[#82786D] uppercase tracking-wider">마케팅</h3>
+      <div class="slider-row" data-id="cac"  data-label="CAC (신규 유료자 1명당)" data-min="0" data-max="50000" data-step="500" data-default="6000" data-unit="원"></div>
+      <div class="slider-row" data-id="newPayingPerMonth" data-label="월 신규 유료자" data-min="0" data-max="5000" data-step="10" data-default="80" data-unit="명"></div>
+    </section>
+
+    <button id="reset-btn" class="w-full rounded-2xl bg-[#2C3E50]/8 py-2.5 text-sm font-extrabold text-[#2C3E50] active:scale-[0.98]">기본값으로 리셋</button>
+  </aside>
+
+  <!-- ────────────── RESULTS ────────────── -->
+  <section class="space-y-5">
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-4 shadow-[0_8px_18px_rgba(44,62,80,0.05)]">
+        <p class="text-[11px] font-extrabold text-[#82786D]">월 매출</p>
+        <p id="kpi-rev" class="mt-1 text-2xl font-black tracking-tight num">—</p>
+        <p id="kpi-rev-sub" class="mt-0.5 text-[11px] font-bold text-[#82786D] num">—</p>
+      </div>
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-4 shadow-[0_8px_18px_rgba(44,62,80,0.05)]">
+        <p class="text-[11px] font-extrabold text-[#82786D]">월 비용</p>
+        <p id="kpi-cost" class="mt-1 text-2xl font-black tracking-tight num">—</p>
+        <p id="kpi-cost-sub" class="mt-0.5 text-[11px] font-bold text-[#82786D] num">—</p>
+      </div>
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-4 shadow-[0_8px_18px_rgba(44,62,80,0.05)]">
+        <p class="text-[11px] font-extrabold text-[#82786D]">월 순이익</p>
+        <p id="kpi-net" class="mt-1 text-2xl font-black tracking-tight num">—</p>
+        <p id="kpi-margin" class="mt-0.5 text-[11px] font-bold num">—</p>
+      </div>
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-4 shadow-[0_8px_18px_rgba(44,62,80,0.05)]">
+        <p class="text-[11px] font-extrabold text-[#82786D]">LTV / CAC</p>
+        <p id="kpi-ltvcac" class="mt-1 text-2xl font-black tracking-tight num">—</p>
+        <p id="kpi-ltvcac-judge" class="mt-0.5 text-[11px] font-bold num">—</p>
+      </div>
+    </div>
+
+    <!-- Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-5">
+        <h3 class="text-sm font-black mb-3">매출 구성</h3>
+        <table class="w-full text-sm">
+          <tbody class="num">
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">유료 유저 수 (충전)</td>
+              <td class="text-right font-black" id="tbl-payers">—</td>
+            </tr>
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">충전 매출</td>
+              <td class="text-right font-black" id="tbl-rev-credit">—</td>
+            </tr>
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">구독자 수</td>
+              <td class="text-right font-black" id="tbl-subs">—</td>
+            </tr>
+            <tr>
+              <td class="py-2 font-bold">구독 매출</td>
+              <td class="text-right font-black" id="tbl-rev-sub">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-5">
+        <h3 class="text-sm font-black mb-3">비용 구성</h3>
+        <table class="w-full text-sm">
+          <tbody class="num">
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">LLM 호출 비용</td>
+              <td class="text-right font-black" id="tbl-cost-llm">—</td>
+            </tr>
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">이미지 생성 비용</td>
+              <td class="text-right font-black" id="tbl-cost-img">—</td>
+            </tr>
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">고정 인프라</td>
+              <td class="text-right font-black" id="tbl-cost-infra">—</td>
+            </tr>
+            <tr class="border-b border-[#2C3E50]/8">
+              <td class="py-2 font-bold">PG 수수료</td>
+              <td class="text-right font-black" id="tbl-cost-pg">—</td>
+            </tr>
+            <tr>
+              <td class="py-2 font-bold">마케팅 (CAC × 신규)</td>
+              <td class="text-right font-black" id="tbl-cost-mkt">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- v1 vs v1.1 비교 -->
+    <div class="rounded-3xl bg-gradient-to-br from-[#F4D03F]/14 via-white to-[#4ECDC4]/10 border border-[#F4D03F]/40 p-5">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="text-sm font-black">💡 v1 단가였다면? (이전 가격)</h3>
+        <span class="text-[10px] font-extrabold text-[#82786D]">풀이 2알·궁합 4알 시절</span>
+      </div>
+      <p class="text-[12px] font-bold text-[#82786D] leading-snug mb-3">
+        가격 인상 전 단가로 환산. ARPU는 약 67% 수준, 가격탄력성 +10% conversion 가정.
+        같은 MAU·CAC·churn 가정에서 매출·순이익이 어떻게 달라지는지 비교.
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 num">
+        <div class="rounded-2xl bg-white/85 p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">v1 매출</p>
+          <p class="mt-0.5 text-base font-black" id="v1-rev">—</p>
+          <p class="mt-0.5 text-[10px] font-bold" id="v1-rev-delta">—</p>
+        </div>
+        <div class="rounded-2xl bg-white/85 p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">v1 비용</p>
+          <p class="mt-0.5 text-base font-black" id="v1-cost">—</p>
+          <p class="mt-0.5 text-[10px] font-bold" id="v1-cost-delta">—</p>
+        </div>
+        <div class="rounded-2xl bg-white/85 p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">v1 순이익</p>
+          <p class="mt-0.5 text-base font-black" id="v1-net">—</p>
+          <p class="mt-0.5 text-[10px] font-bold" id="v1-net-delta">—</p>
+        </div>
+        <div class="rounded-2xl bg-white/85 p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">v1 LTV/CAC</p>
+          <p class="mt-0.5 text-base font-black" id="v1-ltvcac">—</p>
+          <p class="mt-0.5 text-[10px] font-bold" id="v1-ltvcac-delta">—</p>
+        </div>
+      </div>
+      <p class="mt-3 text-[11px] font-extrabold" id="v1-summary">—</p>
+    </div>
+
+    <!-- Unit economics -->
+    <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-5">
+      <h3 class="text-sm font-black mb-3">단위 경제 (Unit Economics)</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 num">
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">유료자 ARPU/월</p>
+          <p class="mt-0.5 text-base font-black" id="ue-arpu">—</p>
+        </div>
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">유료자 LTV</p>
+          <p class="mt-0.5 text-base font-black" id="ue-ltv">—</p>
+        </div>
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">평균 유료기간</p>
+          <p class="mt-0.5 text-base font-black" id="ue-lifetime">—</p>
+        </div>
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">변동 마진율</p>
+          <p class="mt-0.5 text-base font-black" id="ue-cm">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5-year projection chart -->
+    <div class="rounded-3xl bg-white border border-[#2C3E50]/10 p-5">
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="text-sm font-black">5년 누적 시뮬레이션</h3>
+        <p class="text-[11px] font-bold text-[#82786D]">월 성장률 기준으로 60개월 적분</p>
+      </div>
+      <div style="height: 320px;"><canvas id="chart-yearly"></canvas></div>
+      <div class="mt-4 grid grid-cols-3 gap-3 num">
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">5년 누적 매출</p>
+          <p class="mt-0.5 text-base font-black" id="y-rev">—</p>
+        </div>
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">5년 누적 순이익</p>
+          <p class="mt-0.5 text-base font-black" id="y-net">—</p>
+        </div>
+        <div class="rounded-2xl bg-[#FDFAF3] p-3">
+          <p class="text-[10px] font-extrabold text-[#82786D]">BEP (월 단위 흑자 전환)</p>
+          <p class="mt-0.5 text-base font-black" id="y-bep">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <details class="rounded-3xl bg-white/70 border border-[#2C3E50]/10 p-5">
+      <summary class="text-sm font-black cursor-pointer">📝 모델 가정 / 한계</summary>
+      <div class="mt-3 text-[13px] font-medium leading-relaxed space-y-2 text-[#2C3E50]/90">
+        <p><b>유료자 ARPU</b>는 "유료자가 한 달에 충전하는 평균 금액". MAU 전체 평균이 아님. 충전 기록 있는 사람 기준.</p>
+        <p><b>LTV</b>는 단순 모델: <code class="bg-[#FDFAF3] px-1 rounded">유료자 ARPU × (1 / churn) × 변동 마진율</code>. 누적 할인은 적용 안 함.</p>
+        <p><b>변동 마진율</b>은 매출에서 LLM + 이미지 + PG 수수료를 뺀 후의 비율. 고정 인프라/마케팅은 제외 (단위 경제 기준이라서).</p>
+        <p><b>BEP</b>는 "월간 순이익이 0을 넘기는 첫 달". MAU 성장에 따라 자연 도달.</p>
+        <p><b>5년 시뮬레이션</b>은 MAU가 월 성장률에 따라 복리로 증가. churn은 반영 안 함 (유료자 LTV에만 반영). 거시적 추정용.</p>
+        <p><b>가정 한계</b>: 시즌성 X, paid 광고 효율 변화 X, 가격 인상 X, 이탈 후 재가입 X. 첫 12개월 트렌드 보는 용도로 권장.</p>
+      </div>
+    </details>
+
+  </section>
+
+</main>
+
+<script>
+// ────────────────────────────────────────────────────────────
+// 상태 / 입력 모델
+// ────────────────────────────────────────────────────────────
+const PRESETS = {
+  // v1.1 (2026-05-27): 기능 단가 인상 반영 — 풀이/궁합 등 ~1.5배 인상돼
+  // 같은 호출량 가정 시 ARPU도 ~1.5배. 가격탄력성 -10% 감안한 conservative 값.
+  conservative: {
+    mau: 1000, growthPct: 3,
+    convPct: 1.3, arpu: 12000,
+    subConvPct: 0.3, subPrice: 7900,
+    callsPerPayer: 8, costPerCall: 60,
+    imgRatio: 5, imgCost: 100,
+    infraKrw: 60000, churnPct: 18, pgPct: 3.0,
+    cac: 8000, newPayingPerMonth: 15,
+  },
+  realistic: {
+    mau: 5000, growthPct: 8,
+    convPct: 2.3, arpu: 18000,
+    subConvPct: 1.0, subPrice: 7900,
+    callsPerPayer: 12, costPerCall: 60,
+    imgRatio: 8, imgCost: 100,
+    infraKrw: 60000, churnPct: 12, pgPct: 3.0,
+    cac: 6000, newPayingPerMonth: 80,
+  },
+  optimistic: {
+    mau: 30000, growthPct: 15,
+    convPct: 4.5, arpu: 27000,
+    subConvPct: 3.0, subPrice: 7900,
+    callsPerPayer: 18, costPerCall: 60,
+    imgRatio: 12, imgCost: 100,
+    infraKrw: 120000, churnPct: 8, pgPct: 3.0,
+    cac: 5000, newPayingPerMonth: 600,
+  },
+};
+
+const state = { ...PRESETS.realistic };
+
+// ────────────────────────────────────────────────────────────
+// 슬라이더 렌더링
+// ────────────────────────────────────────────────────────────
+function fmtUnit(v, unit) {
+  if (unit === '원') return v.toLocaleString('ko-KR') + '원';
+  if (unit === '%') return Number(v).toFixed(1) + '%';
+  if (unit === '명') return Math.round(Number(v)).toLocaleString('ko-KR') + '명';
+  if (unit === '회') return Math.round(Number(v)).toLocaleString('ko-KR') + '회';
+  return v;
+}
+
+function buildSliders() {
+  document.querySelectorAll('.slider-row').forEach((row) => {
+    const id = row.dataset.id;
+    const label = row.dataset.label;
+    const min = parseFloat(row.dataset.min);
+    const max = parseFloat(row.dataset.max);
+    const step = parseFloat(row.dataset.step);
+    const def = parseFloat(row.dataset.default);
+    const unit = row.dataset.unit;
+    state[id] = def;
+    row.innerHTML = `
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-[12px] font-bold text-[#2C3E50]/85">${label}</span>
+        <span class="text-[12px] font-black num" id="sv-${id}">${fmtUnit(def, unit)}</span>
+      </div>
+      <input type="range" id="sl-${id}" min="${min}" max="${max}" step="${step}" value="${def}" class="w-full" />`;
+    const sl = row.querySelector(`#sl-${id}`);
+    const sv = row.querySelector(`#sv-${id}`);
+    sl.addEventListener('input', () => {
+      state[id] = parseFloat(sl.value);
+      sv.textContent = fmtUnit(state[id], unit);
+      recompute();
+    });
+  });
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  Object.entries(p).forEach(([k, v]) => {
+    state[k] = v;
+    const sl = document.getElementById(`sl-${k}`);
+    const sv = document.getElementById(`sv-${k}`);
+    if (sl) sl.value = v;
+    if (sv) {
+      const unit = document.querySelector(`.slider-row[data-id="${k}"]`).dataset.unit;
+      sv.textContent = fmtUnit(v, unit);
+    }
+  });
+  recompute();
+}
+
+document.getElementById('preset-conservative').onclick = () => applyPreset('conservative');
+document.getElementById('preset-realistic').onclick = () => applyPreset('realistic');
+document.getElementById('preset-optimistic').onclick = () => applyPreset('optimistic');
+document.getElementById('reset-btn').onclick = () => applyPreset('realistic');
+
+// ────────────────────────────────────────────────────────────
+// 계산
+// ────────────────────────────────────────────────────────────
+function computeMonth(mau, s) {
+  const payers = mau * (s.convPct / 100);
+  const subs = mau * (s.subConvPct / 100);
+  const revCredit = payers * s.arpu;
+  const revSub = subs * s.subPrice;
+  const revenue = revCredit + revSub;
+
+  // LLM/이미지 호출: 구독자도 같은 호출량 가정
+  const totalActive = payers + subs;
+  const llmCalls = totalActive * s.callsPerPayer;
+  const imgCalls = llmCalls * (s.imgRatio / 100);
+  const costLlm = llmCalls * s.costPerCall;
+  const costImg = imgCalls * s.imgCost;
+  const costPg  = revenue * (s.pgPct / 100);
+  const costInfra = s.infraKrw;
+  const costMkt = s.cac * s.newPayingPerMonth;
+  const cost = costLlm + costImg + costPg + costInfra + costMkt;
+
+  const net = revenue - cost;
+  const margin = revenue > 0 ? (net / revenue) * 100 : 0;
+  const arpuMonthly = totalActive > 0 ? revenue / totalActive : 0;
+
+  // 변동 마진: 매출 - (LLM+이미지+PG) / 매출
+  const variableCost = costLlm + costImg + costPg;
+  const cm = revenue > 0 ? ((revenue - variableCost) / revenue) * 100 : 0;
+
+  // LTV: 유료자 ARPU × (1 / churn) × 변동 마진 (단순 모델)
+  const lifetimeMonths = s.churnPct > 0 ? 100 / s.churnPct : 0;
+  const ltv = arpuMonthly * lifetimeMonths * (cm / 100);
+  const ltvCac = s.cac > 0 ? ltv / s.cac : 0;
+
+  return {
+    mau, payers, subs,
+    revCredit, revSub, revenue,
+    costLlm, costImg, costPg, costInfra, costMkt, cost,
+    net, margin,
+    arpuMonthly, ltv, ltvCac, lifetimeMonths, cm,
+  };
+}
+
+function project60Months(s) {
+  let mau = s.mau;
+  const rows = [];
+  let bep = null;
+  let cumRev = 0, cumNet = 0;
+  for (let m = 1; m <= 60; m++) {
+    const r = computeMonth(mau, s);
+    cumRev += r.revenue;
+    cumNet += r.net;
+    rows.push({ month: m, mau, rev: r.revenue, cost: r.cost, net: r.net, cumRev, cumNet });
+    if (bep === null && r.net > 0) bep = m;
+    mau = mau * (1 + s.growthPct / 100);
+  }
+  return { rows, bep, cumRev, cumNet };
+}
+
+// ────────────────────────────────────────────────────────────
+// 렌더
+// ────────────────────────────────────────────────────────────
+function won(v) {
+  if (!isFinite(v)) return '—';
+  if (Math.abs(v) >= 1e8) return (v / 1e8).toFixed(2) + '억';
+  if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(1) + '만';
+  return Math.round(v).toLocaleString('ko-KR');
+}
+
+function wonFull(v) {
+  if (!isFinite(v)) return '—';
+  return Math.round(v).toLocaleString('ko-KR') + '원';
+}
+
+let chart;
+function renderChart(rows) {
+  const ctx = document.getElementById('chart-yearly').getContext('2d');
+  const labels = rows.map((r) => `${r.month}개월`);
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: '월 매출',
+        data: rows.map((r) => Math.round(r.rev / 10000)),
+        borderColor: '#4ECDC4',
+        backgroundColor: 'rgba(78, 205, 196, 0.15)',
+        tension: 0.25,
+        fill: true,
+      },
+      {
+        label: '월 비용',
+        data: rows.map((r) => Math.round(r.cost / 10000)),
+        borderColor: '#FF6B6B',
+        backgroundColor: 'rgba(255, 107, 107, 0.08)',
+        tension: 0.25,
+        fill: false,
+      },
+      {
+        label: '월 순이익',
+        data: rows.map((r) => Math.round(r.net / 10000)),
+        borderColor: '#2C3E50',
+        backgroundColor: 'rgba(44, 62, 80, 0.08)',
+        tension: 0.25,
+        borderDash: [3, 3],
+        fill: false,
+      },
+    ],
+  };
+  if (chart) {
+    chart.data = data;
+    chart.update('none');
+  } else {
+    chart = new Chart(ctx, {
+      type: 'line',
+      data,
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { weight: '700' } } },
+          tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y.toLocaleString('ko-KR')}만원` } },
+        },
+        scales: {
+          y: { ticks: { callback: (v) => v.toLocaleString('ko-KR') + '만원', font: { weight: '600' } }, grid: { color: 'rgba(44,62,80,0.06)' } },
+          x: { ticks: { autoSkip: true, maxTicksLimit: 12, font: { weight: '600' } }, grid: { display: false } },
+        },
+      },
+    });
+  }
+}
+
+// v1 단가로 환산한 상태 — ARPU 67%(=2/3, 1.5배 인상 역산), conversion +10%
+// (가격 낮으니 진입 유저 약간 더 많다는 가정).
+function v1State(s) {
+  return {
+    ...s,
+    arpu: s.arpu * (2 / 3),
+    convPct: s.convPct * 1.10,
+    subPrice: s.subPrice, // 구독 가격은 변동 없음 (v2 기능 단가 영향 X)
+  };
+}
+
+function pctDelta(curr, base) {
+  if (!isFinite(base) || base === 0) return null;
+  return ((curr - base) / base) * 100;
+}
+
+function fmtDelta(v1Val, currVal, suffix) {
+  // currVal 대비 v1Val이 얼마나 작은지 (보통 적자/감소 방향)
+  const pct = pctDelta(v1Val, currVal);
+  if (pct === null) return '—';
+  const sign = pct >= 0 ? '+' : '';
+  const color = pct >= 0 ? 'text-[#16706B]' : 'text-[#FF6B6B]';
+  return `<span class="${color}">${sign}${pct.toFixed(1)}%${suffix ? ' ' + suffix : ''}</span>`;
+}
+
+function recompute() {
+  const r = computeMonth(state.mau, state);
+  const v1 = computeMonth(state.mau, v1State(state));
+  document.getElementById('kpi-rev').textContent = won(r.revenue) + '원';
+  document.getElementById('kpi-rev-sub').textContent = `연 ${won(r.revenue * 12)}원`;
+  document.getElementById('kpi-cost').textContent = won(r.cost) + '원';
+  document.getElementById('kpi-cost-sub').textContent = `매출 대비 ${r.revenue > 0 ? Math.round(100 * r.cost / r.revenue) : 0}%`;
+  document.getElementById('kpi-net').textContent = won(r.net) + '원';
+  const marginEl = document.getElementById('kpi-margin');
+  marginEl.textContent = `마진 ${r.margin.toFixed(1)}%`;
+  marginEl.className = 'mt-0.5 text-[11px] font-bold num ' + (r.net >= 0 ? 'text-[#16706B]' : 'text-[#FF6B6B]');
+
+  const ratio = r.ltvCac;
+  document.getElementById('kpi-ltvcac').textContent = isFinite(ratio) ? ratio.toFixed(2) + 'x' : '—';
+  const judge = document.getElementById('kpi-ltvcac-judge');
+  if (ratio >= 3) { judge.textContent = '✅ 건전 (≥3x)'; judge.className = 'mt-0.5 text-[11px] font-bold num text-[#16706B]'; }
+  else if (ratio >= 1) { judge.textContent = '⚠️ 손익 분기 (1~3x)'; judge.className = 'mt-0.5 text-[11px] font-bold num text-[#B58A00]'; }
+  else { judge.textContent = '❌ 마케팅 적자 (<1x)'; judge.className = 'mt-0.5 text-[11px] font-bold num text-[#FF6B6B]'; }
+
+  // 매출 구성
+  document.getElementById('tbl-payers').textContent = won(r.payers) + '명';
+  document.getElementById('tbl-rev-credit').textContent = wonFull(r.revCredit);
+  document.getElementById('tbl-subs').textContent = won(r.subs) + '명';
+  document.getElementById('tbl-rev-sub').textContent = wonFull(r.revSub);
+
+  // 비용 구성
+  document.getElementById('tbl-cost-llm').textContent = wonFull(r.costLlm);
+  document.getElementById('tbl-cost-img').textContent = wonFull(r.costImg);
+  document.getElementById('tbl-cost-infra').textContent = wonFull(r.costInfra);
+  document.getElementById('tbl-cost-pg').textContent = wonFull(r.costPg);
+  document.getElementById('tbl-cost-mkt').textContent = wonFull(r.costMkt);
+
+  // v1 vs v1.1 비교 카드 렌더
+  document.getElementById('v1-rev').textContent = won(v1.revenue) + '원';
+  document.getElementById('v1-rev-delta').innerHTML =
+    `현재 대비 ${fmtDelta(v1.revenue, r.revenue, '')}`;
+  document.getElementById('v1-cost').textContent = won(v1.cost) + '원';
+  document.getElementById('v1-cost-delta').innerHTML =
+    `현재 대비 ${fmtDelta(v1.cost, r.cost, '')}`;
+  document.getElementById('v1-net').textContent = won(v1.net) + '원';
+  document.getElementById('v1-net-delta').innerHTML =
+    `현재 대비 ${fmtDelta(v1.net, r.net, '')}`;
+  document.getElementById('v1-ltvcac').textContent =
+    isFinite(v1.ltvCac) ? v1.ltvCac.toFixed(2) + 'x' : '—';
+  document.getElementById('v1-ltvcac-delta').innerHTML =
+    `현재 ${r.ltvCac.toFixed(2)}x 대비 ${fmtDelta(v1.ltvCac, r.ltvCac, '')}`;
+
+  // v1 summary 문장
+  const revDelta = pctDelta(r.revenue, v1.revenue);
+  const netDelta = pctDelta(r.net, v1.net);
+  const summaryEl = document.getElementById('v1-summary');
+  if (revDelta !== null && netDelta !== null) {
+    if (r.net > 0 && v1.net <= 0) {
+      summaryEl.innerHTML = `→ <span class="text-[#16706B]">가격 인상이 결정적</span>: v1 단가에선 적자(${won(v1.net)}원)인데 v1.1에선 흑자(${won(r.net)}원). 인상의 가치 입증됨.`;
+    } else if (r.net > 0 && v1.net > 0) {
+      summaryEl.innerHTML = `→ <span class="text-[#16706B]">v1.1로 매출 +${revDelta.toFixed(0)}%, 순이익 +${netDelta.toFixed(0)}%</span>. 가격탄력성 -10% 감안해도 명확한 매출 점프.`;
+    } else if (r.net <= 0) {
+      summaryEl.innerHTML = `→ <span class="text-[#FF6B6B]">v1.1로도 흑자 미달</span>. 다른 변수 (MAU·CAC·conversion) 조정 필요.`;
+    }
+  }
+
+  // Unit economics
+  document.getElementById('ue-arpu').textContent = wonFull(r.arpuMonthly);
+  document.getElementById('ue-ltv').textContent = wonFull(r.ltv);
+  document.getElementById('ue-lifetime').textContent = r.lifetimeMonths.toFixed(1) + '개월';
+  document.getElementById('ue-cm').textContent = r.cm.toFixed(1) + '%';
+
+  // 60-month projection
+  const proj = project60Months(state);
+  renderChart(proj.rows);
+  document.getElementById('y-rev').textContent = won(proj.cumRev) + '원';
+  document.getElementById('y-net').textContent = won(proj.cumNet) + '원';
+  document.getElementById('y-bep').textContent = proj.bep ? `${proj.bep}개월` : '5년 내 미달성';
+}
+
+// ────────────────────────────────────────────────────────────
+// 부트
+// ────────────────────────────────────────────────────────────
+buildSliders();
+applyPreset('realistic');
+</script>
+
+</body>
+</html>

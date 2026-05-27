@@ -60,13 +60,18 @@ export const REFUND_WINDOW_DAYS = 7;
  * Per-feature credit cost. 0 = free with no daily cap (but still subject to
  * FREE_DAILY_LIMITS where applicable). Keep in sync with PRICING.md §2.
  */
+// 2026-05-27 v1.1 인상 — 시장가 대비 1/5~1/15 수준으로 낮았던 단가를 한 단계
+// 올림. 정밀풀이 패키지(₩307/알) 기준 풀이 한 번이 ₩921로 정렬되어 사주
+// 업계 ₩2,000~5,000 단건가 대비 여전히 경쟁력 있는 가격 유지.
+// 채팅(1알=₩307)은 인게이지먼트 위해 유지.
 export const CREDIT_COSTS = {
   chat: 1,
-  interpretation: 2,
-  compatibility: 4,
-  daewoon: 2,
-  auspicious: 3,
-  talisman: 5,
+  interpretation: 3,
+  compatibility: 6,
+  daewoon: 3,
+  auspicious: 4,
+  talisman: 7,
+  comic: 8,
 } as const;
 
 /**
