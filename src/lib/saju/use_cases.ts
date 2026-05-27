@@ -87,10 +87,12 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     title: '결혼 시기',
     question: '언제쯤이 좋을까, 어떤 결의 사람과',
     emoji: '💍',
-    categories: ['love', 'ilju'],
+    // 결혼은 (1) 연애·일지·배우자성과 (2) 가족 영역(부모·시댁·자녀)이 함께
+    // 작용해서, love + family 매핑이 가장 결혼이라는 사건을 입체적으로 보여준다.
+    categories: ['love', 'family'],
     eventTypes: ['marriage'],
     focus:
-      '결혼 가능 시기 — 일지 합 진입 + 배우자성(남=재성/여=관성) 활성 시점. 어떤 결의 사람과 잘 맞는지(용신 보완 결).',
+      '결혼 가능 시기 — 일지 합 진입 + 배우자성(남=재성/여=관성) 활성 시점. 어떤 결의 사람과 잘 맞는지(용신 보완 결). 결혼 후 가족(부모·시댁·자녀) 영역에서의 흐름도 함께.',
     cardClass: 'bg-gradient-to-br from-gold/15 via-white to-red/10 border-gold/40',
     accentChipClass: 'bg-gold/25 text-[#7C5A0E]',
   },
@@ -99,10 +101,13 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     title: '공부·자격',
     question: '지금 시작해도 될지, 어느 분야가 잘 풀릴지',
     emoji: '📚',
-    categories: ['career', 'strength'],
+    // 공부·자격은 (1) 어떤 분야가 잘 맞는지(career의 격국·용신 적성) +
+    // (2) 학습 환경·시간대·색·루틴(direction의 용신 처방). strength는 너무
+    // 적성과 겹쳐서 빠짐.
+    categories: ['career', 'direction'],
     eventTypes: ['study'],
     focus:
-      '인성(印星)이 강해지는 시기 — 공부·자격증·귀인의 흐름. 어느 분야가 사주적으로 잘 맞는지(격국·용신 기반).',
+      '인성(印星)이 강해지는 시기 — 공부·자격증·귀인의 흐름. 어느 분야가 사주적으로 잘 맞는지(격국·용신 기반). 학습 환경·시간대·집중에 좋은 색·방향 처방까지.',
     cardClass: 'bg-gradient-to-br from-mint/15 via-white to-navy/8 border-mint/35',
     accentChipClass: 'bg-mint/22 text-[#16706B]',
   },

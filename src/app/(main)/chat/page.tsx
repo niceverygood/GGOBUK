@@ -30,7 +30,9 @@ export default function ChatListPage() {
         <h1 className="mt-3 text-2xl font-black tracking-tight text-navy">꼬북이와 대화</h1>
         <p className="mt-1 text-sm font-semibold text-[#82786D]">페르소나를 골라 새 대화를 시작해</p>
 
-        <Link href="/persona" className="block mt-6">
+        {/* 모드 선택은 사주풀이·채팅 통합 경로(/mode)로 보낸다.
+            from=/chat 으로 가면 모드 선택 후 새 chat session 자동 생성. */}
+        <Link href="/mode?from=/chat" className="block mt-6">
           <ButtonPrimary tone="mint">＋ 새 대화 시작하기</ButtonPrimary>
         </Link>
 

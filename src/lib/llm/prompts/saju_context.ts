@@ -215,30 +215,56 @@ export function formatSajuContext(saju: SajuResult, name?: string): string {
   const topGroup = sortedGroups[0]?.[0] ?? null;
   const yinYangTilt: 'yang_heavy' | 'yin_heavy' | 'balanced' =
     yang > yin + 2 ? 'yang_heavy' : yin > yang + 2 ? 'yin_heavy' : 'balanced';
+  // 두드러진 신살(같은 이름은 한 번만, 일주/일지 기반 우선)
+  const sinsalNamesSet = new Set<string>();
+  for (const s of sinsal) {
+    if (s.name) sinsalNamesSet.add(s.name);
+  }
   const sig = buildSignatureBehaviors({
     topSipsungGroup: topGroup,
     iljiStage: advanced.dayStage,
     yinYangTilt,
     weakestOhaeng: weak as '목' | '화' | '토' | '금' | '수',
+    gyeokgukSipsung: analysis.gyeokguk.sipsung,
+    strengthLabel: analysis.strength.label,
+    sinsalNames: Array.from(sinsalNamesSet),
   });
   lines.push('## Signature Behavior 후보 (소름 효과 재료 — 절대 그대로 베끼지 말 것)');
   lines.push('아래 후보들은 이 사주가 통계적으로 fit하는 micro-behavior다. 사용자의 일주·격국·진행 중 대운과 결합해, 사용자가 "어? 이거 진짜 나 그래"라고 무릎 칠 한 줄로 합성한다. 그대로 인용하면 일반론이 된다.');
+  if (sig.fromGyeokguk.length > 0) {
+    lines.push(`[격국 ${analysis.gyeokguk.primary} — 사주의 골격]`);
+    for (const s of sig.fromGyeokguk) lines.push(`- ${s}`);
+  }
   if (sig.fromSipsung.length > 0) {
-    lines.push(`[${topGroup} 1위 그룹]`);
+    lines.push(`[${topGroup} 1위 그룹 — 욕구·동력 축]`);
     for (const s of sig.fromSipsung) lines.push(`- ${s}`);
   }
+  if (sig.fromStrength.length > 0) {
+    lines.push(`[일간 강약 ${analysis.strength.label} — 의지·결정 축]`);
+    for (const s of sig.fromStrength) lines.push(`- ${s}`);
+  }
   if (sig.fromIljiStage.length > 0) {
-    lines.push(`[일지 ${advanced.dayStage} 단계]`);
+    lines.push(`[일지 ${advanced.dayStage} 십이운성 — 자존감·배우자 축]`);
     for (const s of sig.fromIljiStage) lines.push(`- ${s}`);
   }
   if (sig.fromYinYang.length > 0) {
-    lines.push(`[음양 ${yinYangTilt === 'yang_heavy' ? '양 쏠림' : yinYangTilt === 'yin_heavy' ? '음 쏠림' : '균형'}]`);
+    lines.push(`[음양 ${yinYangTilt === 'yang_heavy' ? '양 쏠림' : yinYangTilt === 'yin_heavy' ? '음 쏠림' : '균형'} — 외향·내향 축]`);
     for (const s of sig.fromYinYang) lines.push(`- ${s}`);
   }
   if (sig.fromWeakOhaeng.length > 0) {
-    lines.push(`[부족한 오행 ${weak}]`);
+    lines.push(`[부족한 오행 ${weak} — 결핍 신호]`);
     for (const s of sig.fromWeakOhaeng) lines.push(`- ${s}`);
   }
+  if (sig.fromSinsal.length > 0) {
+    for (const bucket of sig.fromSinsal) {
+      lines.push(`[신살 ${bucket.name}]`);
+      for (const s of bucket.lines) lines.push(`- ${s}`);
+    }
+  }
+  lines.push(
+    '',
+    '⚠️ 위 후보는 "통계적 fit"이라 그대로 베끼면 일반화된다. 반드시 2-3개 축(예: 격국+십성그룹+일지운성, 일간강약+신살+부족오행)을 한 문장에서 묶어 그 사람만의 micro-observation으로 합성하라.',
+  );
 
   return lines.join('\n');
 }

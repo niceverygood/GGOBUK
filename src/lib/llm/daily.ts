@@ -1,6 +1,7 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { HANJA_NOTATION_RULE } from './prompts/hanja_rule';
 import { analyzeSaju, iljiRelation } from '@/lib/saju/analysis';
 import { CHEONGAN, JIJI } from '@/lib/saju/constants';
 import type { SajuResult } from '@/lib/saju/types';
@@ -36,6 +37,8 @@ const MOOD_ALIASES: Record<string, DailyMood> = {
 
 const SYSTEM = `너는 매일의 일진을 개인 사주와 연결해 읽는 꼬북점 상담가다.
 ${PREMIUM_SAJU_GUIDE}
+
+${HANJA_NOTATION_RULE}
 
 규칙:
 - 한 줄 운세는 28-42자, 사용자의 오늘 흐름이 느껴지는 친근한 문장. 일반론 금지.
@@ -159,7 +162,18 @@ export async function generateDaily(params: {
   })();
   const rel = iljiRelation(params.saju.palja.day.ganIdx, ganIdx, jiIdx);
 
-  const userMsg = `오늘은 ${params.date}, 일진은 ${params.iljiGan}${params.iljiJi}이야.
+  // 한글 일진/대운/세운 형식 — LLM이 한자만 단독으로 못 쓰게 한글을 명시.
+  const iljiGanKo = ganList[ganIdx];
+  const iljiJiKo = jiList[jiIdx];
+  const iljiGanHj = ganHanja[ganIdx];
+  const iljiJiHj = jiHanja[jiIdx];
+  const dwLine = analysis.currentDaewoon
+    ? `${analysis.currentDaewoon.pillar.gan}${analysis.currentDaewoon.pillar.ji}(${analysis.currentDaewoon.pillar.ganHanja}${analysis.currentDaewoon.pillar.jiHanja}, ${analysis.currentDaewoon.sipsung})`
+    : '없음';
+  const sw = analysis.currentSewoon;
+  const swLine = `${sw.pillar.gan}${sw.pillar.ji}(${sw.pillar.ganHanja}${sw.pillar.jiHanja}, ${sw.sipsung})`;
+
+  const userMsg = `오늘은 ${params.date}, 일진은 ${iljiGanKo}${iljiJiKo}(${iljiGanHj}${iljiJiHj})이야.
 
 ${context}
 
@@ -167,14 +181,12 @@ ${context}
 - 일진 천간↔일간 관계: ${rel.ganSipsung}${rel.hap ? ' (천간합)' : rel.chung ? ' (천간충)' : ''}
 - 일진 지지 오행: ${rel.jiOhaeng}
 - 사용자 일간 강약: ${analysis.strength.label}, 용신 후보: ${analysis.yongsin.main}
-- 진행 중 대운: ${
-    analysis.currentDaewoon
-      ? `${analysis.currentDaewoon.pillar.ganHanja}${analysis.currentDaewoon.pillar.jiHanja} (${analysis.currentDaewoon.sipsung})`
-      : '없음'
-  }, 올해 세운: ${analysis.currentSewoon.pillar.ganHanja}${analysis.currentSewoon.pillar.jiHanja} (${analysis.currentSewoon.sipsung})
+- 진행 중 대운: ${dwLine}
+- 올해 세운: ${swLine}
 
 작성 규칙:
 - one_liner는 위 일진 관계와 진행 중 대운/세운을 반영한 오늘의 결과지향 한 줄. 일반론 금지.
+- ⚠️ 60갑자(일진/세운/대운)와 명리 술어는 본문에서 반드시 한글 우선 + 괄호 한자 형식. 한자 단독 노출은 금지. 예: "경자(庚子)" ○ / "庚子" ✗
 - lucky_color는 용신 또는 부족한 오행에 대응하는 색.
 - recommend 3개는 일진과 본인 사주의 만남에서 실제로 잘 풀릴 행동.
 - avoid는 일진에서 자극되는 약점.

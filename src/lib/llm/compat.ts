@@ -1,6 +1,7 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { HANJA_NOTATION_RULE } from './prompts/hanja_rule';
 import { pairwiseSummary } from '@/lib/saju/hapchung';
 import { analyzeSaju } from '@/lib/saju/analysis';
 import type { Palja, Pillar, SajuResult } from '@/lib/saju/types';
@@ -55,6 +56,8 @@ function pairInteractions(a: Palja, b: Palja): string[] {
 const SYSTEM = `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 사주를 깊이 읽어 프리미엄 궁합 리포트를 작성한다.
 
 ${PREMIUM_SAJU_GUIDE}
+
+${HANJA_NOTATION_RULE}
 
 상담 톤:
 - 한국어로만 쓴다.

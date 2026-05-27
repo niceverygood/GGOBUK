@@ -1,6 +1,7 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
+import { HANJA_NOTATION_RULE } from './prompts/hanja_rule';
 import type { SajuResult } from '@/lib/saju/types';
 
 export interface AuspiciousSuggestion {
@@ -15,6 +16,8 @@ interface Candidate extends AuspiciousSuggestion {
 
 const SYSTEM = `너는 택일과 길일을 현대적으로 풀어주는 꼬북점 명리 상담가다.
 ${PREMIUM_SAJU_GUIDE}
+
+${HANJA_NOTATION_RULE}
 
 규칙:
 - 입력 후보 날짜 안에서만 고른다. 날짜를 새로 만들지 않는다.

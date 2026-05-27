@@ -77,14 +77,14 @@ export default async function MorePage() {
             icon={<Bell size={22} strokeWidth={2.5} />}
           />
           <MoreLink
-            href="/persona"
-            title="페르소나 전환"
-            subtitle="꼬북이의 4가지 모드"
+            href="/mode?from=/more"
+            title="모드 선택"
+            subtitle="꼬북이의 4가지 모드 · 사주풀이·채팅 톤"
             icon={
               <KkobukSprite
                 variant="persona-kkobuk"
                 size="xs"
-                ariaLabel="페르소나 전환"
+                ariaLabel="모드 선택"
               />
             }
           />

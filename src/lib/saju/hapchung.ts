@@ -38,7 +38,8 @@ const JIJI_SAMHAP: number[][] = [
 ];
 
 // 지지충: 자오, 축미, 인신, 묘유, 진술, 사해
-const JIJI_CHUNG: Array<[number, number]> = [
+// Exported so clash_timing.ts can compute future trigger years.
+export const JIJI_CHUNG: ReadonlyArray<readonly [number, number]> = [
   [0, 6],
   [1, 7],
   [2, 8],
@@ -48,7 +49,7 @@ const JIJI_CHUNG: Array<[number, number]> = [
 ];
 
 // 지지형: 인사신, 축술미, 자묘, 진오유해 자형
-const JIJI_HYEONG: Array<[number, number]> = [
+export const JIJI_HYEONG: ReadonlyArray<readonly [number, number]> = [
   [2, 5],
   [5, 8],
   [2, 8],
@@ -59,7 +60,7 @@ const JIJI_HYEONG: Array<[number, number]> = [
 ];
 
 // 지지파: 자유, 인해, 묘오, 사신, 진축, 술미
-const JIJI_PA: Array<[number, number]> = [
+export const JIJI_PA: ReadonlyArray<readonly [number, number]> = [
   [0, 9],
   [2, 11],
   [3, 6],
@@ -68,7 +69,11 @@ const JIJI_PA: Array<[number, number]> = [
   [10, 7],
 ];
 
-function pairIncludes(pairs: Array<[number, number]>, a: number, b: number): boolean {
+function pairIncludes(
+  pairs: ReadonlyArray<readonly [number, number]>,
+  a: number,
+  b: number,
+): boolean {
   return pairs.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 

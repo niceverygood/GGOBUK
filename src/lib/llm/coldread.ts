@@ -1,6 +1,7 @@
 import { complete } from "./client";
 import { formatSajuContext } from "./prompts/saju_context";
 import { PREMIUM_SAJU_GUIDE } from "./prompts/premium_saju";
+import { HANJA_NOTATION_RULE } from "./prompts/hanja_rule";
 import { calculatePalja } from "@/lib/saju/palja";
 import { sipsungOf } from "@/lib/saju/sipsung";
 import {
@@ -32,6 +33,8 @@ function sewoonForRange(saju: SajuResult, startYear: number): string[] {
 
 const SYSTEM = `너는 대운 흐름을 현실 언어로 풀어주는 꼬북점 명리 상담가다.
 ${PREMIUM_SAJU_GUIDE}
+
+${HANJA_NOTATION_RULE}
 
 ## ⚠️ 마크다운 절대 금지 — 일반 텍스트로만
 이 카드는 마크다운을 렌더링하지 않는다. 마크다운 기호를 쓰면 사용자에겐

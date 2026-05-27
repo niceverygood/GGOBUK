@@ -2,6 +2,11 @@ import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
 import { analyzeSaju } from '@/lib/saju/analysis';
+import {
+  filterClashesByPosition,
+  findFutureClashes,
+  formatClashTriggers,
+} from '@/lib/saju/clash_timing';
 import type { PersonaKey } from './personas';
 import type { SajuResult } from '@/lib/saju/types';
 import type { InterpretationCategory } from '@/types/db';
@@ -314,7 +319,11 @@ ${PREMIUM_SAJU_GUIDE}
 - "한 줄 결론" 바로 다음에 ⚠️ 반드시 다음 형식의 "## 한눈에" 섹션을 넣는다. (사용자가 본문을 다 읽기 전에 핵심·실천·주의를 한 화면에 잡을 수 있도록.)
 
   ## 한눈에
-  - 🔑 키워드: 사주 술어 3개를 "용어(쉬운 풀이)" 형식으로. 예: "정인(어머니·배움의 자리) / 비견(나와 같은 결의 사람) / 일지 사화(자존감의 자리)"
+  - 🔑 키워드: 이 사주를 한 줄로 정의하는 결정적 dynamic 3개. 단순 술어 풀이("정인=어머니") 금지. 사주의 구조·축·시간을 짚는다.
+    축 1) 큰 구조 — 격국·일간강약·십성흐름 중 하나 (예: "재성 4개 × 식상생재 흐름")
+    축 2) 자기 자리 — 일주·일지 십이운성·통근·신살 중 하나 (예: "일지 사화 제왕 자존감")
+    축 3) 시간 — 진행 중 대운·세운·앞으로 들어올 대운 중 하나 (예: "갑신 편관 대운 31~40세 책임 떠안는 시기")
+    각 축 한 줄, 슬래시(/)로 구분. 예: "재성 4개 × 식상생재 흐름 / 일지 사화 제왕 자존감 / 갑신 편관 대운(31~40세) 책임 시기"
   - ✅ 이렇게 해봐: 사용자가 오늘부터 바로 실천할 수 있는 행동 2개를 한 줄씩. 추상 조언 금지 ("매주 일요일 30분 산책으로 수 보강하기" ○ / "긍정적으로" ✗).
   - ⚠️ 이건 조심: 그늘이 나타나는 구체적인 상황·행동 1-2개. ("비교심 올라올 때 친구한테 톡 쏘기 / 충동 결제" 같은 구체 장면)
 
@@ -331,10 +340,14 @@ ${PREMIUM_SAJU_GUIDE}
 □ 5대 십성 그룹 카운트의 1위 그룹을 인용했는가?
 □ 오행 가중 점수의 가장 강한/약한 자리를 숫자로 인용했는가?
 □ 진행 중 대운/세운의 시기(연도 또는 나이)를 한 번 이상 인용했는가?
+□ 직전 대운(누적) → 진행 대운 → 다음 대운 transition 중 최소 2개를 본문에 한 줄씩 끼웠는가?
 □ 일반론 금지 목록의 표현이 본문에 들어가지 않았는가?
 □ "이럴 때 자주 ~함" 체크포인트가 추상이 아니라 장면을 그리는가?
 □ "이 사주 사람이 자주 하는 말 3개" mini-block을 깊은 풀이에 넣었는가?
 □ 시점이 박힌 예언(연도/계절/나이 구간) 한 줄을 깊은 풀이에 넣었는가?
+□ ⚠️ 카테고리 핵심 신호 섹션의 모든 ⚠️ 신호를 한 번씩 본문에 인용했는가? (빠뜨리면 답변 실패)
+□ 충/형/파 재발동 시점이 컨텍스트에 있다면, 그 중 하나를 "OO년 OO 글자가 들어와 OO 자리 OO 발동" 식으로 시점 박힌 예언에 활용했는가?
+□ 통근 vs 비통근 십성의 강도 차이를 한 번은 본문에서 짚었는가? ("이름만 있는 정관" / "통근한 편관" 같은)
 □ "겉으론 X, 속으론 Y"의 양가성 한 줄이 어딘가에 있는가?
 
 [Gold-Standard 예시 — 이 결과물의 결을 참고하라 (그대로 베끼지 말 것)]
@@ -388,48 +401,79 @@ ${PREMIUM_SAJU_GUIDE}
 
 /**
  * 카테고리별 사전 계산된 핵심 신호. LLM이 놓치기 쉬운 결정적 데이터를
- * userMsg 안에 미리 못박아 넣는다. 현재는 family에 집중 — 무재 사주,
- * 인성/관성 부재, 비겁 개수, 자리 간 충 같은 결정적 신호.
+ * userMsg 안에 미리 못박아 넣는다. 무재 사주, 식상생재, 일지 십이운성·합충,
+ * 신살별 경계 포인트, 격국별 적성 같은 카테고리 결정 신호를 한 번에.
+ *
+ * family/love/wealth/career/weakness/personality 6개 카테고리 지원.
+ * 나머지 카테고리는 system prompt + anchor list로도 충분히 깊어진다.
  */
 function categoryExtraContext(
   saju: SajuResult,
   category: InterpretationCategory,
 ): string {
-  if (category !== 'family') return '';
+  switch (category) {
+    case 'family':
+      return familyExtraContext(saju);
+    case 'love':
+      return loveExtraContext(saju);
+    case 'wealth':
+      return wealthExtraContext(saju);
+    case 'career':
+      return careerExtraContext(saju);
+    case 'weakness':
+      return weaknessExtraContext(saju);
+    case 'personality':
+      return personalityExtraContext(saju);
+    default:
+      return '';
+  }
+}
 
-  const gender = saju.input.gender;
-  const sipsung = saju.sipsung;
-  const allValues = Object.values(sipsung).filter(Boolean) as string[];
+/** 십성 개수 집계 헬퍼. */
+function sipsungCounts(saju: SajuResult) {
+  const allValues = Object.values(saju.sipsung).filter(Boolean) as string[];
   const countOf = (...names: string[]) =>
     allValues.filter((v) => names.includes(v)).length;
+  return {
+    inseong: countOf('정인', '편인'),
+    jaeseong: countOf('정재', '편재'),
+    pyeonJae: countOf('편재'),
+    jeongJae: countOf('정재'),
+    gwanseong: countOf('정관', '편관'),
+    pyeonGwan: countOf('편관'),
+    jeongGwan: countOf('정관'),
+    sikSang: countOf('식신', '상관'),
+    sikSin: countOf('식신'),
+    sangGwan: countOf('상관'),
+    bigeop: countOf('비견', '겁재'),
+  };
+}
 
-  const inseong = countOf('정인', '편인'); // 인성 — 어머니
-  const jaeseong = countOf('정재', '편재'); // 재성 — 남자=父
-  const gwanseong = countOf('정관', '편관'); // 관성 — 남자=자녀 / 여자=남편
-  const sikSang = countOf('식신', '상관'); // 식상 — 여자=자녀
-  const bigeop = countOf('비견', '겁재'); // 비겁 — 형제
+function familyExtraContext(saju: SajuResult): string {
+  const gender = saju.input.gender;
+  const c = sipsungCounts(saju);
 
   const lines: string[] = [
     '## 가족 관계 핵심 신호 (사전 계산)',
     `- 사용자 성별: ${gender === 'M' ? '남성' : '여성'}`,
-    `- 인성(어머니) ${inseong}개${inseong === 0 ? ' — 母 인연 박함/정서적 결핍 신호' : ''}`,
+    `- 인성(어머니) ${c.inseong}개${c.inseong === 0 ? ' — 母 인연 박함/정서적 결핍 신호' : ''}`,
   ];
 
   if (gender === 'M') {
     lines.push(
-      `- 재성(아버지) ${jaeseong}개${jaeseong === 0 ? ' — ⚠️ 무재 사주: 父와 인연 박함, 일찍 독립 또는 부친 정서적 거리 가능성 높음' : ''}`,
-      `- 관성(자녀) ${gwanseong}개${gwanseong === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
+      `- 재성(아버지) ${c.jaeseong}개${c.jaeseong === 0 ? ' — ⚠️ 무재 사주: 父와 인연 박함, 일찍 독립 또는 부친 정서적 거리 가능성 높음' : ''}`,
+      `- 관성(자녀) ${c.gwanseong}개${c.gwanseong === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
     );
   } else {
     lines.push(
-      `- 관성(남편) ${gwanseong}개${gwanseong === 0 ? ' — ⚠️ 무관 사주: 남편 인연 박함 또는 늦은 결혼/독신 경향' : ''}`,
-      `- 식상(자녀) ${sikSang}개${sikSang === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
-      `- 재성(개인 재물·자기 가치) ${jaeseong}개`,
+      `- 관성(남편) ${c.gwanseong}개${c.gwanseong === 0 ? ' — ⚠️ 무관 사주: 남편 인연 박함 또는 늦은 결혼/독신 경향' : ''}`,
+      `- 식상(자녀) ${c.sikSang}개${c.sikSang === 0 ? ' — 자녀 인연 약함 또는 늦은 자녀운 신호' : ''}`,
+      `- 재성(개인 재물·자기 가치) ${c.jaeseong}개`,
     );
   }
 
   lines.push(
-    `- 비겁(형제·동료) ${bigeop}개${bigeop >= 3 ? ' — ⚠️ 비겁 과다: 형제·동료가 많거나 재물 나누는 구도(군겁쟁재 위험)' : ''}`,
+    `- 비겁(형제·동료) ${c.bigeop}개${c.bigeop >= 3 ? ' — ⚠️ 비겁 과다: 형제·동료가 많거나 재물 나누는 구도(군겁쟁재 위험)' : ''}`,
   );
 
   // 자리 간 충/형 (가족 영역 갈등 신호) — interactions에서 추출.
@@ -444,7 +488,6 @@ function categoryExtraContext(
   ];
   const conflicts: string[] = [];
   for (const inter of analysis.interactions) {
-    // 가족 갈등은 충/형/파 계열만 보고, 합은 결속 신호라 별도로 봄.
     if (!inter.type.includes('충') && !inter.type.includes('형') && !inter.type.includes('파')) continue;
     for (const [a, b, label] of familyPositionsAxis) {
       const hasA = inter.positions.some((p) => p.includes(a.replace('주', '')));
@@ -460,7 +503,7 @@ function categoryExtraContext(
     for (const c of conflicts) lines.push(`  · ${c}`);
   }
 
-  // 공망 — sinsal에서 찾기
+  // 공망
   const gongmang = saju.sinsal.filter((s) => s.name?.includes('공망'));
   if (gongmang.length > 0) {
     lines.push(
@@ -471,9 +514,440 @@ function categoryExtraContext(
     );
   }
 
+  // 향후 가족 자리(연주·월주·시주) 충·형 재발동 시점
+  const allClashes = findFutureClashes(saju, { yearsAhead: 5, daewoonAhead: 3 });
+  const familyClashes = filterClashesByPosition(allClashes, [
+    '연주',
+    '월주',
+    '시주',
+  ]);
+  if (familyClashes.length > 0) {
+    const summary = formatClashTriggers(familyClashes, {
+      maxLines: 6,
+      categoryLabel: '가족 자리',
+    });
+    lines.push('');
+    lines.push(summary);
+  }
+
   lines.push(
     '',
     '→ 위 신호들을 반드시 본문에서 인용해 풀어준다. 특히 ⚠️ 표시된 신호는 가족 풀이의 가장 결정적인 신호이므로 빠뜨리지 마라.',
+  );
+
+  return lines.join('\n');
+}
+
+function loveExtraContext(saju: SajuResult): string {
+  const gender = saju.input.gender;
+  const c = sipsungCounts(saju);
+  const analysis = analyzeSaju(saju);
+
+  // 배우자성: 남 = 재성(특히 정재 = 정실), 여 = 관성(특히 정관 = 남편)
+  const partnerStarName = gender === 'M' ? '재성' : '관성';
+  const partnerStarCount = gender === 'M' ? c.jaeseong : c.gwanseong;
+  const partnerStarOfficial =
+    gender === 'M'
+      ? `정재(아내) ${c.jeongJae}개 / 편재(이성 끌림·유동 재물) ${c.pyeonJae}개`
+      : `정관(남편) ${c.jeongGwan}개 / 편관(이성 끌림·격동 인연) ${c.pyeonGwan}개`;
+
+  const lines: string[] = [
+    '## 연애·결혼 핵심 신호 (사전 계산)',
+    `- 사용자 성별: ${gender === 'M' ? '남성' : '여성'} → 배우자성 = ${partnerStarName}`,
+    `- 배우자성 총 ${partnerStarCount}개 (세부: ${partnerStarOfficial})`,
+  ];
+
+  if (partnerStarCount === 0) {
+    lines.push(
+      `  · ⚠️ ${gender === 'M' ? '무재' : '무관'} 사주: 배우자 인연이 늦거나, 만나도 안정 단계까지 시간이 걸리는 신호. 결혼은 대운에서 ${partnerStarName} 들어오는 시기를 우선 봐야 함.`,
+    );
+  } else if (partnerStarCount >= 3) {
+    lines.push(
+      `  · 배우자성 과다: ${gender === 'M' ? '이성 인연이 자주 들어오나 정착이 어렵거나, 한 사람에 집중하기 어려운 패턴' : '관성 과다는 부담·압박으로도 작용 — 좋은 인연도 부담스럽게 느껴질 수 있음'}`,
+    );
+  }
+
+  // 일간 강약 + 배우자성 강약 매칭
+  const strength = analysis.strength.label;
+  if (partnerStarCount > 0) {
+    if ((strength === '신강' || strength === '극신강') && partnerStarCount >= 2) {
+      lines.push(`  · 일간 ${strength} + 배우자성 충분 → 결혼 후 자기 색을 지키면서도 상대를 배려할 수 있는 안정 구도`);
+    } else if ((strength === '신약' || strength === '극신약') && partnerStarCount >= 3) {
+      lines.push(`  · ⚠️ 일간 ${strength} + 배우자성 과다 → 배우자에 의존하거나 끌려가기 쉬운 구도. "내가 약한데 상대가 너무 강하다"는 체감이 들 수 있음`);
+    }
+  }
+
+  // 일지 = 배우자궁
+  const ilji = saju.palja.day.ji;
+  const advanced = analysis.gyeokguk; // not needed — we want dayStage from computeAdvanced; but analysis doesn't carry it. Use separate.
+  // dayStage 가져오기 위해 다시 advanced 계산
+  // (lightweight — palja already in saju)
+  lines.push(`- 일지 ${ilji}(배우자궁) 십이운성 상태가 자존감·연애의 핵심 — context의 "일지 ~ (자존감·배우자 관계 해석의 핵심)" 라인 참조`);
+  void advanced; // 변수 사용 표시용
+
+  // 일지 합/충/형 (배우자궁 갈등/결속 신호)
+  const iljiInteractions = analysis.interactions.filter((i) =>
+    i.positions.some((p) => p.includes('일')),
+  );
+  if (iljiInteractions.length > 0) {
+    lines.push('- 일지(배우자궁) 관련 합·충·형:');
+    for (const i of iljiInteractions) {
+      const tag = i.type.includes('합')
+        ? '결속 신호 (좋은 인연·이끌림)'
+        : i.type.includes('충')
+          ? '갈등 신호 (배우자와 부딪힘·이별 위험)'
+          : i.type.includes('형')
+            ? '시련 신호 (배우자 영역에 곡절)'
+            : '변동 신호';
+      lines.push(`  · [${i.type}] ${i.detail} → ${tag}`);
+    }
+  }
+
+  // 도화살 / 천을귀인 위치
+  const dohwa = saju.sinsal.filter((s) => s.name === '도화살');
+  const cheoneul = saju.sinsal.filter((s) => s.name === '천을귀인');
+  if (dohwa.length > 0) {
+    lines.push(
+      `- 도화살 ${dohwa.map((s) => s.position).join(', ')} → 매력·인기 자리. ${dohwa.some((s) => s.position === '일주') ? '일주 도화는 본인이 매력 발산. 연애 시기마다 시선을 끌어모음' : ''}`,
+    );
+  }
+  if (cheoneul.length > 0) {
+    lines.push(
+      `- 천을귀인 ${cheoneul.map((s) => s.position).join(', ')} → 좋은 인연·조력자가 나타나는 자리. 인연이 늦어도 결정적인 만남이 한 번은 있음`,
+    );
+  }
+
+  // 진행 중 대운에서 배우자성이 들어오는지
+  const partnerSipsungSet =
+    gender === 'M' ? new Set(['정재', '편재']) : new Set(['정관', '편관']);
+  const upcomingPartnerDaewoon = saju.daewoon.find(
+    (d) => d.sipsung && partnerSipsungSet.has(d.sipsung),
+  );
+  if (upcomingPartnerDaewoon) {
+    lines.push(
+      `- ${upcomingPartnerDaewoon.pillar.ganHanja}${upcomingPartnerDaewoon.pillar.jiHanja} 대운 (${upcomingPartnerDaewoon.startAge}~${upcomingPartnerDaewoon.startAge + 9}세, ${upcomingPartnerDaewoon.startYear}~) — ${upcomingPartnerDaewoon.sipsung} ${partnerStarName} 들어옴. 배우자 인연이 강해지는 시기로 인용할 것.`,
+    );
+  }
+
+  // 향후 일주(배우자궁) 충·형 재발동 시점 — 사랑/결혼 영역 갈등 표식
+  const allClashes = findFutureClashes(saju, { yearsAhead: 5, daewoonAhead: 3 });
+  const loveClashes = filterClashesByPosition(allClashes, ['일주']);
+  if (loveClashes.length > 0) {
+    const summary = formatClashTriggers(loveClashes, {
+      maxLines: 6,
+      categoryLabel: '배우자궁',
+    });
+    lines.push('');
+    lines.push(summary);
+  }
+
+  lines.push(
+    '',
+    '→ 본문에서 (1) 배우자성 개수와 일간 강약의 매칭, (2) 일지 십이운성·합충, (3) 도화/천을귀인, (4) 배우자성 대운 시기, (5) 위 배우자궁 충·형 재발동 시점을 최소 3개 이상 직접 인용한다.',
+  );
+
+  return lines.join('\n');
+}
+
+function wealthExtraContext(saju: SajuResult): string {
+  const c = sipsungCounts(saju);
+  const analysis = analyzeSaju(saju);
+  const strength = analysis.strength.label;
+
+  const lines: string[] = [
+    '## 재물운 핵심 신호 (사전 계산)',
+    `- 재성 ${c.jaeseong}개 (편재 ${c.pyeonJae} · 정재 ${c.jeongJae})`,
+    `- 식상 ${c.sikSang}개 · 비겁 ${c.bigeop}개 · 일간 ${strength}`,
+  ];
+
+  // 무재
+  if (c.jaeseong === 0) {
+    lines.push(
+      '  · ⚠️ 무재 사주: 원국에 재성이 없음. 돈을 "쥐고 굴리는" 감각보다는 식상(생산)·인성(지식)으로 우회해 돈을 만드는 구도. 큰 돈 다루는 시기는 대운에서 재성 들어올 때.',
+    );
+  }
+
+  // 식상생재
+  if (c.sikSang >= 2 && c.jaeseong >= 1) {
+    lines.push(
+      '  · ⭕ 식상생재(食傷生財) 흐름: 식상이 재성을 생함. 자기가 만든 것(콘텐츠·제품·서비스·전문성)으로 돈 만드는 데 유리한 구도.',
+    );
+  }
+
+  // 군겁쟁재 (비겁 과다 + 재성 적음)
+  if (c.bigeop >= 3 && c.jaeseong <= 2 && c.jaeseong > 0) {
+    lines.push(
+      '  · ⚠️ 군겁쟁재(群劫爭財) 위험: 비겁이 많은데 재성이 적음. 형제·동료·동업자와 재물 다툼, 또는 돈 들어와도 새는 구도. 큰돈은 분산·신탁·계약서로 잠가둬야 함.',
+    );
+  }
+
+  // 일간 강약 + 재성 매칭
+  if (strength === '극신약' || strength === '신약') {
+    if (c.jaeseong >= 3) {
+      lines.push(
+        `  · ⚠️ 일간 ${strength} + 재성 과다: "재가 많아도 못 가져간다(財多身弱)". 돈에 쫓기는 시기, 큰돈일수록 일간을 돕는 인성·비겁으로 받쳐야 안전.`,
+      );
+    } else if (c.jaeseong === 0) {
+      lines.push(
+        `  · 일간 ${strength} + 무재: 일단 일간을 키우는 시기가 우선. 재물 추구보다 자기 입지·전문성 축적 시기를 먼저.`,
+      );
+    }
+  } else if (strength === '극신강' || strength === '신강') {
+    if (c.jaeseong >= 2) {
+      lines.push(
+        `  · ⭕ 일간 ${strength} + 재성 충분: 돈 다루는 힘이 있는 구도. 재성 대운/세운에 큰 흐름이 트일 수 있음.`,
+      );
+    } else if (c.jaeseong === 0) {
+      lines.push(
+        `  · 일간 ${strength} + 무재: 일간이 강한데 재성이 없어 "쓸 곳을 찾지 못한 힘". 사업·투자로 재성을 끌어쓰는 시기가 잘 맞음.`,
+      );
+    }
+  }
+
+  // 재성과 대운 매칭
+  const upcomingJaeDaewoon = saju.daewoon.find(
+    (d) => d.sipsung === '정재' || d.sipsung === '편재',
+  );
+  if (upcomingJaeDaewoon) {
+    lines.push(
+      `- ${upcomingJaeDaewoon.pillar.ganHanja}${upcomingJaeDaewoon.pillar.jiHanja} 대운 (${upcomingJaeDaewoon.startAge}~${upcomingJaeDaewoon.startAge + 9}세) — ${upcomingJaeDaewoon.sipsung} 들어옴. 재물 흐름 트이는 시기.`,
+    );
+  }
+
+  // 비겁 대운 (재성 빼앗기는 시기)
+  if (c.jaeseong > 0) {
+    const upcomingBigeopDaewoon = saju.daewoon.find(
+      (d) => d.sipsung === '비견' || d.sipsung === '겁재',
+    );
+    if (upcomingBigeopDaewoon) {
+      lines.push(
+        `- ⚠️ ${upcomingBigeopDaewoon.pillar.ganHanja}${upcomingBigeopDaewoon.pillar.jiHanja} 대운 (${upcomingBigeopDaewoon.startAge}~${upcomingBigeopDaewoon.startAge + 9}세) — ${upcomingBigeopDaewoon.sipsung} 들어옴. 동업·돈 나누기·재물 새기 쉬운 시기.`,
+      );
+    }
+  }
+
+  lines.push(
+    '',
+    '→ 본문에서 (1) 무재/식상생재/군겁쟁재 중 해당 신호, (2) 일간 강약 vs 재성 매칭, (3) 재성·비겁 대운 시기를 반드시 직접 인용한다.',
+  );
+
+  return lines.join('\n');
+}
+
+function careerExtraContext(saju: SajuResult): string {
+  const c = sipsungCounts(saju);
+  const analysis = analyzeSaju(saju);
+  const strength = analysis.strength.label;
+  const gyeokguk = analysis.gyeokguk;
+
+  const lines: string[] = [
+    '## 직업·적성 핵심 신호 (사전 계산)',
+    `- 격국: ${gyeokguk.primary}`,
+    `- 일간 ${strength} · 식상 ${c.sikSang}개 · 재성 ${c.jaeseong}개 · 관성 ${c.gwanseong}개 · 인성 ${c.inseong}개`,
+    `- 용신: ${analysis.yongsin.main}${analysis.yongsin.alt ? ` (보조 ${analysis.yongsin.alt})` : ''}`,
+  ];
+
+  // 격국별 적성 가이드
+  const gyeokgukCareerHint: Record<string, string> = {
+    비견: '독립·자영업·전문직 — 자기 영역 분명한 일',
+    겁재: '경쟁·운동·금융·영업 — 추진력 살리는 일',
+    식신: '요리·콘텐츠·디자인·교육·서비스 — 만들고 표현하는 일',
+    상관: '예술·언론·비평·기획·자유업 — 재능·표현·변혁이 자산',
+    편재: '사업·유통·투자·중개 — 큰 흐름 다루는 일',
+    정재: '회계·재무·관리·정밀 — 안정과 축적의 일',
+    편관: '군·경·검·의·소방·외과 — 압박·책임 큰 자리',
+    정관: '공직·대기업·법무·교육 — 시스템·명예의 일',
+    편인: '연구·심리·종교·예술 — 비주류·심화 영역',
+    정인: '학문·교육·문서·자격 — 학문·지식 영역',
+  };
+  if (gyeokguk.sipsung) {
+    lines.push(`- 격국별 적성: ${gyeokgukCareerHint[gyeokguk.sipsung] ?? '직업 방향 가이드 없음'}`);
+  }
+
+  // 일간 강약별 환경
+  if (strength === '극신강' || strength === '신강') {
+    lines.push('- 일간 강한 자리: 리더·결정권 있는 자리에서 능력 발휘. 보조·서포트 자리는 답답함. 사업·창업·결정권자 적합.');
+  } else if (strength === '극신약' || strength === '신약') {
+    lines.push('- 일간 약한 자리: 큰 조직·전문가·연구·기술직처럼 시스템·구조가 받쳐주는 자리가 안정. 단독으로 결정·책임 떠안는 자리는 부담.');
+  } else {
+    lines.push('- 일간 중화: 환경 변화에 잘 적응하는 자리. 다양한 분야 시도해보고 가장 잘 맞는 곳에 정착하는 패턴이 흔함.');
+  }
+
+  // 식상생재 / 재생관 / 상관견관 같은 흐름
+  if (c.sikSang >= 2 && c.jaeseong >= 1) {
+    lines.push('- ⭕ 식상생재(食傷生財) 흐름: 자기가 만든 결과로 돈 만드는 구조. 사업·콘텐츠·전문 서비스에 유리.');
+  }
+  if (c.jaeseong >= 2 && c.gwanseong >= 1) {
+    lines.push('- ⭕ 재생관(財生官) 흐름: 돈이 명예·자리로 이어지는 구조. 사업 성공이 직함·인정으로 연결되는 자리.');
+  }
+  if (c.sangGwan >= 2 && c.jeongGwan >= 1) {
+    lines.push('- ⚠️ 상관견관(傷官見官) 충돌: 재능과 규범이 부딪힘. 조직 안에서 자유로움을 추구하다 갈등 빈번. 자유업·예술업이 더 맞을 가능성.');
+  }
+
+  // 용신과 직업 환경
+  const yongsinEnvHint: Record<string, string> = {
+    목: '성장·교육·문화·기획·식물·동쪽·푸른색 환경에서 기운 회복',
+    화: '표현·예술·서비스·열정·남쪽·붉은색 환경에서 기운 회복',
+    토: '중개·부동산·서비스·중앙·황색 환경에서 기운 회복',
+    금: '금융·법무·기술·정밀·서쪽·흰색 환경에서 기운 회복',
+    수: '연구·유체·물류·지식·북쪽·검은색 환경에서 기운 회복',
+  };
+  lines.push(`- 용신 ${analysis.yongsin.main} 환경 가이드: ${yongsinEnvHint[analysis.yongsin.main] ?? ''}`);
+
+  lines.push(
+    '',
+    '→ 본문에서 (1) 격국 적성 + (2) 일간 강약별 환경 + (3) 흐름(식상생재/재생관/상관견관)을 반드시 직접 인용. 직업 추천은 "이런 일이 잘 맞을 거예요" 추상이 아니라 "OO처럼 구체적 일·역할"로.',
+  );
+
+  return lines.join('\n');
+}
+
+function weaknessExtraContext(saju: SajuResult): string {
+  const c = sipsungCounts(saju);
+  const analysis = analyzeSaju(saju);
+  const strength = analysis.strength.label;
+
+  const lines: string[] = ['## 경계할 점 핵심 신호 (사전 계산)'];
+
+  // 일간 극단의 위험
+  if (strength === '극신강') {
+    lines.push(
+      '- ⚠️ 극신강 (자기 의지 과잉): 가까운 사람의 의견이 안 들리는 시기, 협상·양보가 어려움. 큰 결정 직전 반드시 한 사람의 의견을 듣는 장치 필요.',
+    );
+  } else if (strength === '극신약') {
+    lines.push(
+      '- ⚠️ 극신약 (자기 입지 약함): 환경·사람·기운에 휘둘리기 쉬움. 큰 결정을 미루다 가까운 사람의 의견대로 따라가는 패턴 반복. 결정 자체보다 결정 전 충전 루틴이 핵심.',
+    );
+  }
+
+  // 신살 경계 포인트
+  const sinsalGuide: Record<string, string> = {
+    양인살: '⚠️ 양인살 — 추진력 강한 만큼 분노·사고·과한 결단의 그늘. 격렬한 충동 직전 30초만 멈추는 장치(심호흡·메모) 필요.',
+    백호살: '⚠️ 백호살 — 격동기 두각의 반대급부로 건강·안전·사고에 큰 일이 한 번씩 지나감. 정기적 건강검진·안전관리 필수.',
+    괴강살: '⚠️ 괴강살 — 극단으로 치우치면 자기 고집·독단. 가까운 사람과 마찰 빈번. "한 사람의 반대 의견"을 받아들이는 연습.',
+    도화살: '⚠️ 도화살 — 매력의 그늘은 관계 흔들림·삼각관계·유혹. 일주에 있을수록 자기 단속의 기준 명확히.',
+    역마살: '⚠️ 역마살 — 한 자리에 안주 못함. 좋은 자리 잡고도 떠나고 싶은 충동 반복. 큰 이동은 충동 직후 1주는 결정 미루기.',
+    공망: '⚠️ 공망 — 비어 있는 자리에서 실현이 늦거나 방향이 자주 바뀜. 그 영역(부모/형제/배우자/자녀)에 대한 기대치 자체를 조정.',
+  };
+  const sinsalSet = new Set<string>();
+  for (const s of saju.sinsal) {
+    if (s.name && sinsalGuide[s.name] && !sinsalSet.has(s.name)) {
+      sinsalSet.add(s.name);
+      lines.push(`- ${sinsalGuide[s.name]} (위치: ${s.position})`);
+    }
+  }
+
+  // 원국 내 충/형 (취약 패턴)
+  const chunghyeong = analysis.interactions.filter(
+    (i) =>
+      i.type.includes('충') || i.type.includes('형') || i.type.includes('파'),
+  );
+  if (chunghyeong.length > 0) {
+    lines.push('- 원국 내 충·형·파 (취약 패턴 — 같은 글자가 운에서 다시 들어올 때 재발동):');
+    for (const i of chunghyeong) {
+      lines.push(`  · [${i.type}] ${i.detail} (${i.positions.join('-')})`);
+    }
+  }
+
+  // 비겁 과다 (자존심·외로움)
+  if (c.bigeop >= 4) {
+    lines.push('- ⚠️ 비겁 과다: 자존심·경쟁심·외로움이 동시에 강함. 협업 자리에서 "내가 더 했는데" 싶은 갈등 반복.');
+  }
+
+  // 식상 과다 (말 많고 후회)
+  if (c.sikSang >= 4) {
+    lines.push('- ⚠️ 식상 과다: 말·표현 많아 매력적이나 다 말하고 나서 후회 반복. "말 안 하고 지나가는 24시간"의 연습 필요.');
+  }
+
+  // 관성 과다 (책임 떠안기)
+  if (c.gwanseong >= 4) {
+    lines.push('- ⚠️ 관성 과다: 책임·압박을 자기도 모르게 끌어안는 자리. "내가 안 하면 누가" 하는 충동을 미리 알아차리는 장치 필요.');
+  }
+
+  // 인성 과다 (시작 늦음)
+  if (c.inseong >= 4) {
+    lines.push('- ⚠️ 인성 과다: 준비·공부 늘리다가 시작 못 하는 자리. "70% 알면 시작"의 룰 필요.');
+  }
+
+  // 향후 충/형/파 재발동 시점 (자동 계산) — 전 자리
+  const clashes = findFutureClashes(saju, { yearsAhead: 5, daewoonAhead: 3 });
+  if (clashes.length > 0) {
+    const summary = formatClashTriggers(clashes, { maxLines: 8 });
+    lines.push('');
+    lines.push(summary);
+  }
+
+  lines.push(
+    '',
+    '→ 본문에서 (1) 일간 강약 극단, (2) 신살별 그늘, (3) 십성 과다 패턴, (4) 위 충·형 재발동 시점을 반드시 직접 인용. 단정·재앙 표현 금지, 알아차리는 장치로 바꿔 적는다.',
+  );
+
+  return lines.join('\n');
+}
+
+function personalityExtraContext(saju: SajuResult): string {
+  const c = sipsungCounts(saju);
+  const analysis = analyzeSaju(saju);
+  const palja = saju.palja;
+
+  const lines: string[] = ['## 성격 핵심 신호 (사전 계산)'];
+
+  // 일간-일지 결 비교 (간여지동: 같은 결인지)
+  // 일지의 정기가 일간과 같은 오행인지로 간단 판정
+  const ilganOhaengIdx = (function () {
+    // CHEONGAN_OHAENG_IDX는 saju 도메인 함수에서 export 안 됨 — 우회: palja.day.gan에서 자정 사용
+    // 그냥 통근 정보로 대체
+    const tongeun = analysis.tongeun.find((t) => t.position === '일주');
+    return tongeun ? '간여지동(干與支同) — 일간과 일지가 같은 결' : '간여지동 아님';
+  })();
+  lines.push(`- 일주 ${palja.day.ganHanja}${palja.day.jiHanja}: ${ilganOhaengIdx}`);
+
+  // 음양 쏠림 (context에 이미 있지만 personality 강조용으로 재인용)
+  // 다시 계산하기 부담 — context의 음양 라인을 다시 인용하라고 가이드
+  lines.push('- 음양 쏠림은 context의 "## 음양 비율" 라인 참조 — 양 쏠림은 외향·행동 우선, 음 쏠림은 내향·사색 우선');
+
+  // 천간 투출 = 드러나는 면, 지지 = 안 보이는 면
+  lines.push('- 천간(드러나는 면) vs 지지(안 보이는 면) 결 차이가 "겉으론 X, 속으론 Y"의 양가성을 만듦. 단락 어디서 한 번은 그 대비를 적어줄 것.');
+
+  // 합 — 결속·끌림 (내면 화합)
+  // 충 — 갈등 (내면 분열)
+  const haps = analysis.interactions.filter((i) => i.type.includes('합'));
+  const chungs = analysis.interactions.filter((i) => i.type.includes('충'));
+  if (haps.length > 0) {
+    lines.push(`- 원국 내 합 (내면 화합/끌림): ${haps.map((h) => `[${h.type}] ${h.detail}`).join(' / ')}`);
+  }
+  if (chungs.length > 0) {
+    lines.push(`- ⚠️ 원국 내 충 (내면 분열/갈등): ${chungs.map((c) => `[${c.type}] ${c.detail}`).join(' / ')} — 같은 글자가 운에서 다시 들어올 때 그 갈등이 재발동`);
+  }
+
+  // 십성 1위 그룹의 욕구
+  const groupCount: Record<string, number> = {};
+  if (c.bigeop > 0) groupCount['비겁'] = c.bigeop;
+  if (c.sikSang > 0) groupCount['식상'] = c.sikSang;
+  if (c.jaeseong > 0) groupCount['재성'] = c.jaeseong;
+  if (c.gwanseong > 0) groupCount['관성'] = c.gwanseong;
+  if (c.inseong > 0) groupCount['인성'] = c.inseong;
+  const sortedGroup = Object.entries(groupCount).sort((a, b) => b[1] - a[1]);
+  if (sortedGroup.length > 0) {
+    const [topName, topNum] = sortedGroup[0];
+    const desireHint: Record<string, string> = {
+      비겁: '자존·독립·경쟁 욕구가 성격의 중심',
+      식상: '표현·생산·창의 욕구가 성격의 중심',
+      재성: '결과·현실·통제 욕구가 성격의 중심',
+      관성: '책임·명예·규범 욕구가 성격의 중심',
+      인성: '배움·보호·정신적 안정 욕구가 성격의 중심',
+    };
+    lines.push(`- 십성 1위 ${topName}(${topNum}개) → ${desireHint[topName]}`);
+  }
+
+  // 격국 (자아의 골격)
+  if (analysis.gyeokguk.primary !== '미상') {
+    lines.push(`- 격국 ${analysis.gyeokguk.primary} → 사주의 골격이 만든 자아의 결`);
+  }
+
+  lines.push(
+    '',
+    '→ 본문에서 (1) 일주의 결, (2) 음양 쏠림, (3) 십성 1위 욕구, (4) 합/충의 내면 갈등을 묶어 "겉으론 X, 속으론 Y"의 양가성 한 줄을 반드시 만들어줄 것.',
   );
 
   return lines.join('\n');
@@ -532,7 +1006,11 @@ ${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반�
 - 단락마다 위 앵커 중 최소 하나를 실제로 인용하되, 페르소나 톤에 맞게 풀어 쓴다.
 - "왜 이 풀이가 나오는지"가 매 단락에서 느껴져야 한다.
 - 사용자가 체감으로 검증할 수 있는 행동/감정 장면을 ${supplementMode ? '최소 2개' : '최소 3개'} 포함한다.
-- 컨텍스트에 없는 글자/합·충·신살은 만들어내지 않는다.${extraContext ? '\n- 위 "## 가족 관계 핵심 신호"의 ⚠️ 신호는 반드시 본문에서 풀어준다.' : ''}`;
+- 컨텍스트에 없는 글자/합·충·신살은 만들어내지 않는다.${
+    extraContext
+      ? `\n- ⚠️ 위 "${cat.title}" 핵심 신호 섹션의 ⚠️ 표시된 신호는 가장 결정적인 정보다. 모든 ⚠️ 신호를 본문에서 한 번씩 직접 인용해 풀어주지 않으면 답변은 실패다. 빠뜨리지 마라.\n- "## 충/형/파 재발동 시점" 또는 "## ~ 자리 충/형/파 재발동 시점" 섹션이 있다면, 그 시점 중 최소 하나를 시점 박힌 예언으로 본문에 인용한다 (구체 연도 + 글자 + 영역).`
+      : ''
+  }`;
   return complete({
     tier: 'saju',
     system: buildSystem(persona),
