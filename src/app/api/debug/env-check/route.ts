@@ -76,5 +76,65 @@ export async function GET() {
     // Sanity check that the auth gate is working — should always match the
     // logged-in user.
     userId: user.id,
+
+    // Live admin probes — see what supabase actually says when we use the
+    // service_role key. This is the decisive diagnostic for "env says it's
+    // set but spend_credits still fails".
+    probes: await runAdminProbes(user.id),
   });
+}
+
+async function runAdminProbes(userId: string) {
+  const result: Record<string, unknown> = {};
+
+  // Probe 1: simple admin SELECT — exercises the key end-to-end.
+  // If JWT secret is mismatched or the key is otherwise rejected, this fails
+  // BEFORE any function-level permission check.
+  try {
+    const admin = await createServerClient({ admin: true });
+    const { data, error } = await admin
+      .from('users')
+      .select('id, credit_balance')
+      .eq('id', userId)
+      .maybeSingle();
+    result.adminSelect = error
+      ? { ok: false, message: error.message, code: error.code, details: error.details }
+      : { ok: true, rowFound: Boolean(data) };
+  } catch (e) {
+    result.adminSelect = {
+      ok: false,
+      thrown: true,
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
+
+  // Probe 2: dry-run spend_credits with amount=0 to see the actual server error.
+  // We do NOT swallow or rewrite the error here — raw message goes to the
+  // response so we can see whether it's JWT, permission, function-not-found, etc.
+  try {
+    const admin = await createServerClient({ admin: true });
+    const { data, error } = await admin.rpc('spend_credits', {
+      p_user_id: userId,
+      p_amount: 0,
+      p_reason: 'debug_env_check',
+      p_reference_id: null,
+    });
+    result.spendCreditsProbe = error
+      ? {
+          ok: false,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        }
+      : { ok: true, returned: data };
+  } catch (e) {
+    result.spendCreditsProbe = {
+      ok: false,
+      thrown: true,
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
+
+  return result;
 }
