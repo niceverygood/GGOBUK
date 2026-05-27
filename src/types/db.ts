@@ -88,6 +88,21 @@ export interface InterpretationRow {
   generated_at: string;
 }
 
+export interface InterpretationComicRow {
+  id: string;
+  user_id: string;
+  saju_id: string;
+  category: InterpretationCategory;
+  persona: Persona;
+  content_hash: string;
+  image_url: string;
+  title: string;
+  model: string | null;
+  format: string;
+  prompt_version: string;
+  generated_at: string;
+}
+
 export interface ChatSessionRow {
   id: string;
   user_id: string;

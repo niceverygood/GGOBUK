@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Layers3 } from "lucide-react";
 import { InterpretationBody } from "@/components/shell/InterpretationBody";
+import { ComicPanel } from "@/components/shell/ComicPanel";
 // import { TalismanPanel } from "@/components/shell/TalismanPanel"; // 부적 만들기 — 임시 숨김
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
@@ -583,7 +584,6 @@ export function InterpretationPanel({
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [activeFocus, setActiveFocus] = useState("");
   const [error, setError] = useState("");
   const isRichReport =
     content.includes("##") || content.includes("| 사주 근거 |");
@@ -607,8 +607,11 @@ export function InterpretationPanel({
   // cached interpretation). Without this, the panel would show the previous
   // persona's text until the user manually regenerated.
   useEffect(() => {
-    setContent(initialContent);
-    setError("");
+    const id = window.setTimeout(() => {
+      setContent(initialContent);
+      setError("");
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [initialContent]);
 
   useEffect(() => {
@@ -619,13 +622,11 @@ export function InterpretationPanel({
       if (task.status === "running") {
         setLoading(true);
         setElapsedMs(Math.max(0, Date.now() - task.startedAt));
-        setActiveFocus(task.focus);
         setError("");
         return;
       }
 
       setLoading(false);
-      setActiveFocus("");
 
       if (task.status === "success") {
         setElapsedMs(EXPECTED_ANALYSIS_MS);
@@ -677,7 +678,6 @@ export function InterpretationPanel({
     });
     setLoading(true);
     setElapsedMs(Math.max(0, Date.now() - task.startedAt));
-    setActiveFocus(task.focus);
     setError("");
   }
 
@@ -733,6 +733,7 @@ export function InterpretationPanel({
       <InterpretationBody text={content} />
       <div className="mt-5 space-y-3">
         {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
+        {!loading && <ComicPanel category={category} content={content} />}
         {/* 부적 만들기 — 임시 숨김 (v1 출시 후 재오픈 예정) */}
         {/* {!loading && <TalismanPanel category={category} />} */}
         {!loading && (
