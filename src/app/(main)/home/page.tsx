@@ -17,6 +17,8 @@ import { LoadingDots } from '@/components/ui/LoadingDots';
 import { EnsureDaily } from '@/components/home/EnsureDaily';
 import { TodayInsight } from '@/components/home/TodayInsight';
 import { WeekStrip } from '@/components/home/WeekStrip';
+import { WelcomeBonusCard } from '@/components/home/WelcomeBonusCard';
+import { PremiumFeaturesPromo } from '@/components/home/PremiumFeaturesPromo';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -190,6 +192,9 @@ export default async function HomePage() {
           <Badge tone="mint">길운 {gilun}</Badge>
         </div>
 
+        {/* 신규 가입 보너스 환영 카드 — 보너스 미사용 + dismiss 안 한 유저만 노출 */}
+        <WelcomeBonusCard />
+
         {/* ════════════════ 🌅 오늘 ════════════════ */}
         <SectionDivider emoji="🌅" label="오늘" />
 
@@ -286,6 +291,9 @@ export default async function HomePage() {
             })}
           </div>
         </section>
+
+        {/* 부적·웹툰 promotion — high-margin 기능 home 노출 */}
+        <PremiumFeaturesPromo />
 
         {/* ════════════════ 🗓 이번 달 ════════════════ */}
         <SectionDivider emoji="🗓" label="이번 달" />

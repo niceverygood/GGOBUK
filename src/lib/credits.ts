@@ -91,6 +91,8 @@ export const FREE_DAILY_LIMITS = {
   talismansLifetime: 1,
 } as const;
 
+// 패키지 perks는 사용자가 카드에서 한눈에 보는 마케팅 카피.
+// 정확한 dynamic 환산은 packageBreakdown() 사용.
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
     id: 'starter',
@@ -100,7 +102,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     priceKrw: 4900,
     caption: '가볍게 맛보고 싶을 때',
     badge: '첫 충전',
-    perks: ['정밀 리포트 6개', '또는 궁합 3회'],
+    perks: ['정밀 풀이 4개', '또는 궁합 2회'],
   },
   {
     id: 'focus',
@@ -110,7 +112,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     priceKrw: 12900,
     caption: '사주·궁합·채팅을 같이 볼 때',
     badge: '인기',
-    perks: ['정밀 리포트 21개', '부적 8장까지 가능'],
+    perks: ['정밀 풀이 14개', '궁합 7회 또는 부적 6장'],
     recommended: true,
   },
   {
@@ -121,7 +123,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     priceKrw: 29900,
     caption: '깊게 자주 보는 유저용',
     badge: '효율',
-    perks: ['궁합 30회', 'AI 부적 24장까지 가능'],
+    perks: ['정밀 풀이 40개', '궁합 20회 또는 부적 17장'],
     bestValue: true,
   },
   {
@@ -132,9 +134,34 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     priceKrw: 59000,
     caption: '친구·가족까지 함께 볼 때',
     badge: '최대 보너스',
-    perks: ['보너스 80알 포함', '대운·궁합·부적 넉넉히'],
+    perks: ['보너스 80알 포함', '정밀 풀이 86개 또는 궁합 43회'],
   },
 ];
+
+/**
+ * 패키지(또는 임의의 알 개수)로 살 수 있는 각 기능별 회수 계산.
+ * CREDIT_COSTS이 바뀌면 자동으로 환산값도 따라간다 — 가격 인상 시 perks
+ * 텍스트 따로 안 고쳐도 store UI는 동기화됨.
+ */
+export function packageBreakdown(creditsTotal: number): {
+  interpretations: number;
+  compats: number;
+  auspicious: number;
+  talismans: number;
+  comics: number;
+  daewoons: number;
+  chats: number;
+} {
+  return {
+    interpretations: Math.floor(creditsTotal / CREDIT_COSTS.interpretation),
+    compats: Math.floor(creditsTotal / CREDIT_COSTS.compatibility),
+    auspicious: Math.floor(creditsTotal / CREDIT_COSTS.auspicious),
+    talismans: Math.floor(creditsTotal / CREDIT_COSTS.talisman),
+    comics: Math.floor(creditsTotal / CREDIT_COSTS.comic),
+    daewoons: Math.floor(creditsTotal / CREDIT_COSTS.daewoon),
+    chats: Math.floor(creditsTotal / CREDIT_COSTS.chat),
+  };
+}
 
 export function creditPackageById(id: string): CreditPackage | undefined {
   // First-purchase welcome deal lives outside CREDIT_PACKAGES.

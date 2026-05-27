@@ -2,7 +2,16 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Check, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
+import {
+  Check,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  ScrollText,
+  Heart,
+  CalendarCheck,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card, ButtonPrimary, Badge } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
@@ -13,6 +22,7 @@ import {
   CREDIT_UNIT,
   type CreditPackageId,
   formatKrw,
+  packageBreakdown,
   totalCredits,
 } from '@/lib/credits';
 import { PREMIUM_SERVICES } from '@/lib/premium-services';
@@ -49,6 +59,45 @@ const RECOMMENDED_BUNDLES = [
     cost: 30,
   },
 ];
+
+/** 패키지로 살 수 있는 기능별 회수 시각화 — CREDIT_COSTS와 자동 동기화. */
+function PackageBreakdownGrid({ total }: { total: number }) {
+  const b = packageBreakdown(total);
+  // 가장 가치 큰 4개만 (정밀 풀이 / 궁합 / 부적 / 채팅).
+  // 채팅은 회수가 많아 마지막에 배치.
+  const rows: Array<{ icon: typeof ScrollText; label: string; count: number; color: string }> = [
+    { icon: ScrollText, label: '정밀 풀이', count: b.interpretations, color: 'text-mint-dark' },
+    { icon: Heart, label: '궁합', count: b.compats, color: 'text-red' },
+    { icon: ImageIcon, label: '부적/웹툰', count: Math.max(b.talismans, b.comics), color: 'text-[#B58A00]' },
+    { icon: CalendarCheck, label: '길일', count: b.auspicious, color: 'text-navy' },
+  ];
+  return (
+    <div className="mt-3 rounded-2xl border border-dashed border-navy/12 bg-ivory/45 p-2.5">
+      <p className="px-1 text-[10px] font-extrabold text-muted">
+        이걸로 살 수 있는 것
+      </p>
+      <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+        {rows.map(({ icon: Icon, label, count, color }) => (
+          <div
+            key={label}
+            className="rounded-xl bg-white/85 px-1.5 py-2 text-center"
+          >
+            <Icon size={14} strokeWidth={2.6} className={`mx-auto ${color}`} />
+            <p className="mt-1 text-[10px] font-extrabold text-muted leading-none">
+              {label}
+            </p>
+            <p className="mt-0.5 text-sm font-black text-navy leading-none">
+              {count}
+              <span className="ml-0.5 text-[10px] font-bold">
+                {label === '정밀 풀이' || label === '길일' ? '개' : '회'}
+              </span>
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function CreditPage() {
   return (
@@ -296,6 +345,9 @@ function CreditPageInner() {
                     </span>
                   ))}
                 </div>
+
+                {/* 환산 사용 가능 횟수 — CREDIT_COSTS 변경 시 자동 동기화 */}
+                <PackageBreakdownGrid total={totalCredits(pkg)} />
               </button>
             ))}
           </div>
