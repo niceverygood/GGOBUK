@@ -6,6 +6,7 @@ import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
 import { todayKstIso } from '@/lib/utils/date';
 import { logger } from '@/lib/utils/logger';
+import { sendPush, isPushConfigured } from '@/lib/push/send';
 import type { SajuProfileRow } from '@/types/db';
 
 export const runtime = 'nodejs';
@@ -175,5 +176,49 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ generated, failed, date: today });
+  // ── 푸시 발송 — push 켠 사용자에게 그날의 한 줄 운세 ──
+  let pushed = 0;
+  let pushExpired = 0;
+  if (isPushConfigured()) {
+    const { data: pushUsers } = await admin
+      .from('users')
+      .select('id, push_token')
+      .eq('push_enabled', true)
+      .not('push_token', 'is', null);
+
+    // owner_id → self profile id 매핑 (이번에 처리한 profiles 기준)
+    const ownerToProfile = new Map(profiles.map((p) => [p.owner_id, p.id]));
+
+    for (const u of pushUsers ?? []) {
+      const profileId = ownerToProfile.get(u.id);
+      if (!profileId) continue; // 미동의·프로필 없음 → 운세 없어 skip
+
+      const { data: fortune } = await admin
+        .from('daily_fortunes')
+        .select('one_liner')
+        .eq('saju_id', profileId)
+        .eq('date', today)
+        .maybeSingle();
+      if (!fortune?.one_liner) continue;
+
+      const result = await sendPush(u.push_token, {
+        title: '🐢 오늘의 한 줄',
+        body: fortune.one_liner,
+        url: '/home',
+        tag: 'ggobuk-daily',
+      });
+      if (result.ok) {
+        pushed += 1;
+      } else if (result.expired) {
+        // 만료/해지된 구독 정리 — 다음 발송 때 제외.
+        pushExpired += 1;
+        await admin
+          .from('users')
+          .update({ push_token: null, push_enabled: false })
+          .eq('id', u.id);
+      }
+    }
+  }
+
+  return NextResponse.json({ generated, failed, pushed, pushExpired, date: today });
 }

@@ -5,6 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+/** VAPID public key(base64url) → ArrayBuffer. applicationServerKey 요구 형식(BufferSource). */
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const buffer = new ArrayBuffer(rawData.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < rawData.length; i += 1) {
+    view[i] = rawData.charCodeAt(i);
+  }
+  return buffer;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
 
@@ -36,13 +49,33 @@ export default function SettingsPage() {
 
   async function togglePush(next: boolean) {
     if (next) {
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        window.alert('푸시 설정이 아직 준비되지 않았어요. 잠시 후 다시 시도해줘.');
+        return;
+      }
+      if (
+        typeof Notification === 'undefined' ||
+        !('serviceWorker' in navigator) ||
+        !('PushManager' in window)
+      ) {
+        window.alert(
+          '이 브라우저는 푸시를 지원하지 않아요. iOS는 홈 화면에 추가(PWA) 후 iOS 16.4+ 에서 가능해요.',
+        );
+        return;
+      }
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') return;
       const reg = await navigator.serviceWorker.register('/sw.js');
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_FCM_VAPID_KEY,
-      });
+      await navigator.serviceWorker.ready;
+      // 기존 구독 있으면 재사용, 없으면 새로 구독.
+      const existing = await reg.pushManager.getSubscription();
+      const sub =
+        existing ??
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        }));
       await fetch('/api/me/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
