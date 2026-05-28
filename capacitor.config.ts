@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
       'kapi.kakao.com',
       '*.kakao.com',
       '*.kakaopay.com',
+      'appleid.apple.com',
+      'idmsa.apple.com',
+      '*.apple.com',
     ],
   },
 };

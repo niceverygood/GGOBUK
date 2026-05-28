@@ -16,8 +16,13 @@ function loginRedirect(request: Request, error: string) {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const providerHint = url.searchParams.get('provider') ?? 'kakao';
+  const oauthFailKey = providerHint === 'apple' ? 'apple_oauth_failed' : 'kakao_oauth_failed';
+  const callbackFailKey =
+    providerHint === 'apple' ? 'apple_callback_failed' : 'kakao_callback_failed';
+
   const oauthError = url.searchParams.get('error');
-  if (oauthError) return loginRedirect(request, 'kakao_oauth_failed');
+  if (oauthError) return loginRedirect(request, oauthFailKey);
 
   const code = url.searchParams.get('code');
   const next = safeNext(url.searchParams.get('next'));
@@ -26,13 +31,13 @@ export async function GET(request: Request) {
 
   const supabase = await createServerClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return loginRedirect(request, 'kakao_callback_failed');
+  if (error) return loginRedirect(request, callbackFailKey);
 
   // Ensure a row exists in public.users.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return loginRedirect(request, 'kakao_callback_failed');
+  if (!user) return loginRedirect(request, callbackFailKey);
 
   const meta = (user.user_metadata ?? {}) as {
     full_name?: string;
@@ -41,7 +46,12 @@ export async function GET(request: Request) {
     preferred_username?: string;
   };
   const nickname = meta.nickname ?? meta.name ?? meta.full_name ?? meta.preferred_username ?? null;
-  const kakaoId = user.app_metadata?.provider_id ? String(user.app_metadata.provider_id) : null;
+  const provider = user.app_metadata?.provider ?? providerHint;
+  // kakao_id 컬럼은 카카오 식별자 전용. Apple 로그인 사용자는 NULL 로 둔다.
+  const kakaoId =
+    provider === 'kakao' && user.app_metadata?.provider_id
+      ? String(user.app_metadata.provider_id)
+      : null;
   await supabase
     .from('users')
     .upsert({ id: user.id, nickname, kakao_id: kakaoId }, { onConflict: 'id' });

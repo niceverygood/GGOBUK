@@ -13,14 +13,18 @@ function loginErrorMessage(error: string): string {
     return '카카오 로그인 연결에 실패했어. 잠시 후 다시 시도해줘.';
   if (error === 'kakao_callback_failed')
     return '카카오 인증은 됐지만 세션 생성에 실패했어. 설정을 다시 확인해줘.';
+  if (error === 'apple_oauth_failed')
+    return 'Apple 로그인 연결에 실패했어. 잠시 후 다시 시도해줘.';
+  if (error === 'apple_callback_failed')
+    return 'Apple 인증은 됐지만 세션 생성에 실패했어. 설정을 다시 확인해줘.';
   if (error === 'missing_oauth_code')
-    return '카카오 로그인 응답이 올바르지 않았어. 다시 시도해줘.';
+    return '로그인 응답이 올바르지 않았어. 다시 시도해줘.';
   return error;
 }
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState<'kakao' | 'test' | null>(null);
+  const [loading, setLoading] = useState<'kakao' | 'apple' | 'test' | null>(null);
   const [err, setErr] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -36,11 +40,33 @@ export default function LoginPage() {
       const baseUrl = browserAppOrigin();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
-        options: { redirectTo: `${baseUrl}/callback?next=/home` },
+        options: { redirectTo: `${baseUrl}/callback?next=/home&provider=kakao` },
       });
       if (error) throw error;
     } catch (e) {
       const msg = e instanceof Error ? e.message : '카카오 로그인 실패';
+      setErr(msg);
+      setLoading(null);
+    }
+  }
+
+  async function signInWithApple() {
+    setErr(null);
+    setLoading('apple');
+    try {
+      const supabase = createClient();
+      const baseUrl = browserAppOrigin();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${baseUrl}/callback?next=/home&provider=apple`,
+          // Apple Sign-In 의 최소 스코프 — 이름과 이메일만.
+          scopes: 'name email',
+        },
+      });
+      if (error) throw error;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Apple 로그인 실패';
       setErr(msg);
       setLoading(null);
     }
@@ -111,6 +137,15 @@ export default function LoginPage() {
         >
           <span aria-hidden>💬</span>
           {loading === 'kakao' ? '이동 중…' : '카카오로 3초 시작'}
+        </button>
+
+        <button
+          onClick={signInWithApple}
+          disabled={!!loading}
+          className="mt-3 w-full max-w-xs rounded-2xl bg-black py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(0,0,0,0.18)]"
+        >
+          <span aria-hidden></span>
+          {loading === 'apple' ? '이동 중…' : 'Apple로 계속하기'}
         </button>
 
         <button
