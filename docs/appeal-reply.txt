@@ -1,0 +1,63 @@
+Dear App Review Team,
+
+Thank you for the additional feedback. We have prepared a new build (1.0 build 4) that directly addresses every concern raised in the latest review. Below is a point-by-point response.
+
+—
+
+GUIDELINE 4.3(b) — Spam / saturated category
+
+We respectfully reiterate that 꼬북점 is not a generic fortune-telling app, and we have substantially raised the bar in build 4 by completing the differentiating features that may not have been visible in earlier reviews. Saju (사주명리학) is a 1,500-year-old Korean metaphysical framework — structurally distinct from horoscopes, palmistry, or tarot — with calculations based on the lunisolar calendar of birth (year/month/day/hour pillars expressed as 8 Heavenly Stems and Earthly Branches). It is the dominant Korean cultural counterpart to 命理 apps in the Japanese and Chinese App Stores and is not interchangeable with Western astrology titles.
+
+What makes 꼬북점 different from other apps in the same category:
+- Original IP character (꼬북이) with four accessory-based personas (꼬북 / 도사 / 무당 / 보살), each with its own conversational voice — not stock zodiac graphics.
+- Persistent AI companion chat that remembers prior sessions and the user's saju context (Anthropic Claude).
+- Lifetime 10-year cycle (대운) timeline with score curves and event markers — a feature absent in most fortune apps that focus on daily/yearly readings.
+- Multi-person relationship analysis (compatibility graph across family / friends / partners), not a single-user reading.
+- Interactive tortoise-shell UI: the 8 saju pillars are mapped to tactile panels that the user explores by tap, rather than a static result page.
+- Saju 4-panel webtoon: AI-generated short comic strips that turn the interpretation into a visual story — a format we have not seen in any other fortune app.
+
+Demo account and a 90-second screen recording walking through persona chat, the 대운 timeline, the relationship graph, and the saju webtoon have been added to the App Review Information section of App Store Connect. We would be grateful if a reviewer could re-examine the app with these flows in mind.
+
+—
+
+GUIDELINE 5.1.1(i) and 5.1.2(i) — Privacy / AI data sharing
+
+Build 4 introduces a mandatory consent gate that appears immediately after sign-in, before any AI feature is reachable. The modal explicitly states, in Korean:
+
+- Data sent: name/nickname, birth date and time, gender, registered relationships, saju calculation results, and the user's chat messages with up to the most recent 20 turns of context.
+- Recipient: Anthropic, PBC (United States) — Claude text and image API. We also disclose secondary processors (OpenRouter Inc., OpenAI L.L.C.) when relevant.
+- Purpose: generating interpretations, persona chat replies, compatibility, auspicious-day, talisman, and webtoon outputs. The data is never used for advertising or profiling.
+
+Without explicit consent, every AI-calling endpoint (chat, interpretations, compatibility, daily fortune, auspicious days, webtoons, talismans, premium services) responds with HTTP 412 PRECONDITION REQUIRED. The consent timestamp is stored in `users.ai_consent_at`. Users can withdraw consent at any time in Settings, which immediately disables AI features.
+
+The privacy policy at https://ggobuk.vercel.app/privacy (and inside the app) has been fully rewritten. Section 4 ("AI 서비스(제3자) 제공 및 동의") names Anthropic by legal entity, lists exactly which fields are transmitted and which are not, describes the cross-border transfer to the United States, and explicitly states that we contractually require equivalent protection from third-party processors. Sections 1, 5, 6, 7, and 8 enumerate the data collected, retention periods, deletion rights, and the full list of sub-processors.
+
+—
+
+GUIDELINE 4.8 — Login Services
+
+Build 4 adds Sign in with Apple as an equivalent login option, presented on the login screen with the same visual weight as Kakao Login (the existing Korean-market default). Sign in with Apple satisfies all three 4.8 requirements: it limits data collection to name and email, supports email hiding ("Hide My Email"), and does not collect interactions for advertising purposes. The Apple provider is configured in our Supabase Auth project with a dedicated Services ID and signing key tied to our App ID `com.niceverygood.ggobuk`.
+
+—
+
+GUIDELINE 5.1.1(v) — Account Deletion
+
+Build 4 adds an in-app account deletion flow under Settings → "계정 삭제". The flow:
+
+1. The user explicitly opens the deletion section, reads what will be deleted, and types the Korean word "삭제" (delete) into a confirmation field.
+2. POST /api/me/delete is called. The server verifies the session, then uses the Supabase service-role key to call `auth.admin.deleteUser(user.id)`.
+3. This cascades through `on delete cascade` foreign keys, permanently removing the user's saju profiles, registered relationships, chat sessions and messages, interpretations, generated webtoons and talismans, daily fortunes, push tokens, AI consent records, subscriptions, and all usage logs.
+4. The local session is signed out globally and the user is redirected to /login.
+
+There is no soft-delete or 14-day grace period — the deletion is immediate and final, as required by 5.1.1(v).
+
+A screen recording of the complete deletion flow (create account → navigate → confirm → account no longer exists) has been added to the App Review Information section.
+
+—
+
+We are committed to App Store standards and have invested significant effort to make 꼬북점 a culturally specific, IP-driven, AI-companion experience rather than a generic fortune utility. Build 4 is ready for review. We appreciate your time.
+
+Sincerely,
+Hi (김찬호)
+CEO, Bottle Inc.
+dev@bottlecorp.kr
