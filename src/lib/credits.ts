@@ -53,6 +53,10 @@ export const CREDIT_UNIT = '꼬북알';
 /** New-user signup bonus (granted exactly once via grant_signup_bonus RPC). */
 export const SIGNUP_BONUS_CREDITS = 30;
 
+/** 친구 초대 보상 — 초대한 친구가 사주를 제출(수락)하면 host에게 지급.
+ *  초대 토큰당 1회 (relation_invites.status='completed' 가 중복 방지). */
+export const INVITE_REWARD_CREDITS = 10;
+
 /** Refund window in days (purchased credits only, must be fully unused). */
 export const REFUND_WINDOW_DAYS = 7;
 

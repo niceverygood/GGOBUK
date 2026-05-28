@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Link2 } from 'lucide-react';
+import { INVITE_REWARD_CREDITS, CREDIT_UNIT } from '@/lib/credits';
 
 export function InviteFriendButton() {
   const [busy, setBusy] = useState(false);
@@ -21,6 +22,7 @@ export function InviteFriendButton() {
         throw err;
       }
       const shareText = `${d.hostName ?? '나'}와의 궁합 보러올래? 🐢 꼬북점`;
+      const rewardNote = `친구가 수락하면 ${INVITE_REWARD_CREDITS}${CREDIT_UNIT} 받아요 🎁`;
       if (navigator.share) {
         try {
           await navigator.share({
@@ -28,14 +30,14 @@ export function InviteFriendButton() {
             text: shareText,
             url: d.url,
           });
-          setMsg('초대 링크를 공유했어요!');
+          setMsg(`초대 링크를 공유했어요! ${rewardNote}`);
         } catch {
           await navigator.clipboard.writeText(d.url);
-          setMsg('링크를 복사했어요. 친구에게 보내세요!');
+          setMsg(`링크를 복사했어요. 친구에게 보내세요! ${rewardNote}`);
         }
       } else {
         await navigator.clipboard.writeText(d.url);
-        setMsg('링크를 복사했어요. 친구에게 보내세요!');
+        setMsg(`링크를 복사했어요. 친구에게 보내세요! ${rewardNote}`);
       }
     } catch (e) {
       const code = e instanceof Error ? e.message : '';

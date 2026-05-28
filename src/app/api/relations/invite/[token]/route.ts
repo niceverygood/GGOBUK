@@ -4,6 +4,9 @@ import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import { quickCompat } from '@/lib/saju/quick_compat';
 import { generateCompat } from '@/lib/llm/compat';
+import { addCredits } from '@/lib/credits/server';
+import { INVITE_REWARD_CREDITS } from '@/lib/credits';
+import { logger } from '@/lib/utils/logger';
 import type { CompatibilityResult, SajuProfileRow } from '@/types/db';
 import type { Palja } from '@/lib/saju/types';
 
@@ -171,6 +174,27 @@ export async function POST(req: Request, { params }: RouteContext) {
     })
     .eq('token', token);
 
+  // 친구 초대 보상 — host에게 +10알. invite.status가 위에서 pending→completed로
+  // 바뀐 직후라 한 토큰당 1회만 지급 (이미 completed면 함수 상단에서 409 반환).
+  // best-effort: 보상 실패해도 invite 완료 흐름은 그대로 진행.
+  let rewardGranted = false;
+  try {
+    await addCredits({
+      userId: invite.host_user_id,
+      amount: INVITE_REWARD_CREDITS,
+      reason: '친구 초대 보상',
+      kind: 'bonus',
+      referenceId: token,
+    });
+    rewardGranted = true;
+  } catch (e) {
+    logger.warn('relations/invite', 'invite reward grant failed', {
+      hostUserId: invite.host_user_id,
+      token,
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
+
   // Friend sees a teaser; full report stays with host.
   return NextResponse.json({
     ok: true,
@@ -180,5 +204,7 @@ export async function POST(req: Request, { params }: RouteContext) {
     headline: compatibility.headline ?? null,
     summary: compatibility.summary,
     highlights: (compatibility.highlights ?? []).slice(0, 2),
+    rewardGranted,
+    rewardCredits: rewardGranted ? INVITE_REWARD_CREDITS : 0,
   });
 }
