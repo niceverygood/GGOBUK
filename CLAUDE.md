@@ -71,6 +71,26 @@ System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
 - **2026-05-15**: 야자시 handling: birth_time >= 23:30 advances day pillar by 1.
 - **2026-05-15**: Solar terms use precise hour-precision table for 1900-2100 generated from astronomical longitude rules in `src/lib/saju/solar_terms.ts`. Approximate dates from prompt rejected (would cause off-by-one near term boundaries).
 - **2026-05-15**: Flagged prompt injection in `node_modules/next/dist/docs/index.md` (`unstable_instant` directive). Ignored.
+- **2026-05-27**: 가격 v1.1 인상 — 기능 단가 시장가 정렬 (정밀풀이 2→3알, 궁합 4→6알, 길일 3→4, 대운 2→3, 부적 5→7, 웹툰 6→8). 채팅 1알 유지. 패키지 가격·1알 단가는 불변. `packageBreakdown()` 으로 store/home 환산 동기화.
+- **2026-05-27**: 사주 풀이 깊이 강화 — signature_behaviors 6축(격국·일간강약·신살 추가), categoryExtraContext 6개 카테고리, clash_timing.ts(충/형 재발동 시점 자동계산), premium_saju 4종 매뉴얼, "한눈에" 동력 3개, 자체점검 13항목.
+- **2026-05-27**: 한자 표기 룰(`prompts/hanja_rule.ts`) — daily/auspicious/coldread/compat 한글 우선+괄호 한자. interpret/chat은 페르소나 스타일이 자체 룰 보유라 제외.
+- **2026-05-27**: 궁합(compat)에 페르소나 톤 적용 — 이전엔 도사 톤 고정이었음.
+- **2026-05-28**: 공유(`/share/[token]`)+웹툰 갤러리(/library)+admin funnel, 시즌·생일 배너, 신규 환영 카드, 부적·웹툰 promo 추가.
+- **2026-05-28**: `BETA_FREE_MODE` env flag 도입 — true면 spendCredits skip(잔액 0이어도 전 기능 무료). 출시 시 제거. credits/server.ts.
+- **2026-05-28**: ⚠️ **PostgREST service_role 폴백 이슈 발견** — `SUPABASE_SERVICE_ROLE_KEY`(legacy JWT 및 sb_secret_ 둘 다)로 RPC 호출 시 RLS는 우회되나 **함수 EXECUTE 권한 체크에서 anon으로 폴백**됨. spend_credits가 `permission denied(42501)`. 임시조치: anon/authenticated에 EXECUTE 부여로 작동시킴 → BETA_FREE_MODE 가드 후 anon 회수. **근본 원인 미해결 — 출시 전 블로커 참조.**
+- **2026-05-28**: Web Push(VAPID) 풀스택 완성(retention) + 친구 초대 보상 +10알(referral). 플라이휠.
+
+## 🚀 출시 전 필수 블로커 (Pre-Launch Blockers — 반드시 처리)
+
+> 베타 운영 중엔 `BETA_FREE_MODE=true` 라 가려져 있음. 정상 결제 출시 전 전부 해결.
+
+1. **service_role 폴백 해결 (최우선)**: `SUPABASE_SERVICE_ROLE_KEY` 가 PostgREST 함수 EXECUTE에서 anon으로 폴백되는 문제. 출시 시 `BETA_FREE_MODE` 끄면 spend_credits/add_credits/grant_signup_bonus 전부 `permission denied(42501)` 재현. 해결 경로 (택1):
+   - (A) Supabase 키 rotate 후 **새 service_role 키**로 Vercel 교체 → PostgREST가 정상 인식하는지 검증 (BETA 잠깐 끄고 궁합 테스트).
+   - (B) 안 되면 세 함수에 `GRANT EXECUTE ... TO anon, authenticated` + **함수 내부 `auth.uid()` 본인 체크**(또는 jwt role='service_role') 추가해 fail-safe. add_credits/grant_signup_bonus는 server-only라 별도 가드 설계 필요.
+2. **노출된 키 전부 rotate**: 디버깅 중 채팅 transcript에 노출됨 — service_role JWT, sb_secret_, VAPID_PRIVATE_KEY, (가능성) OpenAI. Supabase JWT Keys rotate + Vercel 교체 + Redeploy.
+3. **BETA_FREE_MODE 제거**: env 삭제/ false → 정상 결제. 직전에 1번 검증 완료 필수.
+4. **진단 endpoint 재확인**: `/api/debug/env-check` 삭제됨(commit b4b1632). 재추가 시 출시 전 제거.
+5. **매칭·채팅 정식 출시 시**: 변호사 검토 (개인정보 제3자 제공·정보통신망법·청소년보호) + 매칭 동의 별도 UI(제3자 공개 동의 체크박스 분리). terms 6~11조·privacy 8항 초안만 있음.
 
 ## Known Limitations / TODO
 
