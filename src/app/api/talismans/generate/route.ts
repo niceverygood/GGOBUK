@@ -9,6 +9,7 @@ import {
 import { generateTalismanImage } from '@/lib/llm/talisman';
 import { buildSajuResult } from '@/lib/saju';
 import { createServerClient } from '@/lib/supabase/server';
+import { hasAiConsent } from '@/lib/privacy/consent';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { logger } from '@/lib/utils/logger';
@@ -35,6 +36,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  if (!(await hasAiConsent(user.id))) {
+    return NextResponse.json({ error: 'ai_consent_required' }, { status: 412 });
+  }
 
   const rl = rateLimit(rateLimitKey(user.id, 'talisman'), 5, 60_000);
   if (!rl.allowed)

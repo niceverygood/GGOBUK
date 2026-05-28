@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { hasAiConsent } from '@/lib/privacy/consent';
 import { generateDaily } from '@/lib/llm/daily';
 import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -32,6 +33,14 @@ export async function GET(req: Request) {
     .eq('date', today)
     .maybeSingle();
   if (existing) return NextResponse.json({ daily: existing, cached: true });
+
+  // 캐시 미스 → 새 생성 = AI 호출. 동의 여부 확인.
+  if (!(await hasAiConsent(user.id))) {
+    return NextResponse.json(
+      { daily: null, error: 'ai_consent_required' },
+      { status: 412 },
+    );
+  }
 
   const { data: profile } = await supabase
     .from('saju_profiles')
@@ -104,16 +113,24 @@ export async function POST(req: Request) {
   const admin = await createServerClient({ admin: true });
   const today = todayKstIso();
 
-  const { data: profiles } = await admin
+  // 동의한 사용자의 self profile 만 생성. 미동의자는 cron 에서도 LLM 호출 금지.
+  const { data: consentedUsers } = await admin
+    .from('users')
+    .select('id')
+    .not('ai_consent_at', 'is', null);
+  const consentedIds = new Set((consentedUsers ?? []).map((u) => u.id));
+
+  const { data: allProfiles } = await admin
     .from('saju_profiles')
     .select('*')
     .eq('relation_type', 'self')
     .returns<SajuProfileRow[]>();
+  const profiles = (allProfiles ?? []).filter((p) => consentedIds.has(p.owner_id));
 
   let generated = 0;
   let failed = 0;
 
-  for (const profile of profiles ?? []) {
+  for (const profile of profiles) {
     const { data: existing } = await admin
       .from('daily_fortunes')
       .select('id')

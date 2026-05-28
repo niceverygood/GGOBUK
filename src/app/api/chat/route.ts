@@ -7,6 +7,10 @@ import {
   isInsufficientCreditsError,
   spendCredits,
 } from '@/lib/credits/server';
+import {
+  isAiConsentRequiredError,
+  requireAiConsent,
+} from '@/lib/privacy/consent';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { todayKstIso } from '@/lib/utils/date';
 import type { PersonaKey } from '@/lib/llm/personas';
@@ -23,6 +27,15 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return new Response('unauthorized', { status: 401 });
+
+  try {
+    await requireAiConsent(user.id);
+  } catch (e) {
+    if (isAiConsentRequiredError(e)) {
+      return new Response('ai_consent_required', { status: 412 });
+    }
+    throw e;
+  }
 
   const rl = rateLimit(rateLimitKey(user.id, 'chat'), 20, 60_000);
   if (!rl.allowed) return new Response('rate_limited', { status: 429 });

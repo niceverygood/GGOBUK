@@ -13,6 +13,10 @@ import {
   isInsufficientCreditsError,
   spendCredits,
 } from '@/lib/credits/server';
+import {
+  isAiConsentRequiredError,
+  requireAiConsent,
+} from '@/lib/privacy/consent';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { logger } from '@/lib/utils/logger';
 import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
@@ -39,6 +43,18 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  try {
+    await requireAiConsent(user.id);
+  } catch (e) {
+    if (isAiConsentRequiredError(e)) {
+      return NextResponse.json(
+        { error: 'ai_consent_required' },
+        { status: 412 },
+      );
+    }
+    throw e;
+  }
 
   const rl = rateLimit(rateLimitKey(user.id, 'interpretation'), 10, 60_000);
   if (!rl.allowed)

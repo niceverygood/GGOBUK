@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
+import { hasAiConsent } from '@/lib/privacy/consent';
 import { buildSajuResult } from '@/lib/saju';
 import { generateCompat } from '@/lib/llm/compat';
 import { quickCompat } from '@/lib/saju/quick_compat';
@@ -51,6 +52,10 @@ async function handleCompat(req: Request) {
   } = await supabase.auth.getUser();
   if (!user)
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  if (!(await hasAiConsent(user.id))) {
+    return NextResponse.json({ error: 'ai_consent_required' }, { status: 412 });
+  }
 
   const body = Body.parse(await req.json());
 
