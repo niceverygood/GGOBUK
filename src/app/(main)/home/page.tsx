@@ -20,6 +20,7 @@ import { WeekStrip } from '@/components/home/WeekStrip';
 import { WelcomeBonusCard } from '@/components/home/WelcomeBonusCard';
 import { PremiumFeaturesPromo } from '@/components/home/PremiumFeaturesPromo';
 import { SeasonalUpdateBanner } from '@/components/home/SeasonalUpdateBanner';
+import { BetaFreeBadge } from '@/components/home/BetaFreeBadge';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -201,6 +202,9 @@ export default async function HomePage() {
           </div>
           <Badge tone="mint">길운 {gilun}</Badge>
         </div>
+
+        {/* 베타 무료 모드 안내 칩 — BETA_FREE_MODE=true 일 때만 노출 */}
+        <BetaFreeBadge />
 
         {/* 신규 가입 보너스 환영 카드 — 보너스 미사용 + dismiss 안 한 유저만 노출 */}
         <WelcomeBonusCard />
