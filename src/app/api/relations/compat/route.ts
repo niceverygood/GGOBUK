@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { hasAiConsent } from '@/lib/privacy/consent';
@@ -6,6 +7,8 @@ import { buildSajuResult } from '@/lib/saju';
 import { generateCompat } from '@/lib/llm/compat';
 import { quickCompat } from '@/lib/saju/quick_compat';
 import { CREDIT_COSTS } from '@/lib/credits';
+import { isPersonaKey } from '@/lib/utils/persona-mode';
+import type { PersonaKey } from '@/lib/llm/personas';
 import {
   addCredits,
   isInsufficientCreditsError,
@@ -97,6 +100,11 @@ async function handleCompat(req: Request) {
     throw e;
   }
 
+  // 현재 사용자가 선택한 모드를 cookie에서 읽어 compat 톤에 적용.
+  const cookieStore = await cookies();
+  const personaRaw = cookieStore.get('ggobuk_persona_mode')?.value ?? 'dosa';
+  const persona: PersonaKey = isPersonaKey(personaRaw) ? personaRaw : 'dosa';
+
   let result;
   let usedFallback = false;
   try {
@@ -107,6 +115,7 @@ async function handleCompat(req: Request) {
       nameB: otherProfile.name,
       relationLabel:
         body.relation_label ?? otherProfile.relation_label ?? undefined,
+      persona,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';

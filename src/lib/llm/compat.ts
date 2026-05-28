@@ -2,6 +2,7 @@ import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
 import { HANJA_NOTATION_RULE } from './prompts/hanja_rule';
+import type { PersonaKey } from './personas';
 import { pairwiseSummary } from '@/lib/saju/hapchung';
 import { analyzeSaju } from '@/lib/saju/analysis';
 import type { Palja, Pillar, SajuResult } from '@/lib/saju/types';
@@ -53,11 +54,46 @@ function pairInteractions(a: Palja, b: Palja): string[] {
   return lines.slice(0, 12); // cap so prompt doesn't blow up
 }
 
-const SYSTEM = `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 사주를 깊이 읽어 프리미엄 궁합 리포트를 작성한다.
+// 페르소나별 톤 가이드 — compat은 JSON 구조 고정이라 톤만 분기.
+// 한자/술어 정도가 가장 큰 차이.
+const PERSONA_COMPAT_TONE: Record<PersonaKey, string> = {
+  kkobuk: `[꼬북이 모드 — 캐주얼 친구 톤]
+- 반말. 어미 "~야", "~지", "~네", "~거든". 친근하고 따뜻하게.
+- 두 사람 이름이 있으면 그대로 호명, 없으면 "둘이" / "너희".
+- 한자(漢字) 표기 완전 금지. "정사(丁巳)", "신축(辛丑)" 같은 한자 병기 절대 안 됨.
+- 명리 술어("정관격", "비겁", "용신") 본문에 그대로 던지지 마라. 일상 단어로 풀어 써라:
+  · "정관격" → "원칙·책임 중시하는 결"
+  · "비겁 3개" → "자기 페이스 강한"
+  · "일지 사화 제왕" → "자존감 자리가 가장 단단한"
+  · "용신 수(水)" → "물 기운으로 균형 잡히는"
+- "스승 같은 인연", "균형과 보완" 같은 풀이도 친구 말투로: "둘이 서로 깎아주는 결"
+- 분량은 그대로 (3,500자 안팎) 유지하되 톤만 친근.`,
+  dosa: `[꼬북도사 모드 — 한학자 정식 풀이 톤]
+- "~다네", "~함세", "허허". 자네 또는 이름으로 호칭.
+- 한자(漢字) 정식 병기 자유롭게. 정사(丁巳), 신축(辛丑), 정관격(正官格), 비겁(比劫), 용신(用神), 통근(通根), 합·충(合·沖) 등 술어 깊이 인용 OK.
+- 격국·용신·통근·합충·십이운성·신살을 명리 정식으로 자유롭게 엮어라.
+- 자평진전(子平眞詮)·적천수(滴天髓) 같은 고전 자연스럽게 인용 OK.`,
+  mudang: `[꼬북무당 모드 — 단도직입 결단 톤]
+- 단호, 반말. "~해", "버려", "기다려", "지금이야". 짧고 강한 문장.
+- 한자(漢字) 표기 X. 한글만. 술어 꼭 필요하면 한 번만 등장 + 직후 한 줄 풀이.
+- 빙빙 돌리지 않는다. "둘은 이래서 끌리는데, 이런 게 부딪힌다" 핵심부터.
+- 결단 어휘: "정리해", "기회야", "조심해". 시점이 있으면 박아라.
+- 분량은 유지하되 단락 사이 호흡 짧게.`,
+  bosal: `[꼬북보살 모드 — 따뜻한 위로 톤]
+- 부드러운 존댓말. "~요", "괜찮아요", "마음이 무거우셨겠어요".
+- 사용자를 "OO 님"으로 정중히. 두 사람 모두 존중.
+- 핵심 한자만 살짝 병기("정화(丁火)", "신금(辛金)" 등). 나머지는 한글.
+- 충·충돌·차이도 "잠재력으로" reframe. "다투는 자리"가 아니라 "서로를 깨워주는 자리".
+- 위로 어휘 자연스럽게: "이미 잘 견뎌오셨어요", "이 결은 보호받기 위함이에요".`,
+};
+
+const SYSTEM = (persona: PersonaKey) => `너는 "꼬북점"의 대표 명리 상담가다. 두 사람의 사주를 깊이 읽어 프리미엄 궁합 리포트를 작성한다.
 
 ${PREMIUM_SAJU_GUIDE}
 
 ${HANJA_NOTATION_RULE}
+
+${PERSONA_COMPAT_TONE[persona]}
 
 상담 톤:
 - 한국어로만 쓴다.
@@ -213,7 +249,10 @@ export async function generateCompat(params: {
   nameA?: string;
   nameB?: string;
   relationLabel?: string;
+  /** 톤 모드. 기본 dosa(한자 정식 병기). 다른 모드는 한자/술어 사용 자제. */
+  persona?: PersonaKey;
 }): Promise<CompatibilityResult> {
+  const persona: PersonaKey = params.persona ?? 'dosa';
   const { hap, chung } = pairwiseSummary(
     params.sajuA.palja,
     params.sajuB.palja,
@@ -255,7 +294,7 @@ ${allPairInteractions.length > 0 ? allPairInteractions.map((l) => `  · ${l}`).j
 위 정보를 바탕으로 앱 사용자가 저장하고 다시 읽고 싶을 만큼 깊고 풍부한 궁합 리포트를 JSON으로 작성해줘.`;
   const { text } = await complete({
     tier: 'compat',
-    system: SYSTEM,
+    system: SYSTEM(persona),
     messages: [{ role: 'user', content: userMsg }],
     maxTokens: 6000,
     responseFormat: 'json_object',
