@@ -19,6 +19,7 @@ import { TodayInsight } from '@/components/home/TodayInsight';
 import { WeekStrip } from '@/components/home/WeekStrip';
 import { WelcomeBonusCard } from '@/components/home/WelcomeBonusCard';
 import { PremiumFeaturesPromo } from '@/components/home/PremiumFeaturesPromo';
+import { SeasonalUpdateBanner } from '@/components/home/SeasonalUpdateBanner';
 import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
@@ -171,6 +172,15 @@ export default async function HomePage() {
     .select('id', { count: 'exact', head: true })
     .eq('saju_id', profile.id);
 
+  // SeasonalUpdateBanner — 가장 최근 풀이 시점만 필요
+  const { data: latestInterp } = await supabase
+    .from('interpretations')
+    .select('generated_at')
+    .eq('saju_id', profile.id)
+    .order('generated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
@@ -194,6 +204,12 @@ export default async function HomePage() {
 
         {/* 신규 가입 보너스 환영 카드 — 보너스 미사용 + dismiss 안 한 유저만 노출 */}
         <WelcomeBonusCard />
+
+        {/* 시즌/생일/풀이 재생성 시점 배너 — 조건부 자동 노출 */}
+        <SeasonalUpdateBanner
+          birthDate={profile.birth_date}
+          latestInterpretationAt={latestInterp?.generated_at ?? null}
+        />
 
         {/* ════════════════ 🌅 오늘 ════════════════ */}
         <SectionDivider emoji="🌅" label="오늘" />

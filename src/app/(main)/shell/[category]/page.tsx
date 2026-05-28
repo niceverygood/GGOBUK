@@ -115,7 +115,7 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
 
   const { data: cached } = await supabase
     .from('interpretations')
-    .select('content')
+    .select('content, generated_at')
     .eq('saju_id', profile.id)
     .eq('category', category)
     .eq('persona', persona)
@@ -200,6 +200,9 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         />
 
         <Card className="mt-4 p-5">
+          {cached?.generated_at && (
+            <InterpretationAgeBadge generatedAt={cached.generated_at} />
+          )}
           <InterpretationPanel
             category={category as InterpretationCategory}
             initialContent={cached?.content ?? ''}
@@ -215,5 +218,41 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
         </Link>
       </div>
     </main>
+  );
+}
+
+/**
+ * 풀이 카드 상단에 "n일 전 생성" timestamp 표시. 180일 이상이면 강조 색.
+ * 사주아이·점신처럼 시점성 hook을 만드는 가벼운 장치.
+ */
+function InterpretationAgeBadge({ generatedAt }: { generatedAt: string }) {
+  const days = Math.floor(
+    (Date.now() - new Date(generatedAt).getTime()) / 86400000,
+  );
+  let label: string;
+  let stale = false;
+  if (days <= 0) label = '오늘 생성';
+  else if (days === 1) label = '어제 생성';
+  else if (days < 7) label = `${days}일 전 생성`;
+  else if (days < 30) label = `${Math.floor(days / 7)}주 전 생성`;
+  else if (days < 365) {
+    label = `${Math.floor(days / 30)}개월 전 생성`;
+    if (days >= 180) stale = true;
+  } else {
+    label = `${Math.floor(days / 365)}년 ${Math.floor((days % 365) / 30)}개월 전`;
+    stale = true;
+  }
+  return (
+    <div
+      className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-extrabold ${
+        stale
+          ? 'bg-red/10 text-red'
+          : 'bg-ivory text-muted'
+      }`}
+    >
+      <span>{stale ? '⏳' : '🕐'}</span>
+      <span>{label}</span>
+      {stale && <span className="ml-1 text-[9.5px] font-bold">· 다시 받아볼 시기</span>}
+    </div>
   );
 }
