@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { PersonaModeChip } from '@/components/nav/PersonaModeChip';
+import { AiConsentGate } from '@/components/privacy/AiConsentGate';
 
 export const metadata: Metadata = {
   robots: {
@@ -19,6 +20,7 @@ export default function MainLayout({
       <PersonaModeChip />
       {children}
       <BottomNav />
+      <AiConsentGate />
     </div>
   );
 }
