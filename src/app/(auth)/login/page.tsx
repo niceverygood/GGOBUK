@@ -167,8 +167,19 @@ export default function LoginPage() {
           </p>
         )}
 
-        <p className="mt-6 text-[11px] font-bold text-muted text-center max-w-xs">
-          가입과 동시에 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
+        <p className="mt-6 text-[11px] font-bold text-muted text-center max-w-xs leading-relaxed">
+          로그인 시{' '}
+          <Link href="/terms" className="text-navy underline underline-offset-2">
+            이용약관
+          </Link>{' '}
+          및{' '}
+          <Link
+            href="/privacy"
+            className="text-navy underline underline-offset-2"
+          >
+            개인정보 처리방침
+          </Link>
+          에 동의한 것으로 간주합니다.
         </p>
 
         <Link
