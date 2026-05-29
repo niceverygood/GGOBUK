@@ -7,6 +7,7 @@ import {
   SITE_URL,
   absoluteUrl,
 } from '@/lib/seo/site';
+import { OfflineGuard } from '@/components/system/OfflineGuard';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -103,7 +104,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="min-h-dvh flex flex-col">{children}</body>
+      <body className="min-h-dvh flex flex-col">
+        {children}
+        <OfflineGuard />
+      </body>
     </html>
   );
 }
