@@ -246,3 +246,72 @@ export interface CreditTransactionRow {
   price_krw: number | null;
   created_at: string;
 }
+
+// ── 유저 매칭 (migration 14) ──
+export interface MatchProfileRow {
+  user_id: string;
+  saju_id: string;
+  opt_in: boolean;
+  display_nickname: string;
+  age_band: string | null;
+  gender: 'M' | 'F';
+  gender_pref: 'M' | 'F' | 'any';
+  bio: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MatchLikeRow {
+  id: string;
+  from_user_id: string;
+  to_user_id: string;
+  action: 'like' | 'pass';
+  created_at: string;
+}
+
+export interface MatchMatchRow {
+  id: string;
+  user_a: string;
+  user_b: string;
+  compatibility: CompatibilityResult | null;
+  status: 'active' | 'closed';
+  created_at: string;
+}
+
+export interface MatchMessageRow {
+  id: string;
+  match_id: string;
+  sender_user_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export interface MatchBlockRow {
+  blocker_user_id: string;
+  blocked_user_id: string;
+  created_at: string;
+}
+
+export interface MatchReportRow {
+  id: string;
+  reporter_user_id: string;
+  reported_user_id: string;
+  match_id: string | null;
+  reason: string;
+  detail: string | null;
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+  created_at: string;
+}
+
+/** 매칭 후보·매칭 상대에게 공개되는 안전한 프로필 (민감정보 제외). */
+export interface PublicMatchCandidate {
+  userId: string;
+  nickname: string;
+  ageBand: string | null;
+  gender: 'M' | 'F';
+  bio: string | null;
+  compatScore: number;
+  compatHeadline: string | null;
+}
