@@ -11,7 +11,8 @@ import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { interpretationCostFor } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
-import { readPersonaMode, usePersonaMode } from "@/lib/utils/persona-mode";
+import { readPersonaMode } from "@/lib/utils/persona-mode";
+import { usePersonaMode } from "@/lib/utils/use-persona-mode";
 import {
   completeGeneration,
   startGeneration,

@@ -24,7 +24,7 @@ async function ensureInit() {
   if (process.env.SENTRY_DSN && typeof window === "undefined") {
     try {
       // @ts-expect-error — @sentry/nextjs is an optional peer dependency
-      const Sentry = await import("@sentry/nextjs");
+      const Sentry = await import(/* turbopackIgnore: true */ "@sentry/nextjs");
       if (!Sentry.isInitialized()) {
         Sentry.init({
           dsn: process.env.SENTRY_DSN,
@@ -42,7 +42,7 @@ async function ensureInit() {
   if (process.env.NEXT_PUBLIC_POSTHOG_KEY && typeof window === "undefined") {
     try {
       // @ts-expect-error — posthog-node is an optional peer dependency
-      const mod = await import("posthog-node");
+      const mod = await import(/* turbopackIgnore: true */ "posthog-node");
       _posthog = new mod.PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         host: "https://us.i.posthog.com",
         flushAt: 10,
