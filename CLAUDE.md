@@ -79,6 +79,9 @@ System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
 - **2026-05-28**: `BETA_FREE_MODE` env flag 도입 — true면 spendCredits skip(잔액 0이어도 전 기능 무료). 출시 시 제거. credits/server.ts.
 - **2026-05-28**: ⚠️ **PostgREST service_role 폴백 이슈 발견** — `SUPABASE_SERVICE_ROLE_KEY`(legacy JWT 및 sb_secret_ 둘 다)로 RPC 호출 시 RLS는 우회되나 **함수 EXECUTE 권한 체크에서 anon으로 폴백**됨. spend_credits가 `permission denied(42501)`. 임시조치: anon/authenticated에 EXECUTE 부여로 작동시킴 → BETA_FREE_MODE 가드 후 anon 회수. **근본 원인 미해결 — 출시 전 블로커 참조.**
 - **2026-05-28**: Web Push(VAPID) 풀스택 완성(retention) + 친구 초대 보상 +10알(referral). 플라이휠.
+- **2026-05-30**: 풀이 3일 보관 정책 — `/api/maintenance/expire-interpretations` cron(`30 21 * * *` UTC = KST 06:30)이 `generated_at + 3일` 이전 row 일괄 삭제. `/library`는 모든 페르소나 풀이를 노출(limit 20) + "N일 N시간 남음" 카운트다운 + 24h 이내 "⏳ 곧 만료" 배지. 모드 변경 다이얼로그의 "3일 동안 보관" 약속과 정렬.
+- **2026-05-30**: 사주 해설 페르소나별 가격 차등(option B) — `INTERPRETATION_COST_BY_PERSONA = { kkobuk:2, mudang:3, bosal:4, dosa:5 }`. `interpretationCostFor(persona)` helper로 API regenerate + 모든 UI 라벨이 동기화. `usePersonaMode()` 훅 + `ggobuk:persona-mode` CustomEvent로 모드 변경 즉시 가격 반응형 표시. `/mode` 카드에 "풀이 N꼬북알" 칩.
+- **2026-05-30**: 백그라운드 생성 상태 chip — BottomNav 위 floating pill이 진행 중인 LLM 작업 표시(label + 시간 + 미확인 완료 배지). 탭하면 시트 열려 활성/완료 목록 + 결과 페이지로 이동. `lockGeneration` → `startGeneration(id, label, href)` 마이그레이션으로 모든 콜러가 의미 있는 라벨/링크 제공.
 
 ## 🚀 출시 전 필수 블로커 (Pre-Launch Blockers — 반드시 처리)
 
