@@ -7,7 +7,7 @@ import {
   generateFallbackInterpretation,
   generateInterpretation,
 } from '@/lib/llm/interpret';
-import { CREDIT_COSTS } from '@/lib/credits';
+import { interpretationCostFor } from '@/lib/credits';
 import {
   addCredits,
   isInsufficientCreditsError,
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   try {
     await spendCredits({
       userId: user.id,
-      amount: CREDIT_COSTS.interpretation,
+      amount: interpretationCostFor(persona),
       reason: `사주 해설 ${focus ? '심화 ' : ''}생성:${category}`,
       referenceId: profile.id,
     });
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
     if (creditsSpent) {
       await addCredits({
         userId: user.id,
-        amount: CREDIT_COSTS.interpretation,
+        amount: interpretationCostFor(persona),
         reason: `사주 해설 AI 실패 환불:${category}`,
         kind: 'refund',
         referenceId: profile.id,
@@ -184,7 +184,7 @@ export async function POST(req: Request) {
   if (error && creditsSpent)
     await addCredits({
       userId: user.id,
-      amount: CREDIT_COSTS.interpretation,
+      amount: interpretationCostFor(persona),
       reason: `사주 해설 저장 실패 환불:${category}`,
       kind: 'refund',
       referenceId: profile.id,

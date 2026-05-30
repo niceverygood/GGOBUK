@@ -15,7 +15,7 @@ import {
   unlockGeneration,
 } from '@/lib/utils/generation-lock';
 import { readPersonaMode } from '@/lib/utils/persona-mode';
-import { CREDIT_COSTS } from '@/lib/credits';
+import { interpretationCostFor } from '@/lib/credits';
 import { isNativeIOS } from '@/lib/utils/platform';
 import type { UseCase } from '@/lib/saju/use_cases';
 import type { PersonaKey } from '@/lib/llm/personas';
@@ -42,6 +42,9 @@ export function UseCaseClient({
   const [content, setContent] = useState(cachedContent);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // 페르소나별 가격 차등 — UseCase 페이지는 서버에서 cookie로 결정된
+  // personaKey가 그대로 prop으로 내려오므로 그걸 기준으로 표시.
+  const cost = interpretationCostFor(personaKey);
 
   async function generate() {
     if (loading) return;
@@ -130,8 +133,8 @@ export function UseCaseClient({
           </p>
           <p className="mt-1 text-[12px] font-bold leading-relaxed text-muted">
             "{useCase.question}"에 답하는 깊은 풀이를{' '}
-            {CREDIT_COSTS.interpretation}꼬북알로 받아보세요. 진행 중 대운과
-            올해 흐름까지 함께 짚어 줍니다.
+            {cost}꼬북알로 받아보세요. 진행 중 대운과 올해 흐름까지 함께 짚어
+            줍니다.
           </p>
         </div>
       )}
@@ -142,8 +145,8 @@ export function UseCaseClient({
             <span className="inline-flex items-center justify-center gap-1.5">
               <Sparkles size={16} strokeWidth={2.6} />
               {content
-                ? `${CREDIT_COSTS.interpretation}꼬북알로 더 깊게 풀이 추가`
-                : `${CREDIT_COSTS.interpretation}꼬북알로 ${useCase.title} 풀이 받기`}
+                ? `${cost}꼬북알로 더 깊게 풀이 추가`
+                : `${cost}꼬북알로 ${useCase.title} 풀이 받기`}
             </span>
           </ButtonPrimary>
           {error && (

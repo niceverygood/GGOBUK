@@ -6,6 +6,7 @@ import { Gift, X } from 'lucide-react';
 import {
   CREDIT_COSTS,
   CREDIT_UNIT,
+  INTERPRETATION_COST_BY_PERSONA,
   SIGNUP_BONUS_CREDITS,
   packageBreakdown,
 } from '@/lib/credits';
@@ -89,7 +90,8 @@ export function WelcomeBonusCard() {
             <span className="ml-0.5 text-[9px] font-bold">개</span>
           </p>
           <p className="mt-0.5 text-[8px] font-bold text-muted leading-none">
-            {CREDIT_COSTS.interpretation}알/개
+            {Math.min(...Object.values(INTERPRETATION_COST_BY_PERSONA))}~
+            {Math.max(...Object.values(INTERPRETATION_COST_BY_PERSONA))}알/개
           </p>
         </div>
         <div className="rounded-xl bg-white/85 px-1 py-1.5">

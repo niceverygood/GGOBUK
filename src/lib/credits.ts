@@ -68,6 +68,10 @@ export const REFUND_WINDOW_DAYS = 7;
 // 올림. 정밀풀이 패키지(₩307/알) 기준 풀이 한 번이 ₩921로 정렬되어 사주
 // 업계 ₩2,000~5,000 단건가 대비 여전히 경쟁력 있는 가격 유지.
 // 채팅(1알=₩307)은 인게이지먼트 위해 유지.
+//
+// `interpretation` 은 페르소나 모드별 가격 차등 적용 후의 "기본/평균" 값이며
+// 실제 청구는 `INTERPRETATION_COST_BY_PERSONA` 로 분기. (`packageBreakdown` 이
+// 환산용으로 사용 → 보수적으로 무당 모드(3알) 기준 그대로 유지.)
 export const CREDIT_COSTS = {
   chat: 1,
   interpretation: 3,
@@ -77,6 +81,36 @@ export const CREDIT_COSTS = {
   talisman: 7,
   comic: 8,
 } as const;
+
+/**
+ * 사주 해설 페르소나별 가격 차등 (2026-05-30 도입).
+ *
+ * 꼬북이 = 친구 톤, 가장 가볍게 다가가는 무료 진입 → 최저가
+ * 무당   = 직설 MZ 톤
+ * 보살   = 따뜻한 위로 톤
+ * 도사   = 정통 사주 격국·신살 등 가장 깊고 비싼 톤 → 프리미엄
+ *
+ * UX 의도: 사용자가 깊은 풀이를 원할수록 도사 모드를 선택하게 만들어
+ * 객단가 상승 + "도사가 비싼만큼 깊다"는 인식 형성. 무료 진입(꼬북이)
+ * 으로 컨버전 + 보살/도사로 ARPU.
+ */
+export const INTERPRETATION_COST_BY_PERSONA = {
+  kkobuk: 2,
+  mudang: 3,
+  bosal: 4,
+  dosa: 5,
+} as const;
+
+export function interpretationCostFor(
+  persona: keyof typeof INTERPRETATION_COST_BY_PERSONA | string | null | undefined,
+): number {
+  if (!persona) return CREDIT_COSTS.interpretation;
+  return (
+    INTERPRETATION_COST_BY_PERSONA[
+      persona as keyof typeof INTERPRETATION_COST_BY_PERSONA
+    ] ?? CREDIT_COSTS.interpretation
+  );
+}
 
 /**
  * Per-day free quota before credits get spent. Resets at KST midnight.

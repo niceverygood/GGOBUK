@@ -9,9 +9,9 @@ import { ShareInterpretationButton } from "@/components/shell/ShareInterpretatio
 // import { TalismanPanel } from "@/components/shell/TalismanPanel"; // 부적 만들기 — 임시 숨김
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
-import { CREDIT_COSTS } from "@/lib/credits";
+import { interpretationCostFor } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
-import { readPersonaMode } from "@/lib/utils/persona-mode";
+import { readPersonaMode, usePersonaMode } from "@/lib/utils/persona-mode";
 import {
   lockGeneration,
   unlockGeneration,
@@ -518,6 +518,8 @@ function DeepDivePanel({
   disabled: boolean;
   consumedTitles: Set<string>;
 }) {
+  const persona = usePersonaMode();
+  const cost = interpretationCostFor(persona);
   const allOptions = CATEGORY_DEEP_DIVES[category] ?? DEFAULT_DEEP_DIVES;
   const options = allOptions.filter(
     (option) => !consumedTitles.has(option.title),
@@ -538,7 +540,7 @@ function DeepDivePanel({
           </p>
           <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
             방금 리포트에서 더 궁금한 지점을 골라 초점을 좁혀볼 수 있어. 심화
-            분석은 주제별로 {CREDIT_COSTS.interpretation}꼬북알을 사용해.
+            분석은 주제별로 {cost}꼬북알을 사용해.
           </p>
         </div>
       </div>
@@ -561,7 +563,7 @@ function DeepDivePanel({
               </span>
             </span>
             <span className="shrink-0 rounded-full bg-mint/20 px-2.5 py-1 text-[10px] font-black text-navy">
-              {CREDIT_COSTS.interpretation}꼬북알
+              {cost}꼬북알
             </span>
             <ArrowRight
               size={16}
@@ -582,6 +584,8 @@ export function InterpretationPanel({
   category: InterpretationCategory;
   initialContent: string;
 }) {
+  const persona = usePersonaMode();
+  const generationCost = interpretationCostFor(persona);
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -702,7 +706,7 @@ export function InterpretationPanel({
         >
           {loading
             ? ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))].title
-            : `${CREDIT_COSTS.interpretation}꼬북알로 해설 생성`}
+            : `${generationCost}꼬북알로 해설 생성`}
         </ButtonPrimary>
         {error && (
           <p className="text-center text-xs font-bold text-red">

@@ -22,6 +22,7 @@ import {
   CREDIT_UNIT,
   type CreditPackageId,
   formatKrw,
+  INTERPRETATION_COST_BY_PERSONA,
   packageBreakdown,
   totalCredits,
 } from '@/lib/credits';
@@ -34,9 +35,15 @@ const STORE_PROMISES = [
   '모든 AI 풀이 공통 사용',
 ];
 
+// 사주 해설은 모드(페르소나)별로 가격이 다름 — 꼬북이(2) ~ 도사(5).
+// 가장 싼/비싼 모드를 모두 보여줘 사용자 기대 정렬.
+const INTERP_RANGE = `${Math.min(
+  ...Object.values(INTERPRETATION_COST_BY_PERSONA),
+)}-${Math.max(...Object.values(INTERPRETATION_COST_BY_PERSONA))}`;
+
 const USAGE_ITEMS = [
   ['채팅 1회', CREDIT_COSTS.chat],
-  ['사주 해설', CREDIT_COSTS.interpretation],
+  ['사주 해설 (모드별)', INTERP_RANGE],
   ['대운 AI 해설', CREDIT_COSTS.daewoon],
   ['길일 찾기', CREDIT_COSTS.auspicious],
   ['궁합 리포트', CREDIT_COSTS.compatibility],

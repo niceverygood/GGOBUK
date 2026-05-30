@@ -12,6 +12,7 @@ import {
   type PersonaKey,
 } from '@/lib/llm/personas';
 import { readPersonaMode, writePersonaMode } from '@/lib/utils/persona-mode';
+import { interpretationCostFor } from '@/lib/credits';
 import {
   isAnyGenerationLocked,
   subscribeGenerationLock,
@@ -236,6 +237,9 @@ export function ModeSelectClient() {
                           <h2 className="text-lg font-black text-navy">
                             {p.displayName}
                           </h2>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-navy/12 bg-white/85 px-2 py-0.5 text-[10px] font-black text-navy">
+                            풀이 {interpretationCostFor(key)}꼬북알
+                          </span>
                           {isOn && (
                             <Badge tone="mint" className="px-2 py-0.5">
                               <span className="inline-flex items-center gap-1 text-[10px]">
