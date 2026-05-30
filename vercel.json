@@ -3,6 +3,10 @@
     {
       "path": "/api/daily",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/maintenance/expire-interpretations",
+      "schedule": "30 21 * * *"
     }
   ]
 }

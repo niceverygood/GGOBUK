@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
+import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
 import { Badge, Card } from '@/components/ui/primitives';
 import { RelationDeleteButton } from '@/components/relations/RelationDeleteButton';
 import { PremiumServiceStore } from '@/components/library/PremiumServiceStore';
@@ -68,10 +69,10 @@ export default async function LibraryPage() {
   ] = await Promise.all([
     supabase
       .from('interpretations')
-      .select('category, generated_at')
+      .select('category, persona, generated_at')
       .eq('saju_id', profile.id)
       .order('generated_at', { ascending: false })
-      .limit(5),
+      .limit(20),
     supabase
       .from('relations')
       .select(
@@ -215,18 +216,36 @@ export default async function LibraryPage() {
           actionHref="/shell"
           actionLabel="등껍질 열기"
         >
-          {interpretations.map((item) => (
-            <LibraryRow
-              key={`${item.category}-${item.generated_at}`}
-              href={`/shell/${item.category}`}
-              title={
-                CATEGORY_TITLE[item.category as InterpretationCategory] ??
-                '사주해설'
-              }
-              subtitle={`${formatDate(item.generated_at)} 생성`}
-              status="완료"
-            />
-          ))}
+          {interpretations.map((item) => {
+            // 3일 보관 정책 — generated_at + 3일 후 자동 삭제 (cron).
+            // 표시: 남은 시간 + 24h 이내면 강조.
+            const ageMs = Date.now() - new Date(item.generated_at).getTime();
+            const remainHours = Math.max(
+              0,
+              Math.round((3 * 24 * 60 * 60 * 1000 - ageMs) / (60 * 60 * 1000)),
+            );
+            const urgentSoon = remainHours <= 24;
+            const personaLabel =
+              PERSONAS[item.persona as PersonaKey]?.displayName ?? '꼬북이';
+            return (
+              <LibraryRow
+                key={`${item.category}-${item.persona}-${item.generated_at}`}
+                href={`/shell/${item.category}`}
+                title={
+                  CATEGORY_TITLE[item.category as InterpretationCategory] ??
+                  '사주해설'
+                }
+                subtitle={`${personaLabel} 모드 · ${formatDate(item.generated_at)} 생성 · ${
+                  remainHours <= 0
+                    ? '만료'
+                    : remainHours < 24
+                      ? `${remainHours}시간 후 만료`
+                      : `${Math.floor(remainHours / 24)}일 ${remainHours % 24}시간 남음`
+                }`}
+                status={urgentSoon ? '⏳ 곧 만료' : '완료'}
+              />
+            );
+          })}
         </LibrarySection>
 
         <LibrarySection
