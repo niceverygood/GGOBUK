@@ -29,7 +29,11 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/_next') ||
     path.startsWith('/icons') ||
     path.startsWith('/characters') ||
-    path.startsWith('/manifest.json');
+    path.startsWith('/manifest.json') ||
+    // Digital Asset Links / Apple App Site Association etc. MUST be served as a
+    // plain 200 to unauthenticated crawlers (Google TWA verifier, Apple). Never
+    // redirect these to /login or the TWA address bar won't verify.
+    path.startsWith('/.well-known/');
 
   let response = NextResponse.next({ request });
 
