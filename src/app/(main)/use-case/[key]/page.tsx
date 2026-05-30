@@ -274,7 +274,7 @@ export default async function UseCasePage({ params }: PageProps) {
             더 깊게 보고 싶다면
           </p>
           <p className="mt-1 text-[12px] font-bold leading-relaxed text-navy">
-            이 use case의 관련 카테고리:{' '}
+            이 풀이의 추천 카테고리:{' '}
             {useCase.categories
               .map(
                 (c) =>
