@@ -25,7 +25,18 @@ export type SubscriptionStatus =
   | 'cancelled'
   | 'expired'
   | 'failed';
-export type CreditPackageId = 'starter' | 'focus' | 'plus' | 'deep' | 'master';
+// DB column type: every value the credit_purchases.package_id CHECK allows.
+// Live (purchasable) + retired ('starter','plus') + first-deal. The app-facing
+// CreditPackageId in src/lib/credits.ts is the narrower live-only union.
+export type CreditPackageId =
+  | 'mini'
+  | 'entry'
+  | 'starter'
+  | 'focus'
+  | 'plus'
+  | 'deep'
+  | 'master'
+  | 'firstdeal';
 export type CreditPurchaseStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
 export type CreditTransactionKind = 'purchase' | 'spend' | 'refund' | 'bonus';
 export type InterpretationCategory =

@@ -6,7 +6,7 @@ import { payReady } from '@/lib/kakao/pay';
 import { creditPackageById, totalCredits } from '@/lib/credits';
 
 const Body = z.object({
-  packageId: z.enum(['firstdeal', 'starter', 'focus', 'deep', 'master']),
+  packageId: z.enum(['firstdeal', 'mini', 'entry', 'focus', 'deep', 'master']),
 });
 
 export const runtime = 'nodejs';

@@ -2,13 +2,13 @@
 // See PRICING.md at repo root for the human-readable policy.
 
 /** Active credit package ids matching the actual CREDIT_PACKAGES array. */
-export type CreditPackageId = 'starter' | 'focus' | 'deep' | 'master';
+export type CreditPackageId = 'mini' | 'entry' | 'focus' | 'deep' | 'master';
 
 /** First-purchase welcome deal id (24h limited, once per account). */
 export type FirstDealId = 'firstdeal';
 
-/** Legacy alias kept for already-persisted rows in credit_purchases. */
-export type LegacyCreditPackageId = 'plus';
+/** Legacy / retired ids kept only for already-persisted credit_purchases rows. */
+export type LegacyCreditPackageId = 'plus' | 'starter';
 
 export type AnyCreditPackageId = CreditPackageId | FirstDealId | LegacyCreditPackageId;
 
@@ -133,14 +133,24 @@ export const FREE_DAILY_LIMITS = {
 // 정확한 dynamic 환산은 packageBreakdown() 사용.
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
-    id: 'starter',
-    label: '입문알 한 줌',
-    credits: 12,
+    id: 'mini',
+    label: '한 알 줍기',
+    credits: 2,
     bonusCredits: 0,
-    priceKrw: 4900,
-    caption: '가볍게 맛보고 싶을 때',
+    priceKrw: 900,
+    caption: '딱 하나만 더 보고 싶을 때',
+    badge: '최소 충전',
+    perks: ['꼬북이 풀이 1개', '또는 채팅 2회'],
+  },
+  {
+    id: 'entry',
+    label: '입문 주머니',
+    credits: 8,
+    bonusCredits: 0,
+    priceKrw: 2900,
+    caption: '가볍게 시작하고 싶을 때',
     badge: '첫 충전',
-    perks: ['정밀 풀이 4개', '또는 궁합 2회'],
+    perks: ['정밀 풀이 2~4개', '또는 궁합 1회'],
   },
   {
     id: 'focus',
@@ -201,12 +211,38 @@ export function packageBreakdown(creditsTotal: number): {
   };
 }
 
+/**
+ * Retired packs — no longer purchasable, kept ONLY so historical
+ * credit_purchases rows still resolve to their original price/credits.
+ * 'starter' (₩4,900 / 12알) was retired 2026-05-30 when the ₩900 mini +
+ * ₩2,900 entry packs replaced it as the low-end entry points.
+ */
+interface RetiredPackage extends Omit<CreditPackage, 'id'> {
+  id: LegacyCreditPackageId;
+}
+const RETIRED_PACKAGES: RetiredPackage[] = [
+  {
+    id: 'starter',
+    label: '입문알 한 줌 (단종)',
+    credits: 12,
+    bonusCredits: 0,
+    priceKrw: 4900,
+    caption: '단종된 패키지',
+    perks: [],
+  },
+];
+
 export function creditPackageById(id: string): CreditPackage | undefined {
   // First-purchase welcome deal lives outside CREDIT_PACKAGES.
   if (id === 'firstdeal') return FIRST_DEAL_PACKAGE;
   // Legacy: rows persisted under 'plus' should resolve to the 'focus' pack.
   if (id === 'plus') return CREDIT_PACKAGES.find((pkg) => pkg.id === 'focus');
-  return CREDIT_PACKAGES.find((pkg) => pkg.id === id);
+  const live = CREDIT_PACKAGES.find((pkg) => pkg.id === id);
+  if (live) return live;
+  // Retired packs: resolve historical rows only (never purchasable now).
+  return RETIRED_PACKAGES.find((pkg) => pkg.id === id) as
+    | CreditPackage
+    | undefined;
 }
 
 export function totalCredits(pkg: CreditPackage): number {

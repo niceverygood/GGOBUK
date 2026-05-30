@@ -353,8 +353,11 @@ function CreditPageInner() {
                   ))}
                 </div>
 
-                {/* 환산 사용 가능 횟수 — CREDIT_COSTS 변경 시 자동 동기화 */}
-                <PackageBreakdownGrid total={totalCredits(pkg)} />
+                {/* 환산 사용 가능 횟수 — CREDIT_COSTS 변경 시 자동 동기화.
+                    너무 작은 팩(예: 2알)은 전부 0이라 그리드를 숨김. */}
+                {totalCredits(pkg) >= CREDIT_COSTS.interpretation && (
+                  <PackageBreakdownGrid total={totalCredits(pkg)} />
+                )}
               </button>
             ))}
           </div>

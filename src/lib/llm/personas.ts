@@ -228,8 +228,8 @@ export function isPersonaKey(value: string): value is PersonaKey {
 
 // 페르소나별 추천 충전 패키지(소개 페이지 cross-sell용, 선택적).
 export const PERSONA_SUGGESTED_PACKAGE: Record<PersonaKey, CreditPackageId> = {
-  kkobuk: 'starter',
+  kkobuk: 'entry',
   dosa: 'focus',
-  mudang: 'starter',
+  mudang: 'entry',
   bosal: 'focus',
 };
