@@ -12,8 +12,8 @@ import { ohaengFromGan } from '@/lib/saju/ohaeng_from_gan';
 import { Badge, Card, Toggle, ButtonPrimary } from '@/components/ui/primitives';
 import { AnalysisLoader, type AnalysisStep } from '@/components/ui/AnalysisLoader';
 import {
-  lockGeneration,
-  unlockGeneration,
+  completeGeneration,
+  startGeneration,
 } from '@/lib/utils/generation-lock';
 import { CREDIT_COSTS } from '@/lib/credits';
 import type { Palja } from '@/lib/saju/types';
@@ -247,7 +247,8 @@ export default function RelationsPage() {
     }
 
     const lockId = `compat:add:${Date.now()}`;
-    lockGeneration(lockId);
+    startGeneration(lockId, `궁합 리포트 — ${name || '새 인연'}`, '/relations');
+    let lockStatus: 'success' | 'error' = 'success';
     try {
       setAddStatus('saving');
       const res = await fetch('/api/saju/calculate', {
@@ -308,8 +309,9 @@ export default function RelationsPage() {
         msg = `${msg}\n원인: ${detail.slice(0, 180)}`;
       }
       setError(msg);
+      lockStatus = 'error';
     } finally {
-      unlockGeneration(lockId);
+      completeGeneration(lockId, lockStatus);
       setAddStatus('idle');
     }
   }

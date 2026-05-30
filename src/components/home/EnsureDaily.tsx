@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  lockGeneration,
-  unlockGeneration,
+  completeGeneration,
+  startGeneration,
 } from '@/lib/utils/generation-lock';
 
 /**
@@ -29,8 +29,9 @@ export function EnsureDaily({ sajuId }: { sajuId: string }) {
 
     let cancelled = false;
     const lockId = `daily:${sajuId}`;
-    lockGeneration(lockId);
+    startGeneration(lockId, '오늘의 운세', '/home');
     (async () => {
+      let status: 'success' | 'error' = 'success';
       try {
         const res = await fetch(
           `/api/daily?saju_id=${encodeURIComponent(sajuId)}`,
@@ -43,16 +44,18 @@ export function EnsureDaily({ sajuId }: { sajuId: string }) {
         if (res.ok || res.status === 503 || res.status === 500) {
           router.refresh();
         }
+        if (!res.ok) status = 'error';
       } catch {
         // Network error — silently swallow. The user can pull-to-refresh.
+        status = 'error';
       } finally {
-        unlockGeneration(lockId);
+        completeGeneration(lockId, status);
       }
     })();
 
     return () => {
       cancelled = true;
-      unlockGeneration(lockId);
+      completeGeneration(lockId, 'success');
     };
   }, [sajuId, router]);
 

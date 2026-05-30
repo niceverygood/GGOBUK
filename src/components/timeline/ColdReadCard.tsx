@@ -6,8 +6,8 @@ import type { DaewoonPeriod } from '@/lib/saju/types';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeIOS } from '@/lib/utils/platform';
 import {
-  lockGeneration,
-  unlockGeneration,
+  completeGeneration,
+  startGeneration,
 } from '@/lib/utils/generation-lock';
 import { AnalysisLoader } from '@/components/ui/AnalysisLoader';
 import {
@@ -84,7 +84,12 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
     const lockId = `coldread:${period.startYear}`;
     setLoading(true);
     setError('');
-    lockGeneration(lockId);
+    startGeneration(
+      lockId,
+      `대운 AI 해설 — ${period.startYear}년~`,
+      '/timeline',
+    );
+    let lockStatus: 'success' | 'error' = 'success';
     try {
       const res = await fetch('/api/timeline/coldread', {
         method: 'POST',
@@ -105,8 +110,9 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
           ? '꼬북알이 부족해. 충전 후 다시 눌러줘.'
           : '대운 해설을 생성하지 못했어. 잠시 후 다시 시도해줘.',
       );
+      lockStatus = 'error';
     } finally {
-      unlockGeneration(lockId);
+      completeGeneration(lockId, lockStatus);
       setLoading(false);
     }
   }

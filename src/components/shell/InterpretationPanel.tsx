@@ -13,13 +13,14 @@ import { interpretationCostFor } from "@/lib/credits";
 import { isNativeIOS } from "@/lib/utils/platform";
 import { readPersonaMode, usePersonaMode } from "@/lib/utils/persona-mode";
 import {
-  lockGeneration,
-  unlockGeneration,
+  completeGeneration,
+  startGeneration,
 } from "@/lib/utils/generation-lock";
 import {
   PERSONA_LOADER_STEPS,
   loaderEyebrowFor,
 } from "@/lib/llm/persona_loader_steps";
+import { INTERPRETATION_CATEGORIES } from "@/lib/llm/interpret";
 import type { InterpretationCategory } from "@/types/db";
 
 const ANALYSIS_STEPS = [
@@ -448,7 +449,10 @@ function startBackgroundGeneration({
   };
 
   const lockId = `interp:${category}`;
-  lockGeneration(lockId);
+  const catTitle =
+    INTERPRETATION_CATEGORIES.find((c) => c.key === category)?.title ??
+    category;
+  startGeneration(lockId, `사주 해설 — ${catTitle}`, `/shell/${category}`);
 
   task.promise = fetch("/api/interpretations/regenerate", {
     method: "POST",
@@ -471,7 +475,7 @@ function startBackgroundGeneration({
       task.error = error instanceof Error ? error.message : "unknown";
     })
     .finally(() => {
-      unlockGeneration(lockId);
+      completeGeneration(lockId, task.status === "error" ? "error" : "success");
       setTaskSnapshot(task);
     });
 

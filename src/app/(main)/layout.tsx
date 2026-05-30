@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { PersonaModeChip } from '@/components/nav/PersonaModeChip';
+import { GenerationStatusChip } from '@/components/nav/GenerationStatusChip';
 import { AiConsentGate } from '@/components/privacy/AiConsentGate';
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function MainLayout({
     <div className="min-h-dvh w-full max-w-md mx-auto overflow-x-hidden text-ink relative">
       <PersonaModeChip />
       {children}
+      <GenerationStatusChip />
       <BottomNav />
       <AiConsentGate />
     </div>

@@ -11,8 +11,8 @@ import {
   loaderEyebrowFor,
 } from '@/lib/llm/persona_loader_steps';
 import {
-  lockGeneration,
-  unlockGeneration,
+  completeGeneration,
+  startGeneration,
 } from '@/lib/utils/generation-lock';
 import { readPersonaMode } from '@/lib/utils/persona-mode';
 import { interpretationCostFor } from '@/lib/credits';
@@ -52,7 +52,11 @@ export function UseCaseClient({
     setError('');
     const persona = readPersonaMode();
     const lockId = `usecase:${useCase.key}`;
-    lockGeneration(lockId);
+    startGeneration(
+      lockId,
+      `포커스 풀이 — ${useCase.title}`,
+      `/use-case/${useCase.key}`,
+    );
     try {
       const res = await fetch('/api/interpretations/regenerate', {
         method: 'POST',
@@ -70,10 +74,14 @@ export function UseCaseClient({
       if (!res.ok) {
         if (res.status === 402) {
           setError('꼬북알이 부족해요. 충전 후 다시 시도해주세요.');
+          completeGeneration(lockId, 'error');
+          setLoading(false);
           return;
         }
         if (res.status === 429) {
           setError('잠시 후 다시 시도해주세요.');
+          completeGeneration(lockId, 'error');
+          setLoading(false);
           return;
         }
         throw new Error(data.error ?? 'gen_failed');
@@ -87,10 +95,12 @@ export function UseCaseClient({
           ? e.message
           : '풀이 생성에 실패했어요. 잠시 후 다시 시도해주세요.',
       );
-    } finally {
-      unlockGeneration(lockId);
+      completeGeneration(lockId, 'error');
       setLoading(false);
+      return;
     }
+    completeGeneration(lockId, 'success');
+    setLoading(false);
   }
 
   return (
