@@ -91,6 +91,28 @@ export function MyIljuHero({
           </div>
         )}
 
+        {/* 일간·일지 한 줄 풀이 — 내 일주의 핵심 결(나 자신 / 배우자궁) */}
+        {ilju && (
+          <div className="mt-3 grid gap-1.5">
+            <div className="rounded-2xl bg-white/70 px-3.5 py-2.5">
+              <p className="text-[10px] font-black text-mint-dark">
+                일간 · {day.gan}({day.ganOhaeng}) — 나 자신
+              </p>
+              <p className="mt-0.5 text-[11px] font-bold leading-relaxed text-navy/80">
+                {ilju.ganNote}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3.5 py-2.5">
+              <p className="text-[10px] font-black text-[#7C5A0E]">
+                일지 · {day.ji} — 배우자궁
+              </p>
+              <p className="mt-0.5 text-[11px] font-bold leading-relaxed text-navy/80">
+                {ilju.jiNote}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* 생년월일 + 일주 vs 일진 혼동 방지 안내 */}
         <div className="mt-4 rounded-2xl bg-white/70 px-3.5 py-3">
           <p className="text-[11px] font-bold text-muted">
