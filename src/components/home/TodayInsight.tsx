@@ -163,7 +163,7 @@ export function TodayInsight({ ilji, myDay, sajuInput, daily }: Props) {
     <>
       {/* HERO — 다중 시각 요소 */}
       <Card className="mt-5 overflow-hidden p-0">
-        <div className="relative bg-gradient-to-br from-mint/25 via-white to-gold/15 p-5">
+        <div className="relative bg-white p-5">
           {/* score chip — 우상단 */}
           <div className="absolute right-4 top-4 flex flex-col items-end gap-1">
             <span

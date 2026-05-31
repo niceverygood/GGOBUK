@@ -15,16 +15,19 @@ import { CREDIT_COSTS } from '@/lib/credits';
  */
 export function PremiumFeaturesPromo() {
   return (
-    <section className="mt-4">
-      <p className="text-xs font-extrabold text-muted mb-2">
-        ✨ 사주를 작품으로 받기
-      </p>
+    <section className="mt-10">
+      <div className="mb-3">
+        <p className="text-[13px] font-extrabold text-muted">사주를 작품으로 받기</p>
+        <h2 className="mt-0.5 text-[22px] font-black leading-tight text-navy">
+          꼬북점 프리미엄 풀이
+        </h2>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {/* 부적 — 첫 1장 무료 강조 */}
         <Link
           href="/shell"
           prefetch
-          className="overflow-hidden rounded-3xl border border-gold/45 bg-gradient-to-br from-gold/18 via-white to-red/8 p-3 shadow-[0_8px_18px_rgba(244,208,63,0.12)] transition active:scale-[0.99]"
+          className="overflow-hidden rounded-3xl border border-gold/45 bg-white p-3 shadow-[0_8px_18px_rgba(244,208,63,0.12)] transition active:scale-[0.99]"
         >
           <div className="flex items-start justify-between">
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/85 text-[#B58A00]">
@@ -51,7 +54,7 @@ export function PremiumFeaturesPromo() {
         <Link
           href="/shell"
           prefetch
-          className="overflow-hidden rounded-3xl border border-mint/45 bg-gradient-to-br from-mint/16 via-white to-navy/8 p-3 shadow-[0_8px_18px_rgba(78,205,196,0.12)] transition active:scale-[0.99]"
+          className="overflow-hidden rounded-3xl border border-mint/45 bg-white p-3 shadow-[0_8px_18px_rgba(78,205,196,0.12)] transition active:scale-[0.99]"
         >
           <div className="flex items-start justify-between">
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/85 text-mint-dark">

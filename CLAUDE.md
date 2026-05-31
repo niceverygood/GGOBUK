@@ -82,14 +82,24 @@ System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
 - **2026-05-30**: 풀이 3일 보관 정책 — `/api/maintenance/expire-interpretations` cron(`30 21 * * *` UTC = KST 06:30)이 `generated_at + 3일` 이전 row 일괄 삭제. `/library`는 모든 페르소나 풀이를 노출(limit 20) + "N일 N시간 남음" 카운트다운 + 24h 이내 "⏳ 곧 만료" 배지. 모드 변경 다이얼로그의 "3일 동안 보관" 약속과 정렬.
 - **2026-05-30**: 사주 해설 페르소나별 가격 차등(option B) — `INTERPRETATION_COST_BY_PERSONA = { kkobuk:2, mudang:3, bosal:4, dosa:5 }`. `interpretationCostFor(persona)` helper로 API regenerate + 모든 UI 라벨이 동기화. `usePersonaMode()` 훅 + `ggobuk:persona-mode` CustomEvent로 모드 변경 즉시 가격 반응형 표시. `/mode` 카드에 "풀이 N꼬북알" 칩.
 - **2026-05-30**: 백그라운드 생성 상태 chip — BottomNav 위 floating pill이 진행 중인 LLM 작업 표시(label + 시간 + 미확인 완료 배지). 탭하면 시트 열려 활성/완료 목록 + 결과 페이지로 이동. `lockGeneration` → `startGeneration(id, label, href)` 마이그레이션으로 모든 콜러가 의미 있는 라벨/링크 제공.
+- **2026-05-31**: 홈 메인 정리 — 본인 일주 히어로(`MyIljuHero`) 신설(맨 위 고정, 일주=평생 불변 vs 오늘 일진 혼동 제거), 하단 탭 '등껍질'→'사주', 로그인 화면 인증 시 자동 홈 이동 + 테스트(익명) 로그인 제거. 히어로에 `ilju_profile`의 일간/일지 한 줄 풀이(ganNote/jiNote) 노출로 정체성 카드 마감.
+- **2026-05-31**: service_role 블로커 #1 **코드 측 해결 확정(option B)** — migration 13(`is_service_role()` self-guard + anon/authenticated EXECUTE 부여)이 활성 정의. 근본 원인 = Vercel `SUPABASE_SERVICE_ROLE_KEY`가 PostgREST의 **DB role 레이어에서 anon으로 폴백**(JWT claims는 service_role 유지)이라 EXECUTE 거부됨. 가드가 JWT claims를 읽으므로 안전·정상 동작. `grantSignupBonusIfNeeded`가 `forbidden`/`permission denied`를 null로 degrade(로그인 흐름 보호). **남은 건 인프라 검증뿐**: `is_service_role` RPC를 service_role 키로 호출해 `true` 확인 → BETA 잠깐 끄고 궁합/가입 smoke test → 통과 시 BETA_FREE_MODE 제거. `false`면 legacy JWT service_role 키(eyJ…)로 교체(신 sb_secret_ 키 미인식 가능성).
 
 ## 🚀 출시 전 필수 블로커 (Pre-Launch Blockers — 반드시 처리)
 
 > 베타 운영 중엔 `BETA_FREE_MODE=true` 라 가려져 있음. 정상 결제 출시 전 전부 해결.
 
-1. **service_role 폴백 해결 (최우선)**: `SUPABASE_SERVICE_ROLE_KEY` 가 PostgREST 함수 EXECUTE에서 anon으로 폴백되는 문제. 출시 시 `BETA_FREE_MODE` 끄면 spend_credits/add_credits/grant_signup_bonus 전부 `permission denied(42501)` 재현. 해결 경로 (택1):
-   - (A) Supabase 키 rotate 후 **새 service_role 키**로 Vercel 교체 → PostgREST가 정상 인식하는지 검증 (BETA 잠깐 끄고 궁합 테스트).
-   - (B) 안 되면 세 함수에 `GRANT EXECUTE ... TO anon, authenticated` + **함수 내부 `auth.uid()` 본인 체크**(또는 jwt role='service_role') 추가해 fail-safe. add_credits/grant_signup_bonus는 server-only라 별도 가드 설계 필요.
+1. **service_role 폴백 — 코드 측 해결 완료(option B), 인프라 검증만 남음**: 근본 원인은 Vercel `SUPABASE_SERVICE_ROLE_KEY`가 PostgREST의 DB role 레이어에서 anon으로 폴백되어 함수 EXECUTE가 거부되는 것(`permission denied 42501`). **JWT claims는 service_role로 유지**되므로, migration 13이 (a) 세 함수에 anon/authenticated EXECUTE 부여 + (b) 함수 내부 `is_service_role()`(JWT claims role 체크) & spend_credits의 `auth.uid()` 본인 체크로 fail-safe 처리 → 안전하게 동작함. `grantSignupBonusIfNeeded`도 `forbidden`/`permission denied`를 null로 degrade(로그인 흐름 보호).
+   - **남은 검증 (출시 직전, 인프라 — 사람이 수행)**:
+     1. service_role 키가 PostgREST에서 service_role로 인식되는지 확인:
+        ```
+        curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/rpc/is_service_role" \
+          -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+          -H "Content-Type: application/json" -d '{}'
+        ```
+        → `true` 면 정상. `false` 면 키가 service_role로 디코드 안 됨 → **legacy JWT service_role 키(eyJ…)**로 Vercel 교체(신 `sb_secret_` 키 미인식 가능성).
+     2. BETA_FREE_MODE 잠깐 끄고 궁합·가입 보너스 smoke test → `permission denied` 없으면 통과.
+   - (대안 A) 키 rotate 후 새 service_role 키로 교체해도 무방. 단 B가 이미 fail-safe라 필수는 아님.
 2. **노출된 키 전부 rotate**: 디버깅 중 채팅 transcript에 노출됨 — service_role JWT, sb_secret_, VAPID_PRIVATE_KEY, (가능성) OpenAI. Supabase JWT Keys rotate + Vercel 교체 + Redeploy.
 3. **BETA_FREE_MODE 제거**: env 삭제/ false → 정상 결제. 직전에 1번 검증 완료 필수.
 4. **진단 endpoint 재확인**: `/api/debug/env-check` 삭제됨(commit b4b1632). 재추가 시 출시 전 제거.

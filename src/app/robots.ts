@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           "/today-fortune",
           "/daewoon",
           "/taegil",
+          "/ilju",
           "/preview",
         ],
         disallow: [

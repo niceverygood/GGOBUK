@@ -165,6 +165,18 @@ export async function grantSignupBonusIfNeeded(
       // Race: users row not yet created. Caller should retry after upsert.
       return null;
     }
+    // service_role 키가 PostgREST에서 service_role로 인식되지 못하면 migration 13의
+    // 내부 가드 is_service_role()가 'forbidden'을, EXECUTE 폴백 시 'permission denied'를
+    // 던진다. 가입 보너스는 idempotent·non-critical 이므로 로그인 흐름을 깨지 않도록
+    // null 로 degrade 한다 (출시 전 service_role 키 검증 시 이 경고가 단서). 블로커 #1 참조.
+    if (/forbidden/i.test(error.message) || /permission denied/i.test(error.message)) {
+      logger.error(
+        'credits',
+        'grant_signup_bonus blocked — service_role key not recognized as service_role (CLAUDE.md blocker #1)',
+        { userId, message: error.message },
+      );
+      return null;
+    }
     throw new Error(error.message);
   }
   return Number(data ?? 0);

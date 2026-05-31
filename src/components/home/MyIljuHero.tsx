@@ -15,6 +15,8 @@ interface Props {
   birthTime: string | null;
   isLunar: boolean;
   gender: 'M' | 'F';
+  /** 홈에서는 슬림하게 — 키워드·일간/일지 노트·생년월일 블록 생략 */
+  compact?: boolean;
 }
 
 /**
@@ -32,6 +34,7 @@ export function MyIljuHero({
   birthTime,
   isLunar,
   gender,
+  compact = false,
 }: Props) {
   const ilju = iljuProfileOf(day.ganIdx, day.jiIdx);
   const calendar = isLunar ? '음력' : '양력';
@@ -39,13 +42,13 @@ export function MyIljuHero({
 
   return (
     <Card className="mt-1 overflow-hidden p-0">
-      <div className="bg-gradient-to-br from-mint/25 via-white to-gold/15 p-5">
+      <div className="bg-white p-5">
         {/* 라벨 + 내 정보 수정 */}
         <div className="flex items-center justify-between gap-2">
           <Badge tone="mint">나 · 내 일주</Badge>
           <Link
             href="/more/people?edit=self"
-            className="inline-flex items-center gap-1 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-black text-navy"
+            className="inline-flex items-center gap-1 rounded-full bg-ivory px-3 py-1.5 text-[11px] font-black text-navy"
           >
             <Pencil size={12} strokeWidth={3} />내 정보
           </Link>
@@ -78,12 +81,12 @@ export function MyIljuHero({
         )}
 
         {/* 키워드 칩 */}
-        {ilju && (
+        {ilju && !compact && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {ilju.keywords.slice(0, 5).map((kw) => (
               <span
                 key={kw}
-                className="rounded-full border border-navy/8 bg-white/85 px-2.5 py-1 text-[10px] font-black text-navy"
+                className="rounded-full border border-navy/8 bg-ivory px-2.5 py-1 text-[10px] font-black text-navy"
               >
                 #{kw}
               </span>
@@ -91,8 +94,31 @@ export function MyIljuHero({
           </div>
         )}
 
+        {/* 일간·일지 한 줄 풀이 — 내 일주의 핵심 결(나 자신 / 배우자궁) */}
+        {ilju && !compact && (
+          <div className="mt-3 grid gap-1.5">
+            <div className="rounded-2xl bg-ivory px-3.5 py-2.5">
+              <p className="text-[10px] font-black text-mint-dark">
+                일간 · {day.gan}({day.ganOhaeng}) — 나 자신
+              </p>
+              <p className="mt-0.5 text-[11px] font-bold leading-relaxed text-navy/80">
+                {ilju.ganNote}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-ivory px-3.5 py-2.5">
+              <p className="text-[10px] font-black text-[#7C5A0E]">
+                일지 · {day.ji} — 배우자궁
+              </p>
+              <p className="mt-0.5 text-[11px] font-bold leading-relaxed text-navy/80">
+                {ilju.jiNote}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* 생년월일 + 일주 vs 일진 혼동 방지 안내 */}
-        <div className="mt-4 rounded-2xl bg-white/70 px-3.5 py-3">
+        {!compact && (
+        <div className="mt-4 rounded-2xl bg-ivory px-3.5 py-3">
           <p className="text-[11px] font-bold text-muted">
             {birthDate} · {time} · {calendar} ·{' '}
             {gender === 'M' ? '남성' : '여성'}
@@ -103,6 +129,7 @@ export function MyIljuHero({
             <span className="font-black text-navy">오늘 일진</span>이고요.
           </p>
         </div>
+        )}
       </div>
     </Card>
   );
