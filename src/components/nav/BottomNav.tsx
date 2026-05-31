@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils/cn';
 
 const TABS = [
   { href: '/home', label: '홈', icon: Home },
-  { href: '/shell', label: '등껍질', icon: Hexagon },
+  { href: '/shell', label: '사주', icon: Hexagon },
   { href: '/chat', label: '채팅', icon: MessageCircle },
   { href: '/relations', label: '인연', icon: Users },
   { href: '/library', label: '보관함', icon: Archive },
