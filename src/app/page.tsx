@@ -104,6 +104,15 @@ function JsonLd() {
   const data = [
     {
       "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      alternateName: ["꼬북점 사주", "꼬북점 운세", "Ggobuk"],
+      url: absoluteUrl("/"),
+      inLanguage: "ko-KR",
+      description: SITE_DESCRIPTION,
+    },
+    {
+      "@context": "https://schema.org",
       "@type": "WebApplication",
       name: SITE_NAME,
       applicationCategory: "LifestyleApplication",
@@ -275,6 +284,23 @@ export default function LandingPage() {
                   </span>
                 </Link>
               ))}
+              <Link
+                href="/ilju"
+                className="flex items-center justify-between gap-4 rounded-3xl border border-navy/10 bg-white/85 px-5 py-4 shadow-[0_10px_24px_rgba(44,62,80,0.05)]"
+              >
+                <div>
+                  <h3 className="text-base font-black text-navy">
+                    60갑자 일주 사전 — 일주별 성격·연애·직업
+                  </h3>
+                  <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
+                    갑자일주부터 계해일주까지, 내 일주가 어떤 결인지 60개 일주를
+                    하나하나 풀이했습니다.
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-black text-mint-dark">
+                  보기
+                </span>
+              </Link>
             </div>
           </div>
         </div>
