@@ -15,10 +15,13 @@ import { CREDIT_COSTS } from '@/lib/credits';
  */
 export function PremiumFeaturesPromo() {
   return (
-    <section className="mt-4">
-      <p className="text-xs font-extrabold text-muted mb-2">
-        ✨ 사주를 작품으로 받기
-      </p>
+    <section className="mt-10">
+      <div className="mb-3">
+        <p className="text-[13px] font-extrabold text-muted">사주를 작품으로 받기</p>
+        <h2 className="mt-0.5 text-[22px] font-black leading-tight text-navy">
+          꼬북점 프리미엄 풀이
+        </h2>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {/* 부적 — 첫 1장 무료 강조 */}
         <Link
