@@ -1,11 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
-  Archive,
   CalendarCheck,
-  HeartHandshake,
-  MessageCircle,
-  ScrollText,
   Sparkles,
   UsersRound,
   Waypoints,
@@ -15,13 +11,13 @@ import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { Badge, Card } from '@/components/ui/primitives';
 import { LoadingDots } from '@/components/ui/LoadingDots';
 import { EnsureDaily } from '@/components/home/EnsureDaily';
+import { MyIljuHero } from '@/components/home/MyIljuHero';
 import { TodayInsight } from '@/components/home/TodayInsight';
 import { WeekStrip } from '@/components/home/WeekStrip';
 import { WelcomeBonusCard } from '@/components/home/WelcomeBonusCard';
 import { PremiumFeaturesPromo } from '@/components/home/PremiumFeaturesPromo';
 import { SeasonalUpdateBanner } from '@/components/home/SeasonalUpdateBanner';
 import { BetaFreeBadge } from '@/components/home/BetaFreeBadge';
-import { FortuneCalendar } from '@/components/calendar/FortuneCalendar';
 import { todayKstIso, formatKoreanDate } from '@/lib/utils/date';
 import { calculatePalja } from '@/lib/saju/palja';
 import { USE_CASES, USE_CASE_ORDER } from '@/lib/saju/use_cases';
@@ -60,6 +56,8 @@ function rough길운(daily: { mood: string | null } | null): number {
   }
 }
 
+// 하단 탭(홈·등껍질·채팅·인연·보관함)과 겹치지 않는 진입점만 남긴다.
+// 등껍질·인연·채팅·보관함은 BottomNav에 상시 노출되므로 카드에서 제외.
 const FEATURE_CARDS = [
   {
     href: '/people',
@@ -68,22 +66,6 @@ const FEATURE_CARDS = [
     badge: '허브',
     icon: UsersRound,
     className: 'bg-gradient-to-br from-mint/25 via-white to-gold/15',
-  },
-  {
-    href: '/shell',
-    title: '등껍질 사주',
-    subtitle: '총평 · 오행 · 십성 해설',
-    badge: '기본',
-    icon: ScrollText,
-    className: 'bg-gradient-to-br from-mint/25 to-white',
-  },
-  {
-    href: '/relations',
-    title: '인연 지도',
-    subtitle: '관계 그래프로 한눈에',
-    badge: '관계도',
-    icon: HeartHandshake,
-    className: 'bg-gradient-to-br from-red/10 to-white',
   },
   {
     href: '/timeline',
@@ -100,22 +82,6 @@ const FEATURE_CARDS = [
     badge: '길일',
     icon: CalendarCheck,
     className: 'bg-gradient-to-br from-gold/30 to-white',
-  },
-  {
-    href: '/chat',
-    title: '꼬북 상담',
-    subtitle: '연애 · 일 · 관계 질문',
-    badge: '대화',
-    icon: MessageCircle,
-    className: 'bg-gradient-to-br from-mint/15 to-gold/20',
-  },
-  {
-    href: '/library',
-    title: '보관함',
-    subtitle: '완료한 풀이 다시 보기',
-    badge: '저장',
-    icon: Archive,
-    className: 'bg-gradient-to-br from-white to-navy/5',
   },
 ];
 
@@ -186,22 +152,23 @@ export default async function HomePage() {
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between pr-28">
-          <div>
-            <p className="text-xs font-extrabold text-muted">
-              {formatKoreanDate(today)} {weekday}
-            </p>
-            <h1 className="mt-1 text-xl font-black text-navy">
-              {ilji.gan}
-              {ilji.ji}일{' '}
-              <span className="font-hanja ml-1">
-                {ilji.ganHanja}
-                {ilji.jiHanja}日
-              </span>
-            </h1>
-          </div>
-          <Badge tone="mint">길운 {gilun}</Badge>
+        {/* 인사 — 우상단 PersonaModeChip(fixed)을 피하려 pr-28 유지 */}
+        <div className="pr-28">
+          <p className="text-xs font-extrabold text-muted">오늘도 꼬북점 🐢</p>
+          <h1 className="mt-0.5 text-lg font-black text-navy">
+            {profile.name}님, 안녕하세요
+          </h1>
         </div>
+
+        {/* 내 일주 — 평생 변하지 않는 '나' (맨 위 고정 노출, 오늘 일진과 구분) */}
+        <MyIljuHero
+          name={profile.name}
+          day={palja.day}
+          birthDate={profile.birth_date}
+          birthTime={profile.birth_time ?? null}
+          isLunar={profile.is_lunar}
+          gender={profile.gender}
+        />
 
         {/* 베타 무료 모드 안내 칩 — BETA_FREE_MODE=true 일 때만 노출 */}
         <BetaFreeBadge />
@@ -215,8 +182,15 @@ export default async function HomePage() {
           latestInterpretationAt={latestInterp?.generated_at ?? null}
         />
 
-        {/* ════════════════ 🌅 오늘 ════════════════ */}
-        <SectionDivider emoji="🌅" label="오늘" />
+        {/* ════════════════ 🌅 오늘 일진 ════════════════ */}
+        <SectionDivider
+          emoji="🌅"
+          label="오늘 일진"
+          right={<Badge tone="mint">길운 {gilun}</Badge>}
+        />
+        <p className="-mt-0.5 mb-1 text-xs font-extrabold text-muted">
+          {formatKoreanDate(today)} {weekday} · 매일 바뀌는 그날의 기운
+        </p>
 
         <TodayInsight
           ilji={ilji}
@@ -266,6 +240,18 @@ export default async function HomePage() {
 
         <WeekStrip sajuInput={calendarInput} />
 
+        {/* 한 달 전체 달력은 /calendar 로 분리 (메인 정리) */}
+        <Link
+          href="/calendar"
+          prefetch
+          className="mt-2 flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3"
+        >
+          <span className="text-xs font-bold text-muted">
+            이번 달 날짜별 일진 길흉이 궁금하면?
+          </span>
+          <span className="text-xs font-black text-mint-dark">운세 달력 →</span>
+        </Link>
+
         {/* 🎯 Use-case 진입점 — 사용자가 실제로 가진 질문 6개로 좁혀 풀이 시작 */}
         <section className="mt-3">
           <div className="mb-2 flex items-end justify-between">
@@ -314,26 +300,6 @@ export default async function HomePage() {
 
         {/* 부적·웹툰 promotion — high-margin 기능 home 노출 */}
         <PremiumFeaturesPromo />
-
-        {/* ════════════════ 🗓 이번 달 ════════════════ */}
-        <SectionDivider emoji="🗓" label="이번 달" />
-
-        <section className="mt-3">
-          <div className="mb-2 flex items-end justify-between">
-            <div>
-              <p className="text-xs font-extrabold text-muted">날짜별 일진 길흉</p>
-              <h2 className="text-lg font-black text-navy">운세 달력</h2>
-            </div>
-            <Link
-              href="/calendar"
-              prefetch
-              className="text-xs font-black text-mint-dark"
-            >
-              크게 보기 →
-            </Link>
-          </div>
-          <FortuneCalendar input={calendarInput} name={profile.name} />
-        </section>
 
         {/* ════════════════ 🎯 추가 풀이 ════════════════ */}
         <SectionDivider emoji="🎯" label="추가 풀이" />
@@ -427,8 +393,16 @@ export default async function HomePage() {
   );
 }
 
-/** 큰 시간 단위 섹션 헤더 (오늘 / 이번 주 / 이번 달 / 추가 풀이). */
-function SectionDivider({ emoji, label }: { emoji: string; label: string }) {
+/** 큰 시간 단위 섹션 헤더 (오늘 일진 / 이번 주 / 추가 풀이). */
+function SectionDivider({
+  emoji,
+  label,
+  right,
+}: {
+  emoji: string;
+  label: string;
+  right?: React.ReactNode;
+}) {
   return (
     <div className="mt-6 mb-2 flex items-center gap-2.5">
       <span className="text-xl leading-none">{emoji}</span>
@@ -436,6 +410,7 @@ function SectionDivider({ emoji, label }: { emoji: string; label: string }) {
         {label}
       </span>
       <span className="ml-2 flex-1 h-px bg-gradient-to-r from-navy/15 via-navy/8 to-transparent" />
+      {right}
     </div>
   );
 }

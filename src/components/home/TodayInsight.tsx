@@ -20,8 +20,8 @@ import {
   OHAENG,
 } from '@/lib/saju/constants';
 import { dayFortune } from '@/lib/saju/fortune_calendar';
-import { iljuProfileOf } from '@/lib/saju/ilju_profile';
 import { buildSajuResult } from '@/lib/saju';
+import { todayKstIso } from '@/lib/utils/date';
 import type { Palja, Pillar, SajuInput, Sipsung } from '@/lib/saju/types';
 
 interface Props {
@@ -136,7 +136,7 @@ const HANJA_OF_JI: Record<string, string> = {
 
 export function TodayInsight({ ilji, myDay, sajuInput, daily }: Props) {
   const saju = buildSajuResult(sajuInput);
-  const today = `${new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)}`;
+  const today = todayKstIso();
   const fortune = dayFortune(saju, today);
 
   // 일진×일간 십성
@@ -152,9 +152,6 @@ export function TodayInsight({ ilji, myDay, sajuInput, daily }: Props) {
 
   // 일진 지지 오행
   const iljiOhaeng = OHAENG[JIJI_OHAENG_IDX[ilji.jiIdx]];
-
-  // 일주 60갑자 명조 (사용자의 일주)
-  const ilju = iljuProfileOf(myDay.ganIdx, myDay.jiIdx);
 
   // 길운 점수 (실제 계산값) — 0-95
   const score = fortune.score;
@@ -270,39 +267,6 @@ export function TodayInsight({ ilji, myDay, sajuInput, daily }: Props) {
                 {daily.lucky_direction ?? '-'}
               </p>
             </div>
-          </div>
-        </Card>
-      )}
-
-      {/* 일주 60갑자 미니 카드 — 항상 표시 */}
-      {ilju && (
-        <Card className="mt-3 p-4 bg-gradient-to-br from-mint/12 via-white to-gold/10">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-[10px] font-extrabold text-mint-dark">
-                내 일주 명조
-              </p>
-              <p className="mt-0.5 text-sm font-black text-navy">
-                {ilju.name} 일주{' '}
-                <span className="font-hanja text-muted">{ilju.hanja}</span>
-              </p>
-            </div>
-            <span className="rounded-full bg-white/85 px-2 py-1 text-[10px] font-black text-navy">
-              60갑자 {ilju.index + 1}번째
-            </span>
-          </div>
-          <p className="mt-2 text-xs font-bold leading-relaxed text-navy">
-            {ilju.ego}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {ilju.keywords.slice(0, 5).map((kw) => (
-              <span
-                key={kw}
-                className="rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-black text-navy border border-navy/8"
-              >
-                #{kw}
-              </span>
-            ))}
           </div>
         </Card>
       )}
