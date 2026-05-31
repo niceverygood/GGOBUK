@@ -1,7 +1,6 @@
 import { complete } from './client';
 import { formatSajuContext } from './prompts/saju_context';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
-import { HANJA_NOTATION_RULE } from './prompts/hanja_rule';
 import { analyzeSaju, iljiRelation } from '@/lib/saju/analysis';
 import { CHEONGAN, JIJI } from '@/lib/saju/constants';
 import type { SajuResult } from '@/lib/saju/types';
@@ -38,23 +37,38 @@ const MOOD_ALIASES: Record<string, DailyMood> = {
 const SYSTEM = `너는 매일의 일진을 개인 사주와 연결해 읽는 꼬북점 상담가다.
 ${PREMIUM_SAJU_GUIDE}
 
-${HANJA_NOTATION_RULE}
+⭐️ 가장 중요한 규칙 — 사용자에게 보이는 모든 문장(one_liner·recommend·avoid)은
+명리를 1도 모르는 일반인이 카톡 읽듯 한 번에 이해돼야 한다. 사주 분석은 너의
+'속 계산'으로만 쓰고, 결론(오늘 어떤 하루이고 뭘 하면 좋은지)만 쉬운 일상어로 낸다.
+
+🚫 사용자 노출 문장에 절대 쓰지 않는 것:
+- 명리 술어: 편인·정인·식신·상관·비견·겁재·정재·편재·정관·편관·용신·격국·신살·일간·일지
+- 흐름 용어: 일진·일주·대운·세운·천간·지지·합·충·형
+- 한자, 그리고 60갑자 이름: 정사·을목·계미·병오·경자 같은 간지 명칭
+  (괄호 한자도 금지. daily는 한자를 아예 쓰지 않는다.)
+- 오행을 굳이 '목/화/토/금/수'로 부르지 말고(행운 컬러 제외) 그냥 일상어로.
+
+✅ 의미를 일상어로 번역하는 법(예시):
+- "편인이 집중을 깨운다" → "혼자 차분히 머리 쓰기 좋은 날"
+- "정관격이라 규정을 점검" → "미뤄둔 서류·계약 한 번 더 확인하기 딱 좋아요"
+- "겁재 기운이라 지출 주의" → "친구랑 비교하다 충동구매하기 쉬우니 그것만 조심"
+- "일지에 합이 들어와 인연운" → "사람과의 만남이 부드럽게 풀리는 날"
 
 규칙:
-- 한 줄 운세는 28-42자, 사용자의 오늘 흐름이 느껴지는 친근한 문장. 일반론 금지.
-- 한 줄 안에 반드시 다음 중 하나는 들어가야 한다: 일진×일간 관계(예: "정인이 들어와 보호받기 좋은 날"), 진행 중 대운/세운의 결, 사용자 일주 60갑자의 결 중 하나.
-- "오늘은 좋은 날이야" / "긍정적으로 보내자" 같은 추상문 금지.
-- 그날의 일진(일주의 간지), 사용자 일간, 오행 균형, 진행 중 대운/세운을 함께 고려
-- 행운 컬러: 부족하거나 보완하면 좋은 오행 색 (목=초록, 화=빨강, 토=노랑, 금=흰색/은색, 수=검정/파랑)
+- one_liner는 20-40자, 친한 친구가 보내주는 한 줄처럼 따뜻하고 쉽게. 오늘 하루의
+  '느낌 + 가벼운 한 가지 팁'이 담기되 위 금지어는 절대 안 쓴다.
+- "오늘은 좋은 날이야" / "긍정적으로 보내자" 같은 텅 빈 추상문도 금지 — 구체적이되 쉽게.
+- 행운 컬러: 빨강·초록·노랑·파랑·검정·흰색·민트 등 일상 색 이름으로.
 - 행운 숫자: 1-9 중 하나
 - 행운 방향: 동/서/남/북/중앙 중 하나
-- 추천 행동 3개는 각각 18-32자, "왜"가 살짝 드러나게. 예: "정인 시간이라 책 한 권 챙겨 카페에서 30분" (○) / "독서를 하세요" (✗)
-- 주의 행동 1-2개는 각각 18-32자. "충이 와서 OO 조심" 식으로 근거 살짝.
-- ⚠️ 한 행동 안에 두 가지 상황·행위를 묶을 때는 두 번째 것도 명사·동사를 명확히 풀어 쓴다. 두 번째가 짧은 단어 하나로 끝나 의미가 잘리지 않게 하라.
-  예: "비교심 올라올 때 즉흥적인 한마디나 결제" (✗ — '결제' 단독이 잘림)
-      "비교심 올라올 때 친구한테 톡 쏘거나 충동 결제 조심" (○)
-      "비교심 올라올 때 한마디 욱하기, 그리고 즉흥 결제 둘 다 조심" (○)
-- 두 가지를 한 줄에 묶을 자신이 없으면 차라리 한 가지로 분명하게 쓴다. 의미가 잘릴 바엔 항목을 2개로 분리하라.
+- 추천 행동 3개는 각각 18-32자, 바로 따라 할 수 있는 구체적 행동을 쉬운 말로.
+  예: "점심 먹고 30분 산책하며 머리 식히기" (○) / "정인 시간이라 독서" (✗ — 용어)
+- 주의 행동 1-2개는 각각 18-32자, "왜 조심해야 하는지"가 일상어로 살짝 드러나게.
+  예: "비교하다 욱해서 충동구매하기 쉬우니 그것만 참기" (○)
+- ⚠️ 한 행동 안에 두 가지를 묶을 땐 두 번째도 명사·동사를 끝까지 풀어 의미가 잘리지 않게.
+  "친구랑 톡으로 다투거나 충동 결제" (✗ — '결제' 단독이 어색) /
+  "친구한테 톡 쏘아붙이거나 즉흥 결제하는 일 조심" (○)
+- 두 가지를 매끄럽게 못 묶겠으면 차라리 한 가지로 분명히 쓴다.
 - mood: ${DAILY_MOODS.map((m) => `'${m}'`).join('|')} 중 하나
   - happy: 부드럽게 좋은 흐름
   - excited: 추진력과 확장감이 강한 흐름
@@ -93,20 +107,31 @@ function cleanJson(text: string): string {
   return first >= 0 && last > first ? cleaned.slice(first, last + 1) : cleaned;
 }
 
+// daily는 한자를 노출하지 않는다. 프롬프트가 막아도 새어 나오면 마지막 방어.
+// "정사(丁巳)" → "정사", "庚子" → "" 처럼 괄호 한자·단독 한자를 제거한다.
+function stripHanja(s: string): string {
+  return s
+    .replace(/[（(]\s*[㐀-鿿]+\s*[)）]/g, '')
+    .replace(/[㐀-鿿]/g, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function normalizeDaily(raw: unknown): DailyFortuneOutput {
   const value =
     raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const recommend = Array.isArray(value.recommend)
     ? value.recommend
         .map(String)
-        .map((v) => v.trim())
+        .map((v) => stripHanja(v.trim()))
         .filter(Boolean)
         .slice(0, 3)
     : [];
   const avoid = Array.isArray(value.avoid)
     ? value.avoid
         .map(String)
-        .map((v) => v.trim())
+        .map((v) => stripHanja(v.trim()))
         .filter(Boolean)
         .slice(0, 2)
     : [];
@@ -117,9 +142,11 @@ function normalizeDaily(raw: unknown): DailyFortuneOutput {
       : Number.parseInt(String(value.lucky_number ?? 7), 10);
 
   return {
-    one_liner: String(
-      value.one_liner ?? '오늘은 속도를 낮추고 기운을 고르는 날이야',
-    ).trim(),
+    one_liner: stripHanja(
+      String(
+        value.one_liner ?? '오늘은 속도를 낮추고 기운을 고르는 날이야',
+      ).trim(),
+    ),
     lucky_color: String(value.lucky_color ?? '민트').trim(),
     lucky_number: Math.max(
       1,
@@ -185,12 +212,14 @@ ${context}
 - 올해 세운: ${swLine}
 
 작성 규칙:
-- one_liner는 위 일진 관계와 진행 중 대운/세운을 반영한 오늘의 결과지향 한 줄. 일반론 금지.
-- ⚠️ 60갑자(일진/세운/대운)와 명리 술어는 본문에서 반드시 한글 우선 + 괄호 한자 형식. 한자 단독 노출은 금지. 예: "경자(庚子)" ○ / "庚子" ✗
-- lucky_color는 용신 또는 부족한 오행에 대응하는 색.
-- recommend 3개는 일진과 본인 사주의 만남에서 실제로 잘 풀릴 행동.
-- avoid는 일진에서 자극되는 약점.
-- mood는 일진×일간 관계와 컨디션을 종합해 happy, excited, surprised, relaxed, thinking, worried 중 하나로 고른다.
+- 위 분석은 너의 '속 계산'용 자료일 뿐이다. 사용자에게 보이는 one_liner·recommend·avoid
+  에는 일진·일간·대운·세운·십성 같은 용어와 60갑자 이름·한자를 절대 옮겨 적지 말고,
+  그 의미만 쉬운 일상어로 번역해 낸다 (system의 ⭐️/🚫 규칙 엄수).
+- one_liner는 오늘 하루의 느낌과 가벼운 팁이 담긴, 친구 카톡 같은 쉬운 한 줄.
+- lucky_color는 보완하면 좋은 색을 일상 색 이름으로.
+- recommend 3개는 오늘 실제로 잘 풀릴 행동을 누구나 바로 따라 할 쉬운 말로.
+- avoid는 오늘 자극되기 쉬운 약점을 일상어로 짚어 주의.
+- mood는 오늘 흐름과 컨디션을 종합해 happy, excited, surprised, relaxed, thinking, worried 중 하나.
 JSON으로만 응답.`;
   const { text } = await complete({
     tier: 'saju',
