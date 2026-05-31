@@ -32,9 +32,10 @@
 }
 
 :root {
-  --background-from: #f3ece1;
-  --background-via: #fff9ee;
-  --background-to: #e8f7f5;
+  /* 점신식 클린 톤 — 단일 웜 화이트로 평탄화 (대각선 민트/베이지 그라데이션 제거) */
+  --background-from: #fbf9f5;
+  --background-via: #fbf9f5;
+  --background-to: #fbf9f5;
 }
 
 * { box-sizing: border-box; }
@@ -49,10 +50,7 @@ html, body {
 }
 
 body {
-  background:
-    radial-gradient(circle at 18px 18px, rgba(44, 62, 80, 0.035) 1.5px, transparent 1.5px),
-    linear-gradient(135deg, var(--background-from) 0%, var(--background-via) 48%, var(--background-to) 100%);
-  background-size: 24px 24px, 100% 100%;
+  background: var(--background-from);
   background-attachment: fixed;
   min-height: 100dvh;
 }
@@ -61,11 +59,11 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.22;
+  opacity: 0.08;
   background-image:
-    linear-gradient(90deg, rgba(44, 62, 80, 0.05) 1px, transparent 1px),
-    linear-gradient(rgba(44, 62, 80, 0.05) 1px, transparent 1px);
-  background-size: 18px 18px;
+    linear-gradient(90deg, rgba(44, 62, 80, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(44, 62, 80, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

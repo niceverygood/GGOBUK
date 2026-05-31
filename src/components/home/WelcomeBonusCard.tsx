@@ -53,7 +53,7 @@ export function WelcomeBonusCard() {
   }
 
   return (
-    <div className="relative mt-4 overflow-hidden rounded-3xl border border-gold/45 bg-gradient-to-br from-gold/22 via-white to-mint/16 p-4 shadow-[0_12px_28px_rgba(244,208,63,0.18)]">
+    <div className="relative mt-4 overflow-hidden rounded-3xl border border-gold/40 bg-gold/8 p-4 shadow-[0_8px_22px_rgba(44,62,80,0.06)]">
       <button
         type="button"
         onClick={handleDismiss}

@@ -11,7 +11,7 @@ export function BetaFreeBadge() {
   if (!active) return null;
 
   return (
-    <div className="mt-3 flex items-center gap-2 rounded-full border border-mint/40 bg-gradient-to-r from-mint/15 via-white to-gold/12 px-3 py-1.5 shadow-[0_4px_10px_rgba(78,205,196,0.10)]">
+    <div className="mt-3 flex items-center gap-2 rounded-full border border-mint/30 bg-mint/8 px-3 py-1.5">
       <Gift size={13} strokeWidth={2.5} className="text-mint-dark shrink-0" />
       <p className="text-[11.5px] font-extrabold leading-none text-navy">
         🎁 베타 기간 — 모든 풀이 무료

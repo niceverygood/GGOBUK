@@ -27,7 +27,7 @@ export function PremiumFeaturesPromo() {
         <Link
           href="/shell"
           prefetch
-          className="overflow-hidden rounded-3xl border border-gold/45 bg-gradient-to-br from-gold/18 via-white to-red/8 p-3 shadow-[0_8px_18px_rgba(244,208,63,0.12)] transition active:scale-[0.99]"
+          className="overflow-hidden rounded-3xl border border-gold/45 bg-white p-3 shadow-[0_8px_18px_rgba(244,208,63,0.12)] transition active:scale-[0.99]"
         >
           <div className="flex items-start justify-between">
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/85 text-[#B58A00]">
@@ -54,7 +54,7 @@ export function PremiumFeaturesPromo() {
         <Link
           href="/shell"
           prefetch
-          className="overflow-hidden rounded-3xl border border-mint/45 bg-gradient-to-br from-mint/16 via-white to-navy/8 p-3 shadow-[0_8px_18px_rgba(78,205,196,0.12)] transition active:scale-[0.99]"
+          className="overflow-hidden rounded-3xl border border-mint/45 bg-white p-3 shadow-[0_8px_18px_rgba(78,205,196,0.12)] transition active:scale-[0.99]"
         >
           <div className="flex items-start justify-between">
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/85 text-mint-dark">

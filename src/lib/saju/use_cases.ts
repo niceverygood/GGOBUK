@@ -27,7 +27,7 @@ export interface UseCase {
   eventTypes: EventMarkerType[];
   /** AI 풀이 생성 시 focus 인자로 들어갈 LLM 지시 */
   focus: string;
-  /** 카드 배경 그라데이션 (Tailwind) */
+  /** 카드 배경 (Tailwind) — 점신식 플랫 화이트로 통일 */
   cardClass: string;
   /** 본문 강조 색 (chip·border 등) */
   accentChipClass: string;
@@ -43,7 +43,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['marriage'],
     focus:
       '지금의 연애 상태, 끌리는 사람의 결, 관계가 잘 풀리는 흐름과 거리 둘 시점을 중심으로 풀어줘. 일주(배우자궁) + 배우자성 십성을 가장 깊게 인용.',
-    cardClass: 'bg-gradient-to-br from-red/15 via-white to-gold/12 border-red/35',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-red/15 text-red',
   },
   career: {
@@ -55,7 +55,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['career', 'turning'],
     focus:
       '이직·전환의 적기와 위험기. 진행 중/다음 대운의 관성(官星) 흐름, 격국과의 어울림, 올해 세운의 변화 신호 중심으로.',
-    cardClass: 'bg-gradient-to-br from-navy/10 via-white to-mint/10 border-navy/25',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-navy/10 text-navy',
   },
   wealth: {
@@ -67,7 +67,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['wealth'],
     focus:
       '돈을 모으고 새는 패턴. 재성(財星) 활성 여부, 식상→재성 흐름, 군겁쟁재 위험. 큰 지출·투자에 좋은 해와 피해야 할 해를 시점 포함해 짚어줘.',
-    cardClass: 'bg-gradient-to-br from-gold/18 via-white to-mint/10 border-gold/40',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-gold/25 text-[#7C5A0E]',
   },
   health: {
@@ -79,7 +79,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['health'],
     focus:
       '오행 균형, 부족 오행이 가져오는 몸·마음 신호, 진행 중 대운에서 무리되는 영역. 회복을 위한 색·환경·습관 처방을 구체적으로.',
-    cardClass: 'bg-gradient-to-br from-mint/18 via-white to-gold/10 border-mint/40',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-mint/22 text-[#16706B]',
   },
   marriage: {
@@ -93,7 +93,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['marriage'],
     focus:
       '결혼 가능 시기 — 일지 합 진입 + 배우자성(남=재성/여=관성) 활성 시점. 어떤 결의 사람과 잘 맞는지(용신 보완 결). 결혼 후 가족(부모·시댁·자녀) 영역에서의 흐름도 함께.',
-    cardClass: 'bg-gradient-to-br from-gold/15 via-white to-red/10 border-gold/40',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-gold/25 text-[#7C5A0E]',
   },
   study: {
@@ -108,7 +108,7 @@ export const USE_CASES: Record<UseCaseKey, UseCase> = {
     eventTypes: ['study'],
     focus:
       '인성(印星)이 강해지는 시기 — 공부·자격증·귀인의 흐름. 어느 분야가 사주적으로 잘 맞는지(격국·용신 기반). 학습 환경·시간대·집중에 좋은 색·방향 처방까지.',
-    cardClass: 'bg-gradient-to-br from-mint/15 via-white to-navy/8 border-mint/35',
+    cardClass: 'bg-white border-navy/10',
     accentChipClass: 'bg-mint/22 text-[#16706B]',
   },
 };

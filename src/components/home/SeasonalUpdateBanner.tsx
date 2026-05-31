@@ -68,7 +68,7 @@ function pickSlot(props: Props, now: Date): Slot | null {
       body: '한 해 흐름이 바뀌었어요. 새 연주(年柱)와 올해 세운을 반영한 풀이를 받아보세요.',
       href: '/shell',
       cta: '새해 사주 받기',
-      gradient: 'from-red/14 via-white to-gold/18',
+      gradient: 'bg-gold/8',
       borderColor: 'border-red/40',
     };
   }
@@ -84,7 +84,7 @@ function pickSlot(props: Props, now: Date): Slot | null {
       body: '나이가 바뀌면 대운 진행도 바뀌어요. 올해 흐름을 새 페르소나로 받아보는 것도 좋아요.',
       href: '/shell',
       cta: '생일 운세 받기',
-      gradient: 'from-gold/18 via-white to-red/10',
+      gradient: 'bg-gold/8',
       borderColor: 'border-gold/45',
     };
   }
@@ -102,7 +102,7 @@ function pickSlot(props: Props, now: Date): Slot | null {
         body: '대운과 세운이 흘렀어요. 같은 카테고리도 시점 풀이가 달라져요.',
         href: '/shell',
         cta: '풀이 다시 받기',
-        gradient: 'from-mint/14 via-white to-navy/8',
+        gradient: 'bg-mint/8',
         borderColor: 'border-mint/40',
       };
     }
@@ -143,7 +143,7 @@ export function SeasonalUpdateBanner(props: Props) {
   const Icon = slot.icon;
   return (
     <div
-      className={`relative mt-4 overflow-hidden rounded-3xl border ${slot.borderColor} bg-gradient-to-br ${slot.gradient} p-4 shadow-[0_10px_24px_rgba(44,62,80,0.08)]`}
+      className={`relative mt-4 overflow-hidden rounded-3xl border ${slot.borderColor} ${slot.gradient} p-4 shadow-[0_10px_24px_rgba(44,62,80,0.08)]`}
     >
       <button
         type="button"
