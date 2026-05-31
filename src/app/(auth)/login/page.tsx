@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -31,6 +31,30 @@ export default function LoginPage() {
     const error = params.get('error');
     return error ? loginErrorMessage(error) : null;
   });
+
+  // 이미 로그인된 사용자가 /login 에 머무는 경우 자동으로 홈으로 보낸다.
+  // OAuth 왕복은 끝나 세션 쿠키는 생겼는데 미들웨어 쿠키 인식 타이밍이나
+  // 뒤로가기 등으로 로그인 화면에 다시 떨어지는 케이스를 self-heal 해서
+  // "한 번 눌러 안 되고 다시 누르면 됨" 현상을 줄인다. getUser()는 세션이
+  // 없으면 네트워크 호출 없이 user=null 을 돌려주므로 로그아웃 상태에선
+  // 부작용이 없다. (/home 은 self 프로필 유무에 따라 onboarding 으로 재라우팅)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!cancelled && user) router.replace('/home');
+      } catch {
+        // 세션 없음 — 로그인 화면 그대로 유지.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   async function signInWithKakao() {
     setErr(null);
