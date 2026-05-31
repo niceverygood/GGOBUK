@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { browserAppOrigin } from '@/lib/app-url';
-import { loadPreviewInput, clearPreviewInput } from '@/lib/saju/preview';
 
 function loginErrorMessage(error: string): string {
   if (error === 'kakao_oauth_failed')
@@ -24,7 +23,7 @@ function loginErrorMessage(error: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState<'kakao' | 'apple' | 'test' | null>(null);
+  const [loading, setLoading] = useState<'kakao' | 'apple' | null>(null);
   const [err, setErr] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -96,52 +95,6 @@ export default function LoginPage() {
     }
   }
 
-  async function testLogin() {
-    setErr(null);
-    setLoading('test');
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInAnonymously({
-        options: { data: { nickname: '테스트 꼬북이', test_account: true } },
-      });
-      if (error) throw error;
-      if (!data.user) throw new Error('user not returned');
-
-      const preview = loadPreviewInput();
-      const bootstrap = await fetch('/api/test/bootstrap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: preview
-            ? {
-                name: preview.name,
-                birthDate: preview.input.birthDate,
-                birthTime: preview.input.birthTime,
-                isLunar: preview.input.isLunar,
-                isLeapMonth: preview.input.isLeapMonth,
-                gender: preview.input.gender,
-              }
-            : undefined,
-        }),
-      });
-      if (!bootstrap.ok) {
-        const detail = await bootstrap.json().catch(() => null);
-        throw new Error(detail?.error ?? '테스트 계정 준비에 실패했어');
-      }
-      clearPreviewInput();
-      router.replace('/home');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
-      setErr(
-        msg.toLowerCase().includes('anonymous')
-          ? 'Supabase Dashboard → Authentication → Sign In / Providers 에서 "Allow anonymous sign-ins"를 켜고 Save changes를 눌러줘.'
-          : msg,
-      );
-    } finally {
-      setLoading(null);
-    }
-  }
-
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center px-6 text-center relative">
       <div className="hanji-overlay" />
@@ -170,19 +123,6 @@ export default function LoginPage() {
         >
           <span aria-hidden></span>
           {loading === 'apple' ? '이동 중…' : 'Apple로 계속하기'}
-        </button>
-
-        <button
-          onClick={testLogin}
-          disabled={!!loading}
-          className="mt-3 w-full max-w-xs rounded-2xl bg-navy py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
-        >
-          <KkobukSprite
-            variant="persona-kkobuk"
-            size="xs"
-            ariaLabel="테스트 꼬북이"
-          />
-          {loading === 'test' ? '꼬북이 깨우는 중…' : '테스트 로그인 (익명)'}
         </button>
 
         {err && (
