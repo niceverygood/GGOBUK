@@ -154,8 +154,8 @@ export default async function HomePage() {
       <div className="relative">
         {/* 인사 — 우상단 PersonaModeChip(fixed)을 피하려 pr-28 유지 */}
         <div className="pr-28">
-          <p className="text-xs font-extrabold text-muted">오늘도 꼬북점 🐢</p>
-          <h1 className="mt-0.5 text-lg font-black text-navy">
+          <p className="text-[13px] font-extrabold text-muted">오늘도 꼬북점 🐢</p>
+          <h1 className="mt-0.5 text-[22px] font-black leading-tight text-navy">
             {profile.name}님, 안녕하세요
           </h1>
         </div>
@@ -182,13 +182,13 @@ export default async function HomePage() {
           latestInterpretationAt={latestInterp?.generated_at ?? null}
         />
 
-        {/* ════════════════ 🌅 오늘 일진 ════════════════ */}
-        <SectionDivider
-          emoji="🌅"
-          label="오늘 일진"
-          right={<Badge tone="mint">길운 {gilun}</Badge>}
+        {/* ───────── 오늘의 운세 ───────── */}
+        <SectionHead
+          eyebrow="오늘의 운세"
+          title="오늘 이런 하루예요"
+          action={<Badge tone="mint">길운 {gilun}</Badge>}
         />
-        <p className="-mt-0.5 mb-1 text-xs font-extrabold text-muted">
+        <p className="-mt-2 mb-1 text-xs font-bold text-muted">
           {formatKoreanDate(today)} {weekday} · 매일 바뀌는 그날의 기운
         </p>
 
@@ -235,8 +235,8 @@ export default async function HomePage() {
           {!daily?.one_liner && <EnsureDaily sajuId={profile.id} />}
         </Card>
 
-        {/* ════════════════ 📅 이번 주 ════════════════ */}
-        <SectionDivider emoji="📅" label="이번 주" />
+        {/* ───────── 이번 주 ───────── */}
+        <SectionHead eyebrow="이번 주" title="한 주 흐름 미리보기" />
 
         <WeekStrip sajuInput={calendarInput} />
 
@@ -252,22 +252,17 @@ export default async function HomePage() {
           <span className="text-xs font-black text-mint-dark">운세 달력 →</span>
         </Link>
 
-        {/* 🎯 Use-case 진입점 — 사용자가 실제로 가진 질문 6개로 좁혀 풀이 시작 */}
-        <section className="mt-3">
-          <div className="mb-2 flex items-end justify-between">
-            <div>
-              <p className="text-xs font-extrabold text-muted">
-                🎯 이번 주 이 질문에 답받기
-              </p>
-              <h2 className="text-lg font-black text-navy">포커스 풀이</h2>
-            </div>
-            <Link
-              href="/shell"
-              className="text-xs font-black text-mint-dark"
-            >
+        {/* ───────── 포커스 풀이 ───────── */}
+        <SectionHead
+          eyebrow="이 질문에 답 받기"
+          title="포커스 풀이"
+          action={
+            <Link href="/shell" className="text-xs font-black text-mint-dark">
               전체 12풀이 →
             </Link>
-          </div>
+          }
+        />
+        <section>
           <div className="grid grid-cols-2 gap-2">
             {USE_CASE_ORDER.map((key) => {
               const uc = USE_CASES[key];
@@ -301,24 +296,18 @@ export default async function HomePage() {
         {/* 부적·웹툰 promotion — high-margin 기능 home 노출 */}
         <PremiumFeaturesPromo />
 
-        {/* ════════════════ 🎯 추가 풀이 ════════════════ */}
-        <SectionDivider emoji="🎯" label="추가 풀이" />
-
-        <section className="mt-3">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-extrabold text-muted">
-                꼬북점 운세 도구
-              </p>
-              <h2 className="text-lg font-black text-navy">
-                필요한 풀이 바로 열기
-              </h2>
-            </div>
+        {/* ───────── 운세 도구 ───────── */}
+        <SectionHead
+          eyebrow="꼬북점 운세 도구"
+          title="필요한 풀이 바로 열기"
+          action={
             <Link href="/library" className="text-xs font-black text-mint-dark">
               보관함 →
             </Link>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          }
+        />
+        <section>
+          <div className="grid grid-cols-2 gap-3">
             {FEATURE_CARDS.map(
               ({ href, title, subtitle, badge, icon: Icon, className }) => (
                 <Link
@@ -393,24 +382,27 @@ export default async function HomePage() {
   );
 }
 
-/** 큰 시간 단위 섹션 헤더 (오늘 일진 / 이번 주 / 추가 풀이). */
-function SectionDivider({
-  emoji,
-  label,
-  right,
+/** 점신식 섹션 헤더 — 작은 회색 eyebrow + 큰 볼드 타이틀. 이모지·구분선 없음. */
+function SectionHead({
+  eyebrow,
+  title,
+  action,
+  className = 'mt-10',
 }: {
-  emoji: string;
-  label: string;
-  right?: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  action?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mt-6 mb-2 flex items-center gap-2.5">
-      <span className="text-xl leading-none">{emoji}</span>
-      <span className="text-[18px] font-black tracking-tight text-navy">
-        {label}
-      </span>
-      <span className="ml-2 flex-1 h-px bg-gradient-to-r from-navy/15 via-navy/8 to-transparent" />
-      {right}
+    <div className={`${className} mb-3 flex items-end justify-between gap-3`}>
+      <div className="min-w-0">
+        <p className="text-[13px] font-extrabold text-muted">{eyebrow}</p>
+        <h2 className="mt-0.5 text-[22px] font-black leading-tight text-navy">
+          {title}
+        </h2>
+      </div>
+      {action ? <div className="shrink-0 pb-1">{action}</div> : null}
     </div>
   );
 }
