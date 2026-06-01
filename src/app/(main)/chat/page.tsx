@@ -10,6 +10,8 @@ interface SessionRow {
   id: string;
   persona: PersonaKey;
   title: string | null;
+  /** 첫 사용자 메시지에서 뽑은 대화 주제 미리보기 (title 없을 때) */
+  preview: string | null;
   updated_at: string;
 }
 
@@ -42,26 +44,34 @@ export default function ChatListPage() {
             <p className="text-xs font-bold text-muted">아직 대화가 없어. 위에서 시작해봐.</p>
           ) : (
             <ul className="space-y-2">
-              {sessions.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    href={`/chat/${s.id}`}
-                    className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-3 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-mint/30 border border-navy/10 flex items-center justify-center overflow-hidden">
-                      <KkobukAvatar variant={s.persona} size="sm" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-black text-navy">
-                        {PERSONAS[s.persona].displayName}
+              {sessions.map((s) => {
+                const topic = s.title ?? s.preview;
+                const persona = PERSONAS[s.persona].displayName;
+                const when = new Date(s.updated_at).toLocaleString('ko-KR', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                });
+                return (
+                  <li key={s.id}>
+                    <Link
+                      href={`/chat/${s.id}`}
+                      className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-3 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-mint/30 border border-navy/10 flex items-center justify-center overflow-hidden shrink-0">
+                        <KkobukAvatar variant={s.persona} size="sm" />
                       </div>
-                      <div className="text-xs font-bold text-muted truncate">
-                        {new Date(s.updated_at).toLocaleString('ko-KR')}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-black text-navy truncate">
+                          {topic ?? persona}
+                        </div>
+                        <div className="text-[11px] font-bold text-muted truncate">
+                          {topic ? `${persona} · ${when}` : when}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
