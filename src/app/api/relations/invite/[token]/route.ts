@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
+import { iljuProfileOf, iljuSlugOf } from '@/lib/saju/ilju_profile';
+import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { quickCompat } from '@/lib/saju/quick_compat';
 import { generateCompat } from '@/lib/llm/compat';
 import { addCredits } from '@/lib/credits/server';
@@ -93,29 +95,49 @@ export async function POST(req: Request, { params }: RouteContext) {
     gender: body.gender,
   });
 
-  // Insert guest as a friend profile owned by host.
-  const { data: guestProfile, error: guestErr } = await admin
-    .from('saju_profiles')
-    .insert({
-      owner_id: invite.host_user_id,
-      name: body.name,
-      birth_date: body.birthDate,
-      birth_time: body.birthTime ?? null,
-      is_lunar: body.isLunar,
-      is_leap_month: body.isLeapMonth ?? false,
-      gender: body.gender,
-      relation_type: 'friend',
-      relation_label: '초대 친구',
-      palja: guestSaju.palja,
-      ohaeng_count: guestSaju.ohaengCount,
-      sipsung: guestSaju.sipsung,
-      sinsal: guestSaju.sinsal,
-      daewoon: guestSaju.daewoon,
-      ilgan: guestSaju.ilgan,
-    })
-    .select()
-    .single();
-  if (guestErr) return NextResponse.json({ error: guestErr.message }, { status: 500 });
+  // 동시 제출(같은 토큰을 거의 동시에 두 번)로 인한 게스트 프로필 중복을 막는다.
+  // 순차 재제출은 위의 status='completed' 409 가 이미 막지만, 경합 구간 방어용.
+  // 동일 인물이 이미 있으면 새로 만들지 않고 그 행을 재사용한다.
+  let guestProfile = await findDuplicateProfile(admin, invite.host_user_id, {
+    name: body.name,
+    birth_date: body.birthDate,
+    birth_time: body.birthTime ?? null,
+    is_lunar: body.isLunar,
+    is_leap_month: body.isLeapMonth ?? false,
+    gender: body.gender,
+    relation_type: 'friend',
+  });
+
+  if (!guestProfile) {
+    // Insert guest as a friend profile owned by host.
+    const { data: inserted, error: guestErr } = await admin
+      .from('saju_profiles')
+      .insert({
+        owner_id: invite.host_user_id,
+        name: body.name,
+        birth_date: body.birthDate,
+        birth_time: body.birthTime ?? null,
+        is_lunar: body.isLunar,
+        is_leap_month: body.isLeapMonth ?? false,
+        gender: body.gender,
+        relation_type: 'friend',
+        relation_label: '초대 친구',
+        palja: guestSaju.palja,
+        ohaeng_count: guestSaju.ohaengCount,
+        sipsung: guestSaju.sipsung,
+        sinsal: guestSaju.sinsal,
+        daewoon: guestSaju.daewoon,
+        ilgan: guestSaju.ilgan,
+      })
+      .select()
+      .single<SajuProfileRow>();
+    if (guestErr || !inserted)
+      return NextResponse.json(
+        { error: guestErr?.message ?? 'guest_insert_failed' },
+        { status: 500 },
+      );
+    guestProfile = inserted;
+  }
 
   const hostSaju = buildSajuResult({
     birthDate: host.birth_date,
@@ -195,6 +217,14 @@ export async function POST(req: Request, { params }: RouteContext) {
     });
   }
 
+  // 게스트의 일주(= 평생 변치 않는 '나') — 궁합 보러 온 친구를 자기 정체성
+  // 카드(/ilju/[slug])로 이어 새로운 공유자로 전환한다(루프①×② 체인).
+  const guestDay = guestSaju.palja.day;
+  const guestIljuProfile = iljuProfileOf(guestDay.ganIdx, guestDay.jiIdx);
+  const guestIlju = guestIljuProfile
+    ? { name: guestIljuProfile.name, slug: iljuSlugOf(guestIljuProfile.index) }
+    : null;
+
   // Friend sees a teaser; full report stays with host.
   return NextResponse.json({
     ok: true,
@@ -204,6 +234,7 @@ export async function POST(req: Request, { params }: RouteContext) {
     headline: compatibility.headline ?? null,
     summary: compatibility.summary,
     highlights: (compatibility.highlights ?? []).slice(0, 2),
+    guestIlju,
     rewardGranted,
     rewardCredits: rewardGranted ? INVITE_REWARD_CREDITS : 0,
   });

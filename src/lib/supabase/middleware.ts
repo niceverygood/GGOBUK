@@ -23,6 +23,10 @@ export async function updateSession(request: NextRequest) {
     path === '/today-fortune' ||
     path === '/daewoon' ||
     path === '/taegil' ||
+    // 60갑자 일주 사전 + 공유형 캐릭터 카드 — 검색 유입·바이럴 진입점이므로
+    // 로그인 없이도 200 으로 열려야 한다(공유 링크를 받은 비로그인 친구 포함).
+    path === '/ilju' ||
+    path.startsWith('/ilju/') ||
     path.startsWith('/preview') ||
     path.startsWith('/invite') ||
     path.startsWith('/api/preview') ||

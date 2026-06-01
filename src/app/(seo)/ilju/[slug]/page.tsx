@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Sparkles, ShieldAlert } from 'lucide-react';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
+import { ShareIljuButton } from '@/components/ilju/ShareIljuButton';
 import { Badge } from '@/components/ui/primitives';
+import { iljuTheme } from '@/lib/saju/ilju_profile';
 import { SITE_NAME, absoluteUrl } from '@/lib/seo/site';
 import {
   ALL_ILJU,
@@ -54,12 +56,19 @@ export async function generateMetadata({
       type: 'article',
       images: [
         {
-          url: absoluteUrl('/icons/icon-1024.png'),
-          width: 1024,
-          height: 1024,
-          alt: `${SITE_NAME} ${e.profile.name}일주`,
+          url: absoluteUrl(`/api/og/ilju/${e.slug}`),
+          // 실제 출력은 2x 슈퍼샘플(2400×1260, 1.91:1 동일) — 캐릭터 또렷하게.
+          width: 2400,
+          height: 1260,
+          alt: `${e.profile.name}일주 사주 캐릭터 카드 · ${SITE_NAME}`,
         },
       ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [absoluteUrl(`/api/og/ilju/${e.slug}`)],
     },
   };
 }
@@ -70,6 +79,8 @@ export default async function IljuDetailPage({ params }: PageProps) {
   if (!e) notFound();
 
   const { profile } = e;
+  const theme = iljuTheme(profile.index);
+  const shareUrl = absoluteUrl(iljuPath(e.slug));
   // 같은 일간(천간)을 공유하는 다른 일주로 내부 링크 (토픽 클러스터).
   const related = ALL_ILJU.filter(
     (x) => x.ganIdx === e.ganIdx && x.slug !== e.slug,
@@ -88,63 +99,90 @@ export default async function IljuDetailPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(iljuJsonLd(e)) }}
       />
 
-      <section className="relative px-5 pb-10 pt-8">
+      <section className="relative px-5 pb-8 pt-8">
         <div className="hanji-overlay" />
-        <div className="relative mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_0.6fr] md:items-center">
-          <div>
-            <Link
-              href="/ilju"
-              className="inline-flex items-center gap-1 text-xs font-black text-muted"
-            >
-              <ArrowLeft size={14} strokeWidth={3} />
-              60갑자 일주 사전
-            </Link>
-            <div className="mt-5">
-              <Badge tone="mint">
-                60갑자 일주 · {profile.name}({profile.hanja})
-              </Badge>
-            </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-tight text-navy md:text-5xl">
-              {profile.name}일주
-              <span className="ml-2 font-hanja text-2xl text-mint-dark md:text-3xl">
-                {profile.hanja}日柱
-              </span>
-            </h1>
-            <p className="mt-5 max-w-2xl text-base font-bold leading-relaxed text-[#6F665E]">
-              {iljuDescription(e)}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {profile.keywords.map((kw) => (
-                <span
-                  key={kw}
-                  className="rounded-full border border-navy/10 bg-white/80 px-3 py-1.5 text-xs font-black text-navy"
-                >
-                  #{kw}
+        <div className="relative mx-auto max-w-5xl">
+          <Link
+            href="/ilju"
+            className="inline-flex items-center gap-1 text-xs font-black text-muted"
+          >
+            <ArrowLeft size={14} strokeWidth={3} />
+            60갑자 일주 사전
+          </Link>
+
+          {/* 내 사주 캐릭터 카드 — 오행 테마 정체성 + 공유(바이럴 진입) */}
+          <div
+            className="mt-4 overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_40px_rgba(44,62,80,0.10)]"
+            style={{ borderColor: `${theme.accent}55` }}
+          >
+            <div className="grid md:grid-cols-[1fr_0.5fr]">
+              <div className="p-6 md:p-8" style={{ background: theme.soft }}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="mint">60갑자 일주</Badge>
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black text-white"
+                    style={{ background: theme.accent }}
+                  >
+                    <span className="font-hanja">{theme.hanja}</span>
+                    {theme.element}의 기운
+                  </span>
+                </div>
+                <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-navy md:text-5xl">
+                  {profile.name}일주
+                  <span
+                    className="ml-2 font-hanja text-2xl md:text-3xl"
+                    style={{ color: theme.accent }}
+                  >
+                    {profile.hanja}日柱
+                  </span>
+                </h1>
+                <p className="mt-2 text-sm font-black text-muted">
+                  60갑자 중 {profile.index + 1}번째 · 일간 {e.gan}(
+                  {theme.element})
+                </p>
+                <p className="mt-4 max-w-2xl text-base font-bold leading-relaxed text-[#6F665E]">
+                  {profile.ego}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {profile.keywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="rounded-full border bg-white/80 px-3 py-1.5 text-xs font-black text-navy"
+                      style={{ borderColor: `${theme.accent}40` }}
+                    >
+                      #{kw}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <ShareIljuButton
+                    url={shareUrl}
+                    name={profile.name}
+                    accent={theme.accent}
+                  />
+                  <Link
+                    href="/preview"
+                    className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-navy px-5 text-sm font-black text-white"
+                  >
+                    내 일주 무료로 확인
+                  </Link>
+                </div>
+              </div>
+              <div
+                className="relative flex flex-col items-center justify-center gap-2 p-6"
+                style={{ background: theme.accent }}
+              >
+                <span className="font-hanja text-[84px] font-black leading-none text-white md:text-[104px]">
+                  {profile.hanja}
                 </span>
-              ))}
+                <KkobukSprite
+                  variant="persona-dosa"
+                  size="lg"
+                  ariaLabel={`${profile.name}일주를 설명하는 꼬북도사`}
+                  className="drop-shadow-[0_16px_28px_rgba(0,0,0,0.18)]"
+                />
+              </div>
             </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/preview"
-                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-mint px-5 text-sm font-black text-[#163438] shadow-[0_12px_22px_rgba(44,62,80,0.14)]"
-              >
-                내 일주 무료로 확인
-              </Link>
-              <Link
-                href="/saju"
-                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-navy px-5 text-sm font-black text-white"
-              >
-                사주 풀이 전체 보기
-              </Link>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <KkobukSprite
-              variant="persona-dosa"
-              size="xl"
-              ariaLabel={`${profile.name}일주를 설명하는 꼬북도사`}
-              className="drop-shadow-[0_20px_30px_rgba(44,62,80,0.16)]"
-            />
           </div>
         </div>
       </section>

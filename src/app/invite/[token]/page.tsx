@@ -14,6 +14,8 @@ interface Result {
   headline: string | null;
   summary: string;
   highlights: string[];
+  /** 궁합 보러 온 친구 본인의 일주 — 자기 정체성 카드(/ilju/[slug])로 잇는 후크 */
+  guestIlju?: { name: string; slug: string } | null;
 }
 
 export default function InvitePage() {
@@ -97,7 +99,7 @@ export default function InvitePage() {
           <p className="mt-2 text-sm font-semibold text-muted">
             초대 링크를 다시 받아보거나, 직접 꼬북점을 시작해보세요.
           </p>
-          <a href="/login" className="mt-5 inline-block rounded-2xl bg-navy text-white px-5 py-3 text-sm font-black">
+          <a href={`${baseUrl}/login`} className="mt-5 inline-block rounded-2xl bg-navy text-white px-5 py-3 text-sm font-black">
             꼬북점 시작하기
           </a>
         </Card>
@@ -110,7 +112,7 @@ export default function InvitePage() {
           <p className="mt-2 text-sm font-semibold text-muted">
             나도 내 사주와 인연을 보고 싶다면 꼬북점을 시작해보세요.
           </p>
-          <a href="/login" className="mt-5 inline-block rounded-2xl bg-navy text-white px-5 py-3 text-sm font-black">
+          <a href={`${baseUrl}/login`} className="mt-5 inline-block rounded-2xl bg-navy text-white px-5 py-3 text-sm font-black">
             내 등껍질 보러가기
           </a>
         </Card>
@@ -188,8 +190,28 @@ export default function InvitePage() {
               </ul>
             )}
           </Card>
+
+          {/* 게스트 본인의 일주 — 궁합 보러 온 친구를 자기 정체성 카드로 잇는다.
+              (루프①×② 체인: 친구가 새 공유자가 되고, 카드 페이지에서 가입까지) */}
+          {result.guestIlju && (
+            <a
+              href={`${baseUrl}/ilju/${result.guestIlju.slug}`}
+              className="mt-5 block rounded-3xl border border-mint/40 bg-mint/10 p-5 text-center"
+            >
+              <p className="text-xs font-extrabold text-mint-dark">
+                그거 알아? {result.guestName}님의 사주 캐릭터는
+              </p>
+              <p className="mt-1 text-2xl font-black text-navy">
+                {result.guestIlju.name}일주
+              </p>
+              <p className="mt-2 text-sm font-bold text-[#3C4650]">
+                나만의 캐릭터 카드 보기 · 공유 →
+              </p>
+            </a>
+          )}
+
           <a href={`${baseUrl}/login`}
-            className="mt-5 block w-full rounded-2xl bg-navy text-white py-4 text-center font-black">
+            className="mt-3 block w-full rounded-2xl bg-navy text-white py-4 text-center font-black">
             내 사주·전체 궁합 보러가기 →
           </a>
           <p className="mt-2 text-center text-[11px] font-bold text-muted">

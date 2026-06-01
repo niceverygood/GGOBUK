@@ -11,7 +11,13 @@
 // 일주 인덱스 계산: 일주는 60갑자 순환에서 위치를 갖는다.
 // gapjaIdx = (ganIdx, jiIdx)가 (0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(0,10),(1,11) 형태로 진행.
 
-import { CHEONGAN, JIJI, CHEONGAN_HANJA, JIJI_HANJA } from './constants';
+import {
+  CHEONGAN,
+  JIJI,
+  CHEONGAN_HANJA,
+  JIJI_HANJA,
+  CHEONGAN_OHAENG_IDX,
+} from './constants';
 
 export interface IljuProfile {
   /** 0..59 */
@@ -676,4 +682,98 @@ export function iljuProfileOf(
   const data = ILJU_DATA[name];
   if (!data) return null;
   return { index: idx, name, hanja, ...data };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 공유용 슬러그 + 오행 테마 — "내 사주 캐릭터" 카드(/ilju/[slug]) 바이럴 루프용.
+// ─────────────────────────────────────────────────────────────────
+
+// 천간(0..9)·지지(0..11) 로마자. 인덱스는 CHEONGAN / JIJI 와 정렬.
+const GAN_ROMAN = [
+  'gap',
+  'eul',
+  'byeong',
+  'jeong',
+  'mu',
+  'gi',
+  'gyeong',
+  'sin',
+  'im',
+  'gye',
+] as const;
+const JI_ROMAN = [
+  'ja',
+  'chuk',
+  'in',
+  'myo',
+  'jin',
+  'sa',
+  'o',
+  'mi',
+  'sin',
+  'yu',
+  'sul',
+  'hae',
+] as const;
+
+/** 일주 index(0..59) → 공유 URL 슬러그. 예: 0 → 'gapja', 53 → 'jeongsa'. */
+export function iljuSlugOf(index: number): string {
+  const ganIdx = ((index % 10) + 10) % 10;
+  const jiIdx = ((index % 12) + 12) % 12;
+  return `${GAN_ROMAN[ganIdx] ?? ''}${JI_ROMAN[jiIdx] ?? ''}`;
+}
+
+/** 60갑자 일주 프로필 전체 (index 오름차순). */
+export function allIljuProfiles(): IljuProfile[] {
+  const out: IljuProfile[] = [];
+  for (let i = 0; i < 60; i += 1) {
+    const p = iljuProfileOf(i % 10, i % 12);
+    if (p) out.push(p);
+  }
+  return out;
+}
+
+const SLUG_TO_INDEX: ReadonlyMap<string, number> = (() => {
+  const m = new Map<string, number>();
+  for (let i = 0; i < 60; i += 1) m.set(iljuSlugOf(i), i);
+  return m;
+})();
+
+/** 슬러그 → 일주 프로필. 없으면 null. */
+export function iljuBySlug(slug: string): IljuProfile | null {
+  const idx = SLUG_TO_INDEX.get(slug.toLowerCase());
+  if (idx === undefined) return null;
+  return iljuProfileOf(idx % 10, idx % 12);
+}
+
+export type OhaengKey = '목' | '화' | '토' | '금' | '수';
+
+/** 일간 오행별 카드/OG 테마. accent=진한 색, soft=옅은 배경, on=accent 위 글자색. */
+export interface OhaengTheme {
+  ohaeng: OhaengKey;
+  /** 木 火 土 金 水 */
+  hanja: string;
+  /** 나무·불·흙·쇠·물 */
+  element: string;
+  accent: string;
+  soft: string;
+  on: string;
+}
+
+const OHAENG_THEMES = {
+  목: { ohaeng: '목', hanja: '木', element: '나무', accent: '#3FAE7A', soft: '#E7F6EE', on: '#0B3D27' },
+  화: { ohaeng: '화', hanja: '火', element: '불', accent: '#E8604C', soft: '#FCEBE6', on: '#5A140B' },
+  토: { ohaeng: '토', hanja: '土', element: '흙', accent: '#D2A03A', soft: '#FAF1DC', on: '#473408' },
+  금: { ohaeng: '금', hanja: '金', element: '쇠', accent: '#8A95A2', soft: '#EDF0F3', on: '#26323D' },
+  수: { ohaeng: '수', hanja: '水', element: '물', accent: '#3E7BC4', soft: '#E6EEF9', on: '#10294A' },
+} satisfies Record<OhaengKey, OhaengTheme>;
+
+const OHAENG_BY_IDX: readonly OhaengKey[] = ['목', '화', '토', '금', '수'];
+
+/** 일주 index → 일간 오행 테마. */
+export function iljuTheme(index: number): OhaengTheme {
+  const ganIdx = ((index % 10) + 10) % 10;
+  const ohIdx = CHEONGAN_OHAENG_IDX[ganIdx] ?? 0;
+  const key = OHAENG_BY_IDX[ohIdx] ?? '목';
+  return OHAENG_THEMES[key];
 }

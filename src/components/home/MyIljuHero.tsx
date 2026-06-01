@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { Pencil } from 'lucide-react';
+import { ArrowRight, Pencil } from 'lucide-react';
 import { Badge, Card } from '@/components/ui/primitives';
-import { iljuProfileOf } from '@/lib/saju/ilju_profile';
+import { iljuProfileOf, iljuSlugOf } from '@/lib/saju/ilju_profile';
 import type { Palja } from '@/lib/saju/types';
 
 interface Props {
@@ -129,6 +129,16 @@ export function MyIljuHero({
             <span className="font-black text-navy">오늘 일진</span>이고요.
           </p>
         </div>
+        )}
+
+        {ilju && (
+          <Link
+            href={`/ilju/${iljuSlugOf(ilju.index)}`}
+            className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-mint py-3 text-sm font-black text-[#163438] shadow-[0_10px_18px_rgba(44,62,80,0.12)]"
+          >
+            내 사주 캐릭터 카드 보기 · 공유
+            <ArrowRight size={15} strokeWidth={3} />
+          </Link>
         )}
       </div>
     </Card>
