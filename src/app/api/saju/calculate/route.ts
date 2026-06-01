@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
+import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { logger } from '@/lib/utils/logger';
 
 const Body = z.object({
@@ -91,6 +92,14 @@ async function handleCalculate(req: Request) {
       },
       { status: 400 },
     );
+  }
+
+  // 인연 추가/온보딩에서 같은 사람을 다시 보내면(더블탭·재시도·궁합계산 실패 후
+  // 재등록) 새 프로필을 만들지 않고 기존 행을 그대로 돌려준다(멱등). 이게 없으면
+  // /api/relations/compat 호출이 실패할 때마다 고아 프로필이 쌓여 중복이 생겼다.
+  const existing = await findDuplicateProfile(supabase, user.id, payload);
+  if (existing) {
+    return NextResponse.json({ saju: existing, deduped: true });
   }
 
   const { data, error } = await supabase

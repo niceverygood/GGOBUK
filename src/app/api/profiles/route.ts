@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
+import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { createServerClient } from '@/lib/supabase/server';
 import type { SajuProfileRow } from '@/types/db';
 
@@ -81,11 +82,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'self_exists' }, { status: 409 });
   }
 
+  const payload = buildSajuProfilePayload(body);
+
+  // 같은 사람을 여러 번 등록하는 중복을 막는다. 동일 인물 프로필이 이미 있으면
+  // 새로 만들지 않고 기존 행을 재사용한다(멱등). self 는 위에서 409 로 처리.
+  if (body.relationType !== 'self') {
+    const existing = await findDuplicateProfile(supabase, user.id, payload);
+    if (existing) {
+      if (selfProfile) {
+        // 관계가 아직 없으면만 연결한다. ignoreDuplicates 로 기존 궁합 점수 보존.
+        await supabase.from('relations').upsert(
+          {
+            user_id: user.id,
+            saju_a_id: selfProfile.id,
+            saju_b_id: existing.id,
+            compatibility: null,
+          },
+          { onConflict: 'saju_a_id,saju_b_id', ignoreDuplicates: true },
+        );
+      }
+      return NextResponse.json({ profile: existing, deduped: true });
+    }
+  }
+
   const { data: profile, error } = await supabase
     .from('saju_profiles')
     .insert({
       owner_id: user.id,
-      ...buildSajuProfilePayload(body),
+      ...payload,
     })
     .select()
     .single<SajuProfileRow>();
