@@ -1,5 +1,11 @@
+import { after } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { chatStream, extractCitedCards } from '@/lib/llm/chat';
+import {
+  loadUserMemory,
+  formatUserMemory,
+  updateUserMemoryFromSession,
+} from '@/lib/llm/memory';
 import { buildSajuResult } from '@/lib/saju';
 import { CREDIT_COSTS } from '@/lib/credits';
 import {
@@ -107,6 +113,19 @@ export async function POST(req: Request) {
     gender: sajuProfile.gender,
   });
 
+  // 개인화 장기 기억 — 과거 대화를 가로질러 사용자를 기억하기 위해 시스템
+  // 프롬프트에 주입한다. 기억이 없으면 빈 문자열 → chatStream 이 블록을 생략해
+  // 기존 동작과 동일하게 작동한다.
+  const memoryItems = await loadUserMemory(supabase, user.id);
+  const memory = formatUserMemory(memoryItems);
+
+  // 응답 후 백그라운드 기억 추출 게이팅(비용 절약): 초반 3턴은 매번, 이후 4턴마다.
+  const priorUserTurns = (history ?? []).filter(
+    (m) => m.role === 'user',
+  ).length;
+  const userTurns = priorUserTurns + 1;
+  const shouldExtractMemory = userTurns <= 3 || userTurns % 4 === 0;
+
   const encoder = new TextEncoder();
   const admin = await createServerClient({ admin: true });
 
@@ -123,6 +142,7 @@ export async function POST(req: Request) {
           }>,
           userMessage: message,
           name: sajuProfile.name,
+          memory,
         })) {
           full += chunk;
           controller.enqueue(
@@ -163,6 +183,12 @@ export async function POST(req: Request) {
       }
     },
   });
+
+  // 응답(스트리밍)이 끝난 뒤 실행 — 사용자 대기시간에 영향 없음. 게이팅된 턴에서만.
+  // updateUserMemoryFromSession 은 내부에서 throw 하지 않는 best-effort.
+  if (shouldExtractMemory) {
+    after(() => updateUserMemoryFromSession({ userId: user.id, sessionId }));
+  }
 
   return new Response(stream, {
     headers: {

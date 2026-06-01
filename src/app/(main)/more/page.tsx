@@ -1,14 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import {
-  Bell,
-  CalendarCheck,
-  Egg,
-  Map,
-  ShoppingBag,
-  UsersRound,
-} from 'lucide-react';
+import { Bell, Brain, CalendarCheck, Map, UsersRound } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
@@ -69,6 +62,12 @@ export default async function MorePage() {
             title="인원 관리"
             subtitle="나와 인연의 이름 · 생년월일시 수정"
             icon={<UsersRound size={22} strokeWidth={2.5} />}
+          />
+          <MoreLink
+            href="/more/memory"
+            title="꼬북이의 기억"
+            subtitle="꼬북이가 나에 대해 기억하는 것 · 보기·삭제"
+            icon={<Brain size={22} strokeWidth={2.5} />}
           />
           <MoreLink
             href="/more/settings"

@@ -53,6 +53,35 @@ export type InterpretationCategory =
   | 'friends'
   | 'direction';
 
+// 개인화 장기 기억 — 페르소나가 세션을 가로질러 사용자를 기억하는 항목.
+export type MemoryKind =
+  | 'fact' // 지속되는 사실: "강아지 콩이 키움", "부산 거주"
+  | 'situation' // 현재 상황: "이직 준비 중", "시험 앞둠"
+  | 'preference' // 취향/성향: "INFP라 함", "직설적인 조언 선호"
+  | 'relationship' // 관계: "연인 민지와 권태기 고민"
+  | 'goal' // 목표: "올해 독립 출간이 목표"
+  | 'emotion'; // 반복되는 정서: "요즘 번아웃 호소"
+
+export interface MemoryItem {
+  /** 안정적 식별자 — 항목별 삭제/머지에 사용. */
+  id: string;
+  /** 한 줄 요약(한국어, 간결). */
+  text: string;
+  kind: MemoryKind;
+  /** 1(약함)~5(핵심 정체성/장기 목표). 캡 초과 시 폐기 우선순위. */
+  salience: number;
+  /** ISO. */
+  createdAt: string;
+  /** ISO. 재확인될 때 갱신(최근성/감쇠 기준). */
+  lastSeenAt: string;
+}
+
+export interface UserMemoryRow {
+  user_id: string;
+  items: MemoryItem[];
+  updated_at: string;
+}
+
 export interface UserRow {
   id: string;
   nickname: string | null;
