@@ -11,6 +11,7 @@ import {
 import { CREDIT_UNIT } from '@/lib/credits';
 import { InterpretationBody } from '@/components/shell/InterpretationBody';
 import { Badge, Card } from '@/components/ui/primitives';
+import { isNativeApp } from '@/lib/utils/platform';
 
 interface PremiumServiceResult {
   serviceId: PremiumServiceId;
@@ -44,6 +45,11 @@ export function PremiumServiceStore() {
   const [loadingId, setLoadingId] = useState<PremiumServiceId | null>(null);
   const [topicById, setTopicById] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
+  // 네이티브 앱(iOS/Play TWA)에선 카카오페이 충전 진입점(꼬북상점/충전하기)을 숨긴다.
+  const [nativeApp, setNativeApp] = useState(false);
+  useEffect(() => {
+    setNativeApp(isNativeApp());
+  }, []);
   const [results, setResults] = useState<PremiumServiceResult[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -123,9 +129,11 @@ export function PremiumServiceStore() {
             유료
           </Badge>
         </div>
-        <Link href="/store" className="text-xs font-black text-mint-dark">
-          꼬북상점
-        </Link>
+        {!nativeApp && (
+          <Link href="/store" className="text-xs font-black text-mint-dark">
+            꼬북상점
+          </Link>
+        )}
       </div>
 
       {featured.length > 0 && (
@@ -203,7 +211,7 @@ export function PremiumServiceStore() {
       {error && (
         <p className="mt-3 rounded-2xl bg-red/10 px-4 py-3 text-center text-xs font-bold leading-relaxed text-red">
           {error}{' '}
-          {error.includes(CREDIT_UNIT) && (
+          {error.includes(CREDIT_UNIT) && !nativeApp && (
             <Link href="/store" className="underline underline-offset-4">
               충전하기
             </Link>

@@ -10,7 +10,7 @@ import { ShareInterpretationButton } from "@/components/shell/ShareInterpretatio
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { interpretationCostFor } from "@/lib/credits";
-import { isNativeIOS } from "@/lib/utils/platform";
+import { isNativeApp } from "@/lib/utils/platform";
 import { readPersonaMode } from "@/lib/utils/persona-mode";
 import { usePersonaMode } from "@/lib/utils/use-persona-mode";
 import {
@@ -716,7 +716,7 @@ export function InterpretationPanel({
         {error && (
           <p className="text-center text-xs font-bold text-red">
             {error}{" "}
-            {error.includes("꼬북알") && !isNativeIOS() && (
+            {error.includes("꼬북알") && !isNativeApp() && (
               <Link href="/more/pro" className="underline underline-offset-4">
                 충전하기
               </Link>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { DaewoonPeriod } from '@/lib/saju/types';
 import { CREDIT_COSTS } from '@/lib/credits';
-import { isNativeIOS } from '@/lib/utils/platform';
+import { isNativeApp } from '@/lib/utils/platform';
 import {
   completeGeneration,
   startGeneration,
@@ -162,7 +162,7 @@ export function ColdReadCard({ period }: { period: DaewoonPeriod }) {
       {error && (
         <div className="mt-3 rounded-2xl bg-red/10 px-4 py-3 text-sm font-bold text-red">
           {error}{' '}
-          {error.includes('부족') && !isNativeIOS() && (
+          {error.includes('부족') && !isNativeApp() && (
             <Link href="/more/pro" className="underline underline-offset-4">
               충전하기
             </Link>

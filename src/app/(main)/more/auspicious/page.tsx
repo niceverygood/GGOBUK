@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CREDIT_COSTS } from '@/lib/credits';
+import { isNativeApp } from '@/lib/utils/platform';
 
 interface Suggestion {
   date: string;
@@ -83,12 +84,15 @@ export default function AuspiciousPage() {
       {needsCredit && (
         <div className="mt-6 rounded-2xl bg-[var(--color-gold)]/30 p-4 text-sm">
           꼬북알이 부족해.
-          <button
-            onClick={() => router.push('/more/pro')}
-            className="ml-2 underline font-semibold"
-          >
-            충전하기
-          </button>
+          {/* needsCredit 분기 안(=사용자 액션 후)이라 하이드레이션 후 평가 → 인라인 호출 안전 */}
+          {!isNativeApp() && (
+            <button
+              onClick={() => router.push('/more/pro')}
+              className="ml-2 underline font-semibold"
+            >
+              충전하기
+            </button>
+          )}
         </div>
       )}
 

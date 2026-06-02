@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { formatKrw, CREDIT_UNIT } from '@/lib/credits';
+import { isNativeApp } from '@/lib/utils/platform';
 
 interface FirstDeal {
   eligible: boolean;
@@ -39,6 +40,8 @@ export function FirstDealBanner() {
   const countdown = useCountdown(deal?.expiresAt ?? null);
 
   useEffect(() => {
+    // 네이티브 앱(iOS/Play TWA)에선 카카오페이 결제 금지 → 첫충전 배너 자체를 띄우지 않음.
+    if (isNativeApp()) return;
     void fetch('/api/credits/first-deal')
       .then((r) => r.json())
       .then((d) => {

@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Egg, ShoppingBag } from 'lucide-react';
 import { CREDIT_UNIT } from '@/lib/credits';
-import { isNativeIOS } from '@/lib/utils/platform';
+import { isNativeApp } from '@/lib/utils/platform';
 
 export function MoreStoreLink({ credits }: { credits: number }) {
-  const [nativeIOS, setNativeIOS] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
 
   useEffect(() => {
-    setNativeIOS(isNativeIOS());
+    setNativeApp(isNativeApp());
   }, []);
 
   return (
@@ -19,7 +19,7 @@ export function MoreStoreLink({ credits }: { credits: number }) {
       className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
     >
       <span className="flex h-8 w-8 items-center justify-center text-xl">
-        {nativeIOS ? (
+        {nativeApp ? (
           <Egg size={22} strokeWidth={2.5} />
         ) : (
           <ShoppingBag size={22} strokeWidth={2.5} />
@@ -27,10 +27,10 @@ export function MoreStoreLink({ credits }: { credits: number }) {
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-black text-navy">
-          {nativeIOS ? '내 꼬북알' : '꼬북상점'}
+          {nativeApp ? '내 꼬북알' : '꼬북상점'}
         </div>
         <div className="text-xs font-bold text-muted mt-0.5">
-          {nativeIOS
+          {nativeApp
             ? `보유 ${credits} ${CREDIT_UNIT}`
             : '구독 없이 필요한 AI 풀이만 사용'}
         </div>

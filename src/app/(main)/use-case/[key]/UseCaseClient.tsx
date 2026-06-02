@@ -16,7 +16,7 @@ import {
 } from '@/lib/utils/generation-lock';
 import { readPersonaMode } from '@/lib/utils/persona-mode';
 import { interpretationCostFor } from '@/lib/credits';
-import { isNativeIOS } from '@/lib/utils/platform';
+import { isNativeApp } from '@/lib/utils/platform';
 import type { UseCase } from '@/lib/saju/use_cases';
 import type { PersonaKey } from '@/lib/llm/personas';
 import type { InterpretationCategory } from '@/types/db';
@@ -162,7 +162,7 @@ export function UseCaseClient({
           {error && (
             <p className="text-center text-[11px] font-bold text-red">
               {error}
-              {error.includes('부족') && !isNativeIOS() && (
+              {error.includes('부족') && !isNativeApp() && (
                 <>
                   {' '}
                   <a

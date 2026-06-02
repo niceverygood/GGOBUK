@@ -27,7 +27,7 @@ import {
   totalCredits,
 } from '@/lib/credits';
 import { PREMIUM_SERVICES } from '@/lib/premium-services';
-import { isNativeIOS } from '@/lib/utils/platform';
+import { isNativeApp } from '@/lib/utils/platform';
 
 const STORE_PROMISES = [
   '정기결제 없음',
@@ -128,14 +128,14 @@ function CreditPageInner() {
   const failed = params.get('failed');
   const [loading, setLoading] = useState<CreditPackageId | 'firstdeal' | null>(null);
   const [balance, setBalance] = useState(0);
-  const [nativeIOS, setNativeIOS] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
   const recommended = useMemo(
     () => CREDIT_PACKAGES.find((pkg) => pkg.recommended) ?? CREDIT_PACKAGES[0],
     [],
   );
 
   useEffect(() => {
-    setNativeIOS(isNativeIOS());
+    setNativeApp(isNativeApp());
   }, []);
 
   useEffect(() => {
@@ -170,10 +170,10 @@ function CreditPageInner() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-extrabold text-muted">
-              {nativeIOS ? '보유 현황' : '꼬북점 유료 콘텐츠 상점'}
+              {nativeApp ? '보유 현황' : '꼬북점 유료 콘텐츠 상점'}
             </p>
             <h1 className="text-3xl font-black tracking-tight text-navy">
-              {nativeIOS ? '내 꼬북알' : '꼬북상점'}
+              {nativeApp ? '내 꼬북알' : '꼬북상점'}
             </h1>
           </div>
           <Badge tone="gold">
@@ -181,9 +181,11 @@ function CreditPageInner() {
           </Badge>
         </div>
 
-        <div className="mt-5">
-          <FirstDealBanner />
-        </div>
+        {!nativeApp && (
+          <div className="mt-5">
+            <FirstDealBanner />
+          </div>
+        )}
 
         <Card className="mt-5 overflow-hidden p-5">
           <div className="flex items-center gap-4">
@@ -262,7 +264,7 @@ function CreditPageInner() {
           </div>
         </Card>
 
-        {!nativeIOS && (
+        {!nativeApp && (
           <div className="mt-4 grid gap-2">
             {RECOMMENDED_BUNDLES.map((bundle) => (
               <div
@@ -288,7 +290,7 @@ function CreditPageInner() {
           </div>
         )}
 
-        {!nativeIOS && (
+        {!nativeApp && (
           <div className="mt-4 grid gap-3">
             {CREDIT_PACKAGES.map((pkg) => (
               <button
@@ -363,7 +365,7 @@ function CreditPageInner() {
           </div>
         )}
 
-        {!nativeIOS && (
+        {!nativeApp && (
           <Card className="mt-4 p-4">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gold/35 text-navy">
@@ -384,7 +386,7 @@ function CreditPageInner() {
         )}
       </div>
 
-      {!nativeIOS && (
+      {!nativeApp && (
         <BottomActionBar>
           <ButtonPrimary
             tone="gold"

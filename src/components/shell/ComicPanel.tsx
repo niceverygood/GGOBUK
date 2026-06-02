@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Download, ImageIcon, PanelsTopLeft, Sparkles } from 'lucide-react';
 import { CREDIT_COSTS } from '@/lib/credits';
-import { isNativeIOS } from '@/lib/utils/platform';
+import { isNativeApp } from '@/lib/utils/platform';
 import { readPersonaMode } from '@/lib/utils/persona-mode';
 import { ButtonPrimary } from '@/components/ui/primitives';
 import type { InterpretationCategory } from '@/types/db';
@@ -187,7 +187,7 @@ export function ComicPanel({
         {error && (
           <p className="mt-3 text-center text-xs font-bold leading-relaxed text-red">
             {error}{' '}
-            {error.includes('꼬북알') && !isNativeIOS() && (
+            {error.includes('꼬북알') && !isNativeApp() && (
               <Link href="/more/pro" className="underline underline-offset-4">
                 충전하기
               </Link>
