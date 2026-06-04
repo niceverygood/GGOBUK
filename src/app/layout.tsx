@@ -8,6 +8,8 @@ import {
   absoluteUrl,
 } from '@/lib/seo/site';
 import { OfflineGuard } from '@/components/system/OfflineGuard';
+import { Analytics } from '@/components/system/Analytics';
+import { Suspense } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -107,6 +109,9 @@ export default function RootLayout({
       <body className="min-h-dvh flex flex-col">
         {children}
         <OfflineGuard />
+        <Suspense fallback={null}>
+          <Analytics />
+        </Suspense>
       </body>
     </html>
   );

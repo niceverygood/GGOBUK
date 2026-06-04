@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { payApprove } from '@/lib/kakao/pay';
 import { creditPackageById, totalCredits } from '@/lib/credits';
 import { addCredits } from '@/lib/credits/server';
+import { recordEvent } from '@/lib/analytics/events';
+import { sendFbCapiEvent, parseFbCookies } from '@/lib/analytics/fb';
 
 export const runtime = 'nodejs';
 
@@ -68,8 +70,53 @@ export async function GET(req: Request) {
       priceKrw: pkg.priceKrw,
     });
 
+    // 결제 전환 신호 — 매출 이벤트라 가장 중요. 서버 CAPI(유실 적음) + 분석 로그.
+    // 같은 event_id(pending.id)를 success 페이지의 브라우저 픽셀에도 넘겨 dedup.
+    const cookieHeader = req.headers.get('cookie');
+    const userAgent = req.headers.get('user-agent');
+    const ip =
+      (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() ||
+      req.headers.get('x-real-ip') ||
+      undefined;
+    const email = user.email;
+    const amount = pending.amount;
+    after(async () => {
+      await recordEvent({
+        event: 'purchase',
+        userId: user.id,
+        valueKrw: amount,
+        props: {
+          package_id: pkg.id,
+          credits: totalCredits(pkg),
+          purchase_id: pending.id,
+        },
+      });
+      await sendFbCapiEvent({
+        eventName: 'Purchase',
+        eventId: pending.id,
+        eventSourceUrl: req.url,
+        user: {
+          email,
+          externalId: user.id,
+          clientUserAgent: userAgent,
+          clientIpAddress: ip,
+          ...parseFbCookies(cookieHeader),
+        },
+        custom: {
+          value: amount,
+          currency: 'KRW',
+          contentName: pkg.id,
+          contentIds: [pkg.id],
+          numItems: 1,
+        },
+      });
+    });
+
     return NextResponse.redirect(
-      new URL(`/more/pro?success=1&credits=${totalCredits(pkg)}`, req.url),
+      new URL(
+        `/more/pro?success=1&credits=${totalCredits(pkg)}&pid=${pending.id}&amt=${amount}`,
+        req.url,
+      ),
     );
   } catch {
     await admin

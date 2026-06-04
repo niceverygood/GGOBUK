@@ -28,6 +28,7 @@ import {
 } from '@/lib/credits';
 import { PREMIUM_SERVICES } from '@/lib/premium-services';
 import { isNativeApp } from '@/lib/utils/platform';
+import { track, fbqTrack } from '@/lib/analytics/track';
 
 const STORE_PROMISES = [
   '정기결제 없음',
@@ -126,6 +127,8 @@ function CreditPageInner() {
   const chargedCredits = params.get('credits');
   const cancelled = params.get('cancelled');
   const failed = params.get('failed');
+  const purchaseId = params.get('pid');
+  const purchaseAmt = params.get('amt');
   const [loading, setLoading] = useState<CreditPackageId | 'firstdeal' | null>(null);
   const [balance, setBalance] = useState(0);
   const [nativeApp, setNativeApp] = useState(false);
@@ -138,6 +141,23 @@ function CreditPageInner() {
     setNativeApp(isNativeApp());
   }, []);
 
+  // 결제 화면 진입 — 수익 퍼널 상단. 마운트 1회.
+  useEffect(() => {
+    track('view_pricing');
+    fbqTrack('ViewContent', { content_type: 'product', content_category: 'credits' });
+  }, []);
+
+  // 결제 완료 복귀 — 브라우저 Purchase 픽셀을 서버 CAPI 와 같은 event_id(pid)로
+  // 발사해 중복 제거한다. 광고 차단/ATT 로 픽셀이 막히면 CAPI 만 집계된다.
+  useEffect(() => {
+    if (!success || !purchaseId) return;
+    fbqTrack(
+      'Purchase',
+      { value: purchaseAmt ? Number(purchaseAmt) : undefined, currency: 'KRW' },
+      purchaseId,
+    );
+  }, [success, purchaseId, purchaseAmt]);
+
   useEffect(() => {
     void fetch('/api/me')
       .then((r) => r.json())
@@ -146,6 +166,9 @@ function CreditPageInner() {
 
   async function start(packageId: CreditPackageId | 'firstdeal') {
     setLoading(packageId);
+    // 결제 시작 — 카카오페이로 떠나기 전 전환 의도 신호.
+    track('checkout_start', { package_id: packageId });
+    fbqTrack('InitiateCheckout', { content_ids: [packageId], currency: 'KRW' });
     try {
       const res = await fetch('/api/payment/kakao/ready', {
         method: 'POST',

@@ -45,11 +45,69 @@ interface SignupRow {
   created_at: string;
 }
 
+// ── 광고 유입 퍼널 (admin_funnel RPC) ──
+interface FunnelTotals {
+  visitors: number;
+  views: number;
+  signups: number;
+  ad_signups: number;
+  onboarded: number;
+  activated: number;
+  paid: number;
+  revenue_krw: number;
+}
+interface FunnelSourceRow {
+  source: string;
+  visitors: number;
+  signups: number;
+  onboarded: number;
+  activated: number;
+  paid: number;
+  revenue_krw: number;
+}
+interface FunnelCampaignRow {
+  campaign: string;
+  source: string;
+  signups: number;
+  onboarded: number;
+  activated: number;
+  paid: number;
+  revenue_krw: number;
+}
+interface FunnelDailyRow {
+  day: string;
+  signups: number;
+  paid: number;
+  revenue_krw: number;
+}
+interface AdminFunnel {
+  range_days: number;
+  totals: FunnelTotals;
+  by_source: FunnelSourceRow[];
+  by_campaign: FunnelCampaignRow[];
+  daily: FunnelDailyRow[];
+}
+
 function num(v: number | null | undefined): string {
   return new Intl.NumberFormat('ko-KR').format(Number(v ?? 0));
 }
 
-export default async function AdminPage() {
+/** 안전한 백분율 (분모 0 이면 null → '—'). */
+function ratio(n: number | null | undefined, d: number | null | undefined): number | null {
+  const dd = Number(d ?? 0);
+  if (dd <= 0) return null;
+  return (Number(n ?? 0) / dd) * 100;
+}
+function pctStr(n: number | null | undefined, d: number | null | undefined): string {
+  const r = ratio(n, d);
+  return r === null ? '—' : `${r.toFixed(1)}%`;
+}
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ days?: string }>;
+}) {
   const { isAdmin, userId, email, needsSetup } = await checkAdmin();
 
   if (!userId) redirect('/login');
@@ -98,8 +156,20 @@ export default async function AdminPage() {
 
   // Admin confirmed — pull stats via service-role (bypasses RLS).
   const admin = await createServerClient({ admin: true });
-  const { data: overviewData } = await admin.rpc('admin_overview');
+
+  // 광고 퍼널 기간 (7/14/30일). 잘못된 값은 14로.
+  const rawDays = Number((await searchParams)?.days);
+  const days = [7, 14, 30, 90].includes(rawDays) ? rawDays : 14;
+
+  const [{ data: overviewData }, { data: funnelData }] = await Promise.all([
+    admin.rpc('admin_overview'),
+    admin.rpc('admin_funnel', { p_days: days }),
+  ]);
   const ov = (overviewData ?? {}) as Partial<Overview>;
+  const fn = (funnelData ?? null) as AdminFunnel | null;
+  const ft = fn?.totals;
+  const funnelTop = Math.max(ft?.visitors ?? 0, ft?.signups ?? 0, 1);
+  const maxDailySignup = Math.max(1, ...(fn?.daily ?? []).map((d) => d.signups));
 
   const { data: purchases } = await admin
     .from('credit_purchases')
@@ -186,9 +256,171 @@ export default async function AdminPage() {
         ))}
       </section>
 
+      {/* 광고 유입 퍼널 (기간/캠페인) */}
+      <section className="mt-8">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <h2 className="text-sm font-black text-navy">
+              페이스북 광고 · 유입 퍼널
+            </h2>
+            <p className="text-[11px] font-bold text-muted">
+              최근 {days}일 · 가입 코호트 기준 (방문은 익명 포함)
+            </p>
+          </div>
+          <div className="flex gap-1">
+            {[7, 14, 30].map((d) => (
+              <Link
+                key={d}
+                href={`/admin?days=${d}`}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold ${
+                  days === d
+                    ? 'bg-navy text-white'
+                    : 'bg-navy/5 text-muted'
+                }`}
+              >
+                {d}일
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {!fn ? (
+          <div className="rounded-2xl border border-dashed border-navy/20 bg-white p-5 text-sm font-bold text-muted">
+            아직 퍼널 데이터를 불러올 수 없어요. (마이그레이션 17 적용 필요:
+            <code className="font-mono text-[11px]"> admin_funnel</code> RPC)
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* 기간 KPI */}
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+              <MiniKpi label="방문자" value={num(ft?.visitors)} sub={`view ${num(ft?.views)}`} />
+              <MiniKpi label="가입" value={num(ft?.signups)} sub={`광고경유 ${num(ft?.ad_signups)}`} />
+              <MiniKpi label="사주등록" value={num(ft?.onboarded)} />
+              <MiniKpi label="결제" value={num(ft?.paid)} />
+              <MiniKpi label="매출" value={`₩${num(ft?.revenue_krw)}`} highlight />
+            </div>
+
+            {/* 단계 막대 */}
+            <div className="rounded-2xl border border-navy/10 bg-white p-5">
+              <FunnelRow label="방문 (익명 포함)" count={ft?.visitors ?? 0} pct={((ft?.visitors ?? 0) / funnelTop) * 100} color="bg-navy/70" />
+              <FunnelRow label="가입" count={ft?.signups ?? 0} pct={((ft?.signups ?? 0) / funnelTop) * 100} color="bg-navy" />
+              <FunnelRow label="사주 등록" count={ft?.onboarded ?? 0} pct={((ft?.onboarded ?? 0) / funnelTop) * 100} color="bg-mint-dark" />
+              <FunnelRow label="활성화 (첫 채팅)" count={ft?.activated ?? 0} pct={((ft?.activated ?? 0) / funnelTop) * 100} color="bg-gold/80" />
+              <FunnelRow label="결제" count={ft?.paid ?? 0} pct={((ft?.paid ?? 0) / funnelTop) * 100} color="bg-red" isLast />
+              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                <div className="rounded-xl bg-paper p-3">
+                  <p className="text-[10px] font-extrabold text-muted">방문→가입</p>
+                  <p className="mt-1 text-lg font-black text-navy tabular-nums">{pctStr(ft?.signups, ft?.visitors)}</p>
+                </div>
+                <div className="rounded-xl bg-paper p-3">
+                  <p className="text-[10px] font-extrabold text-muted">가입→결제</p>
+                  <p className="mt-1 text-lg font-black text-navy tabular-nums">{pctStr(ft?.paid, ft?.signups)}</p>
+                </div>
+                <div className="rounded-xl bg-paper p-3">
+                  <p className="text-[10px] font-extrabold text-muted">유료 1인 ARPU</p>
+                  <p className="mt-1 text-lg font-black text-navy tabular-nums">
+                    ₩{num(ft && ft.paid > 0 ? Math.round(ft.revenue_krw / ft.paid) : 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 일별 가입 추이 */}
+            <div className="rounded-2xl border border-navy/10 bg-white p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[12px] font-extrabold text-navy">일별 가입 추이</p>
+                <p className="text-[10px] font-bold text-muted">막대=가입 · hover 시 결제·매출</p>
+              </div>
+              <div className="flex items-end gap-[3px] h-24">
+                {(fn.daily ?? []).map((d) => (
+                  <div
+                    key={d.day}
+                    className="flex-1 flex flex-col justify-end"
+                    title={`${d.day} · 가입 ${d.signups} · 결제 ${d.paid} · ₩${num(d.revenue_krw)}`}
+                  >
+                    <div
+                      className={`w-full rounded-t ${d.paid > 0 ? 'bg-mint-dark' : 'bg-navy/25'}`}
+                      style={{ height: `${Math.max(3, (d.signups / maxDailySignup) * 100)}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 소스별 */}
+            <div>
+              <h3 className="text-[12px] font-black text-navy mb-2">소스(utm_source)별</h3>
+              <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white">
+                <table className="w-full text-sm">
+                  <thead className="text-[11px] font-extrabold text-muted bg-navy/5">
+                    <tr>
+                      <th className="text-left px-3 py-2">소스</th>
+                      <th className="text-right px-3 py-2">방문</th>
+                      <th className="text-right px-3 py-2">가입</th>
+                      <th className="text-right px-3 py-2">결제</th>
+                      <th className="text-right px-3 py-2">매출</th>
+                      <th className="text-right px-3 py-2">방문→가입</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(fn.by_source ?? []).map((s) => (
+                      <tr key={s.source} className="border-t border-navy/5">
+                        <td className="px-3 py-2 font-bold text-navy">{s.source}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(s.visitors)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(s.signups)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(s.paid)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">₩{num(s.revenue_krw)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-muted">{pctStr(s.signups, s.visitors)}</td>
+                      </tr>
+                    ))}
+                    {(!fn.by_source || fn.by_source.length === 0) && (
+                      <tr><td colSpan={6} className="px-3 py-6 text-center text-muted text-sm">유입 데이터가 아직 없어요.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 캠페인별 */}
+            <div>
+              <h3 className="text-[12px] font-black text-navy mb-2">캠페인(utm_campaign)별</h3>
+              <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white">
+                <table className="w-full text-sm">
+                  <thead className="text-[11px] font-extrabold text-muted bg-navy/5">
+                    <tr>
+                      <th className="text-left px-3 py-2">캠페인</th>
+                      <th className="text-left px-3 py-2">소스</th>
+                      <th className="text-right px-3 py-2">가입</th>
+                      <th className="text-right px-3 py-2">사주</th>
+                      <th className="text-right px-3 py-2">결제</th>
+                      <th className="text-right px-3 py-2">매출</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(fn.by_campaign ?? []).map((c) => (
+                      <tr key={`${c.campaign}-${c.source}`} className="border-t border-navy/5">
+                        <td className="px-3 py-2 font-bold text-navy">{c.campaign}</td>
+                        <td className="px-3 py-2 text-muted">{c.source}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(c.signups)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(c.onboarded)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{num(c.paid)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">₩{num(c.revenue_krw)}</td>
+                      </tr>
+                    ))}
+                    {(!fn.by_campaign || fn.by_campaign.length === 0) && (
+                      <tr><td colSpan={6} className="px-3 py-6 text-center text-muted text-sm">캠페인 데이터가 아직 없어요.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Conversion Funnel */}
       <section className="mt-8">
-        <h2 className="text-sm font-black text-navy mb-3">결제 conversion 깔때기</h2>
+        <h2 className="text-sm font-black text-navy mb-3">결제 conversion 깔때기 (누적·전체)</h2>
         <div className="rounded-2xl border border-navy/10 bg-white p-5">
           <FunnelRow
             label="가입자"
@@ -337,6 +569,31 @@ export default async function AdminPage() {
         로그인: {email ?? userId} · 데이터는 실시간 (RLS 우회, service_role)
       </p>
     </main>
+  );
+}
+
+/** 작은 KPI 타일 (기간 퍼널용). */
+function MiniKpi({
+  label,
+  value,
+  sub,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-3 ${
+        highlight ? 'border-gold/40 bg-gold/10' : 'border-navy/10 bg-white'
+      }`}
+    >
+      <div className="text-[10px] font-bold text-muted">{label}</div>
+      <div className="mt-0.5 text-lg font-black text-navy tabular-nums">{value}</div>
+      {sub && <div className="text-[10px] font-bold text-muted">{sub}</div>}
+    </div>
   );
 }
 

@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
 import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { logger } from '@/lib/utils/logger';
+import { recordEvent } from '@/lib/analytics/events';
 
 const Body = z.object({
   name: z.string().min(1),
@@ -132,5 +133,18 @@ async function handleCalculate(req: Request) {
       { status: 500 },
     );
   }
+
+  // 온보딩 활성화 — 본인 사주를 처음 만든 순간(신규 insert)만 퍼널에 기록.
+  // 인연(가족/친구/연인…) 추가는 온보딩이 아니므로 제외한다.
+  if (body.relationType === 'self') {
+    after(() =>
+      recordEvent({
+        event: 'onboarding_complete',
+        userId: user.id,
+        props: { saju_id: data.id },
+      }),
+    );
+  }
+
   return NextResponse.json({ saju: data });
 }
