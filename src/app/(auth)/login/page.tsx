@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { browserAppOrigin } from '@/lib/app-url';
+import { track } from '@/lib/analytics/track';
+// ⚠️ TEMP (App Store 심사용) — 심사 통과 후 제거 예정. 익명 게스트 로그인 복원.
+import { loadPreviewInput, clearPreviewInput } from '@/lib/saju/preview';
 
 function loginErrorMessage(error: string): string {
   if (error === 'kakao_oauth_failed')
@@ -23,7 +26,7 @@ function loginErrorMessage(error: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState<'kakao' | 'apple' | null>(null);
+  const [loading, setLoading] = useState<'kakao' | 'apple' | 'test' | null>(null);
   const [err, setErr] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -58,6 +61,7 @@ export default function LoginPage() {
   async function signInWithKakao() {
     setErr(null);
     setLoading('kakao');
+    track('login_cta_click', { provider: 'kakao' });
     try {
       const supabase = createClient();
       const baseUrl = browserAppOrigin();
@@ -76,6 +80,7 @@ export default function LoginPage() {
   async function signInWithApple() {
     setErr(null);
     setLoading('apple');
+    track('login_cta_click', { provider: 'apple' });
     try {
       const supabase = createClient();
       const baseUrl = browserAppOrigin();
@@ -91,6 +96,57 @@ export default function LoginPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Apple 로그인 실패';
       setErr(msg);
+      setLoading(null);
+    }
+  }
+
+  // ⚠️ TEMP (App Store 심사용) — 심사 통과 후 이 함수·버튼·import 제거.
+  // OAuth 없이 익명 게스트 세션으로 앱 전체를 체험하게 한다(심사관 진입로).
+  // 프로덕션 동작 조건: ① Supabase 'Allow anonymous sign-ins' ON
+  // ② Vercel env ALLOW_TEST_BOOTSTRAP=1 (없으면 /api/test/bootstrap 이 404).
+  async function testLogin() {
+    setErr(null);
+    setLoading('test');
+    track('login_cta_click', { provider: 'test' });
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInAnonymously({
+        options: { data: { nickname: '테스트 꼬북이', test_account: true } },
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('user not returned');
+
+      const preview = loadPreviewInput();
+      const bootstrap = await fetch('/api/test/bootstrap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: preview
+            ? {
+                name: preview.name,
+                birthDate: preview.input.birthDate,
+                birthTime: preview.input.birthTime,
+                isLunar: preview.input.isLunar,
+                isLeapMonth: preview.input.isLeapMonth,
+                gender: preview.input.gender,
+              }
+            : undefined,
+        }),
+      });
+      if (!bootstrap.ok) {
+        const detail = await bootstrap.json().catch(() => null);
+        throw new Error(detail?.error ?? '테스트 계정 준비에 실패했어');
+      }
+      clearPreviewInput();
+      router.replace('/home');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
+      setErr(
+        msg.toLowerCase().includes('anonymous')
+          ? 'Supabase Dashboard → Authentication → Sign In / Providers 에서 "Allow anonymous sign-ins"를 켜고 Save changes를 눌러줘.'
+          : msg,
+      );
+    } finally {
       setLoading(null);
     }
   }
@@ -123,6 +179,20 @@ export default function LoginPage() {
         >
           <span aria-hidden></span>
           {loading === 'apple' ? '이동 중…' : 'Apple로 계속하기'}
+        </button>
+
+        {/* ⚠️ TEMP (App Store 심사용) — 심사 통과 후 이 버튼 제거 */}
+        <button
+          onClick={testLogin}
+          disabled={!!loading}
+          className="mt-3 w-full max-w-xs rounded-2xl bg-navy py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
+        >
+          <KkobukSprite
+            variant="persona-kkobuk"
+            size="xs"
+            ariaLabel="테스트 꼬북이"
+          />
+          {loading === 'test' ? '꼬북이 깨우는 중…' : '테스트 로그인 (익명)'}
         </button>
 
         {err && (
