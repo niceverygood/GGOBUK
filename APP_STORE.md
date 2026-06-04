@@ -174,20 +174,19 @@ iPhone 전용이라 6.9" 한 사이즈만 있으면 됨(iPad 스크린샷 불필
 1. Certificates, IDs & Profiles ▸ Identifiers ▸ `com.niceverygood.ggobuk` ▸ **Sign in with Apple** capability 체크 ▸ Save.
 2. Identifiers ▸ `+` ▸ **Services IDs** 생성 (예: `com.niceverygood.ggobuk.web`) ▸ Sign in with Apple 활성 ▸ Configure:
    - Primary App ID: `com.niceverygood.ggobuk`
-   - Domains: `ggobuk.vercel.app`, `<project-ref>.supabase.co`
-   - Return URLs: `https://<project-ref>.supabase.co/auth/v1/callback`
+   - Domains and Subdomains: `zaifbeulgqmhzeewkbtd.supabase.co` (필수 — 아래 Return URL의 도메인)
+   - Return URLs: `https://zaifbeulgqmhzeewkbtd.supabase.co/auth/v1/callback`
 3. Keys ▸ `+` ▸ Sign in with Apple 활성 ▸ 생성 ▸ **.p8 키 다운로드(1회뿐)** + **Key ID** 기록 (Team ID = `7AXRWTV5YW`).
 
 ### Supabase (Dashboard ▸ Authentication ▸ Providers ▸ Apple)
 - Apple 활성화
-- Client ID (Services ID) = `com.niceverygood.ggobuk.web`
-- Team ID = `7AXRWTV5YW`
-- Key ID = (위 키)
-- Private key = `.p8` 파일 내용 전체
+- **Client IDs** = `com.niceverygood.ggobuk.web,com.niceverygood.ggobuk` (웹 Services ID + 네이티브 번들 ID, 쉼표구분)
+- **Secret Key (for OAuth)** = `.p8` + Key ID + Team ID(`7AXRWTV5YW`) + Services ID로 생성한 client secret JWT (Supabase 문서의 생성기 사용; **≤6개월 만료 → 갱신 필요**)
 - Save
-- Authentication ▸ URL Configuration: Site URL `https://ggobuk.vercel.app`, redirect 허용목록에 `https://ggobuk.vercel.app/callback` 포함 확인.
+- Authentication ▸ URL Configuration: Site URL `https://ggobuk.vercel.app`, redirect 허용목록에 `https://ggobuk.vercel.app/callback` 포함 — **카카오가 동일 패턴을 쓰므로 이미 설정돼 있을 것**(확인만).
 
-> `<project-ref>`는 Vercel 환경변수 `NEXT_PUBLIC_SUPABASE_URL`(`https://<project-ref>.supabase.co`)에서 확인.
+> 프로젝트 ref `zaifbeulgqmhzeewkbtd` 는 `NEXT_PUBLIC_SUPABASE_URL`(`https://zaifbeulgqmhzeewkbtd.supabase.co`)에서 확인됨.
+> ⚠️ 웹뷰(WKWebView) 안에서 Apple 웹 OAuth가 막히면 `@capacitor-community/apple-sign-in` 네이티브 플러그인 + nonce 플로우로 전환(별도 작업). 우선 웹 플로우로 시도.
 
 ---
 
