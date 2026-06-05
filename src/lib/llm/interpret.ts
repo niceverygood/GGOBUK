@@ -1013,7 +1013,10 @@ ${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반�
   }`;
   return complete({
     tier: 'saju',
+    // system = buildSystem(persona) 은 persona별로 고정 → 12카테고리 sweep 동안
+    // 동일하게 반복되므로 캐시. 카테고리·사주는 user 메시지에 있어 prefix 불변.
     system: buildSystem(persona),
+    cache: true,
     messages: [{ role: 'user', content: userMsg }],
     maxTokens: supplementMode
       ? Math.min(2400, PERSONA_MAX_TOKENS[persona])

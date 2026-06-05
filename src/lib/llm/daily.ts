@@ -222,7 +222,9 @@ ${context}
 - mood는 오늘 흐름과 컨디션을 종합해 happy, excited, surprised, relaxed, thinking, worried 중 하나.
 JSON으로만 응답.`;
   const { text } = await complete({
-    tier: 'saju',
+    // 일일운세는 사전계산된 지표를 쉬운 JSON으로 옮기는 단순 작업 → Haiku로 충분(~3x 저렴).
+    // 매일 전 유저 cron이라 누적 최대 비용 절감. (system이 유저별로 달라 캐시는 미적용.)
+    tier: 'cheap',
     system: SYSTEM,
     messages: [{ role: 'user', content: userMsg }],
     maxTokens: 1200,

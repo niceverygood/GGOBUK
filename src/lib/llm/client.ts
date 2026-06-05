@@ -66,6 +66,18 @@ function getAnthropicClient(): Anthropic {
   return anthropic;
 }
 
+/**
+ * 큰 정적 시스템 프롬프트(페르소나 가이드 + PREMIUM_SAJU_GUIDE + 사주 컨텍스트)는
+ * 채팅 매 턴·해설 12카테고리 sweep에서 동일하게 반복된다. ephemeral 캐시 1블록으로
+ * 묶으면 2번째 호출부터 입력 토큰을 ~10% 비용으로 재사용한다(출력 결과는 불변).
+ * SDK가 cache_control 존재 시 anthropic-beta 헤더를 자동 부착한다. Sonnet-4 최소
+ * 캐시 prefix는 1024토큰 — 본 시스템들은 수천 토큰이라 충족하고, 작은 시스템(haiku
+ * <4096토큰)이면 조용히 무캐시 처리되어(추가 비용 없음) 안전하다.
+ */
+function toCachedSystem(system: string): Anthropic.TextBlockParam[] {
+  return [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }];
+}
+
 export interface CompleteParams {
   tier: ModelTier;
   system: string;
@@ -78,6 +90,13 @@ export interface CompleteParams {
    * computed indicators rather than generating loose generalities.
    */
   temperature?: number;
+  /**
+   * true 면 system 프롬프트를 ephemeral 프롬프트 캐시 블록으로 전송한다.
+   * 같은 system 이 짧은 시간(5분 TTL) 안에 반복되는 호출에만 켠다 —
+   * 채팅 멀티턴(세션 내 system 동일)·해설 12카테고리 sweep(persona별 system 동일).
+   * daily cron·compat 처럼 호출마다 system 이 달라지는 경우엔 켜면 오히려 손해(쓰기 프리미엄만).
+   */
+  cache?: boolean;
 }
 
 export async function complete(
@@ -99,7 +118,7 @@ async function anthropicComplete(
   const res = await client.messages.create({
     model,
     max_tokens: params.maxTokens ?? 2048,
-    system: params.system,
+    system: params.cache ? toCachedSystem(params.system) : params.system,
     messages: params.messages,
     ...(typeof params.temperature === 'number'
       ? { temperature: params.temperature }
@@ -128,7 +147,7 @@ export async function* stream(params: CompleteParams): AsyncIterable<string> {
   const res = await client.messages.stream({
     model,
     max_tokens: params.maxTokens ?? 2048,
-    system: params.system,
+    system: params.cache ? toCachedSystem(params.system) : params.system,
     messages: params.messages,
     ...(typeof params.temperature === 'number'
       ? { temperature: params.temperature }

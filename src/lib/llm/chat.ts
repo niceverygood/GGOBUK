@@ -64,6 +64,8 @@ ${PREMIUM_SAJU_GUIDE}
   for await (const chunk of stream({
     tier: 'saju',
     system,
+    // 세션 내 system(페르소나+사주+기억)은 턴마다 동일 → 캐시로 입력 토큰 재사용.
+    cache: true,
     messages: [
       ...params.history,
       { role: 'user', content: params.userMessage },
