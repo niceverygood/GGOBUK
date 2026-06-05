@@ -1,3 +1,13 @@
+-- ============================================================================
+-- ⚠️ STALE / DO NOT USE TO BOOTSTRAP A DATABASE ⚠️
+-- 이 파일은 2026-05-22 기준 초기 스키마까지만 담겨 있고, migration 9~17
+-- (credit 보안 수정 migration 13, 매칭·메모리·분석 등)이 빠져 있다.
+-- 이 파일로 새 DB를 세우면 "고친 줄 알았던 보안 구멍"이 그대로 뚫린 채 부팅된다.
+-- ✅ 진실의 원천(source of truth)은 supabase/migrations/*.sql 이다.
+--    새 DB는 `supabase db push`(또는 migrations/ 를 번호순으로) 로 세운다.
+-- 이 통합 파일은 참고용 스냅샷일 뿐이며 더 이상 유지보수되지 않는다.
+-- ============================================================================
+
 -- 꼬북점 initial schema
 create extension if not exists "pgcrypto";
 
