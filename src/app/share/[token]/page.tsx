@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
@@ -89,12 +88,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: SITE_NAME,
       type: 'article',
       locale: 'ko_KR',
-      images: [{ url: absoluteUrl('/icons/icon-512.png'), width: 512, height: 512 }],
+      // 정적 아이콘 대신 페르소나 캐릭터 카드(satori) — 카톡/SNS 공유 미리보기 강화.
+      images: [{ url: absoluteUrl(`/api/og/share/${token}`), width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
       description: ogDesc,
+      images: [absoluteUrl(`/api/og/share/${token}`)],
     },
   };
 }
