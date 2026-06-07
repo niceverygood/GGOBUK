@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
@@ -36,13 +35,6 @@ export default async function ShellPage() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge tone="mint">일간 {palja.day.ganOhaeng}</Badge>
-            <Link
-              href="/people"
-              prefetch
-              className="inline-flex items-center gap-1 rounded-full bg-white border border-navy/10 px-3 py-1.5 text-xs font-extrabold text-navy"
-            >
-              👥 사람 관리
-            </Link>
           </div>
         </div>
 
