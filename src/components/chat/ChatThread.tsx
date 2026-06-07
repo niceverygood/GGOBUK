@@ -8,6 +8,7 @@ import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge } from '@/components/ui/primitives';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeApp } from '@/lib/utils/platform';
+import { track } from '@/lib/analytics/track';
 
 interface InitialMessage {
   role: 'user' | 'assistant';
@@ -153,6 +154,8 @@ export function ChatThread({
         setStreaming(false);
         setRateLimited(true);
         setMessages((m) => m.slice(0, -1));
+        // 결제 의도 peak — 무료 채팅 한도 도달(더 대화하려면 결제했을 순간).
+        track('paywall_view', { peak: 'chat_limit', reason: 'rate_limited' });
         return;
       }
       if (res.status === 402) {
@@ -160,6 +163,7 @@ export function ChatThread({
         setStreaming(false);
         setNeedsCredit(true);
         setMessages((m) => m.slice(0, -1));
+        track('paywall_view', { peak: 'chat_limit', reason: 'needs_credit' });
         return;
       }
       if (!res.ok || !res.body) throw new Error('chat failed');
