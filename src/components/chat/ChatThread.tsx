@@ -247,17 +247,6 @@ export function ChatThread({
                 ))}
               </div>
             </div>
-            <div className="flex flex-col gap-2 mt-4 max-w-xs mx-auto">
-              {personaMeta.quickQuestions.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => send(q)}
-                  className="rounded-2xl bg-white py-2.5 px-4 text-sm font-bold shadow-sm border border-navy/10"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
           </div>
         )}
         {messages.map((m, i) => (
@@ -268,6 +257,7 @@ export function ChatThread({
             persona={persona}
           />
         ))}
+        {/* eslint-disable-next-line react-hooks/refs -- 스트리밍 진행 힌트: streaming state 변화로 재렌더되어 ref 읽기가 안전 */}
         {streaming && !skipRef.current && (
           <p className="text-center text-[10px] font-bold text-muted/70 mb-2 select-none">
             화면을 한 번 탭하면 답변 전체가 즉시 표시돼요
@@ -285,15 +275,6 @@ export function ChatThread({
               className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-mint/15 border border-mint/30 text-xs font-extrabold text-navy"
             >
               {item.label}
-            </button>
-          ))}
-          {personaMeta.quickQuestions.map((q) => (
-            <button
-              key={q}
-              onClick={() => send(q)}
-              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white border border-navy/10 text-xs font-extrabold text-navy"
-            >
-              {q}
             </button>
           ))}
         </div>

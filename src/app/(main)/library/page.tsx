@@ -205,8 +205,6 @@ export default async function LibraryPage() {
           </div>
         </Link>
 
-        <PremiumServiceStore />
-
         <LibrarySection
           title="사주해설"
           count={interpretations.length}
@@ -400,6 +398,9 @@ export default async function LibraryPage() {
             </div>
           </section>
         )}
+
+        {/* 기록들 아래에 — 보관함은 '내 기록'이 먼저, 상점은 하단으로 */}
+        <PremiumServiceStore />
 
         <section className="mt-5 grid grid-cols-2 gap-3">
           <QuickBox
