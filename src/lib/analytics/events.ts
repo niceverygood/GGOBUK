@@ -26,6 +26,7 @@ export const TRACKABLE_EVENTS = [
   'checkout_start', // 결제 시작(카카오페이 ready)
   'purchase', // 결제 완료(서버)
   'share_click', // 공유 버튼 탭
+  'paywall_view', // 결제했을 순간(유료 해설 생성·프리미엄 상품 열기 클릭) — BETA 중 결제의도 학습. props.peak 로 지점 구분.
 ] as const;
 
 export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];

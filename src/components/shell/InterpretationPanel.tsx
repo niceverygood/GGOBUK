@@ -11,6 +11,7 @@ import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
 import { interpretationCostFor } from "@/lib/credits";
 import { isNativeApp } from "@/lib/utils/platform";
+import { track } from "@/lib/analytics/track";
 import { readPersonaMode } from "@/lib/utils/persona-mode";
 import { usePersonaMode } from "@/lib/utils/use-persona-mode";
 import {
@@ -675,6 +676,14 @@ export function InterpretationPanel({
   }, [category, loading]);
 
   function generate(focus?: string, title?: string) {
+    // 결제 의도 신호 — 유료 해설을 생성하려는 순간이 '여기서 결제했을 지점'.
+    // BETA_FREE_MODE 라 실제로는 무료지만, 어느 풀이가 전환을 끄는지 미리 학습한다.
+    track("paywall_view", {
+      peak: "interpretation",
+      category,
+      mode: focus ? "deepdive" : "report",
+      cost: generationCost,
+    });
     const persona = readPersonaMode();
     // Deep-dive(focus) 요청은 기존 본문에 이어붙이는 supplement 모드로 처리.
     // 그 외(초기 생성)는 일반 fresh 생성.

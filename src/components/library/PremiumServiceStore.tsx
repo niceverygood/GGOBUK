@@ -12,6 +12,7 @@ import { CREDIT_UNIT } from '@/lib/credits';
 import { InterpretationBody } from '@/components/shell/InterpretationBody';
 import { Badge, Card } from '@/components/ui/primitives';
 import { isNativeApp } from '@/lib/utils/platform';
+import { track } from '@/lib/analytics/track';
 
 interface PremiumServiceResult {
   serviceId: PremiumServiceId;
@@ -48,6 +49,7 @@ export function PremiumServiceStore() {
   // 네이티브 앱(iOS/Play TWA)에선 카카오페이 충전 진입점(꼬북상점/충전하기)을 숨긴다.
   const [nativeApp, setNativeApp] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 후 1회 네이티브앱 감지(SSR 시 판정 불가)
     setNativeApp(isNativeApp());
   }, []);
   const [results, setResults] = useState<PremiumServiceResult[]>(() => {
@@ -85,6 +87,12 @@ export function PremiumServiceStore() {
     }
 
     setLoadingId(service.id);
+    // 결제 의도 신호 — 프리미엄 리포트를 열려는 순간(BETA 중 무료지만 전환 학습용).
+    track('paywall_view', {
+      peak: 'premium_service',
+      service: service.id,
+      cost: service.cost,
+    });
     try {
       const res = await fetch('/api/premium-services/generate', {
         method: 'POST',
