@@ -6,7 +6,6 @@ import {
   CalendarCheck,
   ChevronRight,
   HeartHandshake,
-  MessageCircle,
   ScrollText,
   Settings,
   UserRound,
@@ -219,6 +218,7 @@ export default async function LibraryPage() {
           {interpretations.map((item) => {
             // 3일 보관 정책 — generated_at + 3일 후 자동 삭제 (cron).
             // 표시: 남은 시간 + 24h 이내면 강조.
+            // eslint-disable-next-line react-hooks/purity -- 서버 컴포넌트(요청당 1회 렌더): Date.now 안전
             const ageMs = Date.now() - new Date(item.generated_at).getTime();
             const remainHours = Math.max(
               0,
@@ -354,8 +354,10 @@ export default async function LibraryPage() {
             </div>
             <div className="space-y-2">
               {shares.map((s) => {
+                // eslint-disable-next-line react-hooks/purity -- 서버 컴포넌트(요청당 1회 렌더): Date.now 안전
+                const nowMs = Date.now();
                 const expired = s.expires_at
-                  ? new Date(s.expires_at).getTime() < Date.now()
+                  ? new Date(s.expires_at).getTime() < nowMs
                   : false;
                 return (
                   <a
@@ -387,7 +389,7 @@ export default async function LibraryPage() {
                         ` · ${Math.max(
                           0,
                           Math.ceil(
-                            (new Date(s.expires_at).getTime() - Date.now()) /
+                            (new Date(s.expires_at).getTime() - nowMs) /
                               (1000 * 60 * 60 * 24),
                           ),
                         )}일 남음`}
@@ -411,12 +413,6 @@ export default async function LibraryPage() {
             icon={<CalendarCheck size={19} strokeWidth={2.4} />}
             title="택일"
             subtitle="중요한 날 고르기"
-          />
-          <QuickBox
-            href="/chat"
-            icon={<MessageCircle size={19} strokeWidth={2.4} />}
-            title="대화방"
-            subtitle="최근 상담 이어가기"
           />
           <QuickBox
             href="/shell"

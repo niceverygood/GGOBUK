@@ -50,18 +50,6 @@ export default async function ShellPage() {
           <TortoiseShell palja={palja} activePosition="일간" />
         </div>
 
-        <Card className="mt-6 p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-navy">
-              일간 <span className="font-hanja">{palja.day.ganHanja}</span>
-            </p>
-            <span className="text-xs font-black text-[#F4D03F]">핵심</span>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-[#82786D]">
-            {palja.day.gan}{palja.day.ganOhaeng === '화' ? ' — 작은 촛불 같은 정화. 주변을 밝히되 바람에는 예민한 타입이에요.' : ` — 일간 ${palja.day.gan}이 사주의 중심이에요.`}
-          </p>
-        </Card>
-
         {ilju && (
           <Card className="mt-4 p-4 bg-gradient-to-br from-mint/15 via-white to-gold/15">
             <div className="flex items-center justify-between">

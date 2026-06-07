@@ -4,7 +4,6 @@ import {
   Hexagon,
   HeartHandshake,
   Pencil,
-  Plus,
   Sparkles,
   UserPlus,
   UserRound,
@@ -154,14 +153,6 @@ export default async function PeoplePage() {
               내 사주와 인연을 한 곳에서 · 등껍질·궁합이 바로 열려.
             </p>
           </div>
-          <Link
-            href="/more/people"
-            prefetch
-            className="shrink-0 inline-flex items-center gap-1 rounded-full bg-navy px-3 py-2 text-xs font-black text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]"
-          >
-            <Plus size={13} strokeWidth={3} />
-            등록
-          </Link>
         </div>
 
         {/* SELF HERO CARD */}
@@ -382,16 +373,6 @@ export default async function PeoplePage() {
           </div>
         )}
 
-        <div className="mt-6 flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3 text-[11px] font-bold text-muted">
-          <span>관계도로 한눈에 보고 싶다면?</span>
-          <Link
-            href="/relations"
-            prefetch
-            className="rounded-full bg-navy/90 px-3 py-1.5 text-[11px] font-black text-white"
-          >
-            인연 지도 →
-          </Link>
-        </div>
       </div>
     </main>
   );
