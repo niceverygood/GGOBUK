@@ -221,6 +221,35 @@ export default async function AdminPage({
       ? Number(ov.revenue_krw ?? 0) / Number(ov.paid_count ?? 0)
       : 0;
 
+  // 결제 의도 peak — paywall_view(유료 해설 생성·프리미엄 상점·채팅 한도) 지점별 집계.
+  // BETA_FREE_MODE 라 실결제는 아니지만 "결제 켜기 전 어디서 결제했을지" 학습용.
+  const paywallSince = new Date(
+    new Date().getTime() - days * 86_400_000,
+  ).toISOString();
+  const { data: paywallRows } = await admin
+    .from('analytics_events')
+    .select('props')
+    .eq('event_name', 'paywall_view')
+    .gte('created_at', paywallSince)
+    .limit(20000);
+  const PAYWALL_PEAK_LABEL: Record<string, string> = {
+    interpretation: '정밀 해설 생성',
+    premium_service: '프리미엄 상점 열기',
+    chat_limit: '채팅 한도 도달',
+  };
+  const paywallPeaks = (() => {
+    const m = new Map<string, number>();
+    for (const r of paywallRows ?? []) {
+      const props = (r as { props?: Record<string, unknown> | null }).props ?? {};
+      const peak = (props.peak as string | undefined) || '(unknown)';
+      m.set(peak, (m.get(peak) ?? 0) + 1);
+    }
+    return [...m.entries()]
+      .map(([peak, hits]) => ({ peak, hits }))
+      .sort((a, b) => b.hits - a.hits);
+  })();
+  const paywallTotal = paywallPeaks.reduce((s, p) => s + p.hits, 0);
+
   const kpis: Array<{ label: string; value: string; sub?: string }> = [
     { label: '총 회원', value: num(ov.users_total), sub: `오늘 +${num(ov.users_today)} · 7일 +${num(ov.users_7d)}` },
     { label: '누적 매출', value: `₩${num(ov.revenue_krw)}`, sub: `오늘 ₩${num(ov.revenue_today_krw)}` },
@@ -414,6 +443,34 @@ export default async function AdminPage({
                 </table>
               </div>
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* 결제 의도 peak — paywall_view (BETA 중 '결제했을 순간' 학습) */}
+      <section className="mt-8">
+        <div className="mb-3">
+          <h2 className="text-sm font-black text-navy">결제 의도 peak (paywall)</h2>
+          <p className="text-[11px] font-bold text-muted">
+            최근 {days}일 · 유료 행동 시도 {num(paywallTotal)}건 · BETA 무료(결제 켜기 전 전환 학습)
+          </p>
+        </div>
+        {paywallPeaks.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-navy/20 bg-white p-5 text-sm font-bold text-muted">
+            아직 결제 의도 이벤트가 없어요. (유료 해설 생성·프리미엄 상점·채팅 한도 도달 시 기록)
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-navy/10 bg-white p-5">
+            {paywallPeaks.map((p, i) => (
+              <FunnelRow
+                key={p.peak}
+                label={PAYWALL_PEAK_LABEL[p.peak] ?? p.peak}
+                count={p.hits}
+                pct={(p.hits / Math.max(1, paywallPeaks[0].hits)) * 100}
+                color="bg-gold/80"
+                isLast={i === paywallPeaks.length - 1}
+              />
+            ))}
           </div>
         )}
       </section>
