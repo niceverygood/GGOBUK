@@ -208,14 +208,6 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
             initialContent={cached?.content ?? ''}
           />
         </Card>
-
-        <Link
-          href="/chat"
-          prefetch
-          className="mt-6 block w-full rounded-2xl bg-navy text-white text-center py-4 font-black shadow-[0_14px_26px_rgba(44,62,80,0.22)] active:scale-[0.99] transition"
-        >
-          {PERSONAS[persona].displayName}에게 더 물어보기
-        </Link>
       </div>
     </main>
   );
@@ -226,9 +218,10 @@ export default async function InterpretationDetailPage({ params }: PageProps) {
  * 사주아이·점신처럼 시점성 hook을 만드는 가벼운 장치.
  */
 function InterpretationAgeBadge({ generatedAt }: { generatedAt: string }) {
-  const days = Math.floor(
-    (Date.now() - new Date(generatedAt).getTime()) / 86400000,
-  );
+  // 서버 컴포넌트(force-dynamic): 요청당 1회만 렌더되어 Date.now()가 안전(재렌더 없음).
+  // eslint-disable-next-line react-hooks/purity
+  const elapsedMs = Date.now() - new Date(generatedAt).getTime();
+  const days = Math.floor(elapsedMs / 86400000);
   let label: string;
   let stale = false;
   if (days <= 0) label = '오늘 생성';
