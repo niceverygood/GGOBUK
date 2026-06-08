@@ -752,6 +752,15 @@ export function InterpretationPanel({
       <InterpretationBody text={content} />
       <div className="mt-5 space-y-3">
         {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
+        {!loading && (
+          <button
+            type="button"
+            onClick={() => generate()}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-mint/40 bg-mint/10 px-4 py-3 text-sm font-black text-mint-dark transition active:scale-[0.99]"
+          >
+            🔄 현재 모드로 다시 생성 · {generationCost}꼬북알
+          </button>
+        )}
         {!loading && <ComicPanel category={category} content={content} />}
         {/* 부적 만들기 — 임시 숨김 (v1 출시 후 재오픈 예정) */}
         {/* {!loading && <TalismanPanel category={category} />} */}
