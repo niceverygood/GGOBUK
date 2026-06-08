@@ -31,7 +31,7 @@ export function MoreStoreLink({ credits }: { credits: number }) {
         </div>
         <div className="text-xs font-bold text-muted mt-0.5">
           {nativeApp
-            ? `보유 ${credits} ${CREDIT_UNIT}`
+            ? `충전하기 · 보유 ${credits} ${CREDIT_UNIT}`
             : '구독 없이 필요한 AI 풀이만 사용'}
         </div>
       </div>

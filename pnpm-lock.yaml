@@ -17,6 +17,9 @@ importers:
       '@capacitor/ios':
         specifier: ^8.3.4
         version: 8.3.4(@capacitor/core@8.3.4)
+      '@revenuecat/purchases-capacitor':
+        specifier: ^13.1.5
+        version: 13.1.5(@capacitor/core@8.3.4)
       '@supabase/ssr':
         specifier: ^0.10.3
         version: 0.10.3(@supabase/supabase-js@2.105.4)
@@ -807,6 +810,14 @@ packages:
     peerDependencies:
       react: '>=17'
       react-dom: '>=17'
+
+  '@revenuecat/purchases-capacitor@13.1.5':
+    resolution: {integrity: sha512-klI2VL31woeY0spbZpOYh/b8L2Azv+pbP+ueU3E3NaG8D7Rv1hWM7X+t18rSynY6/L5U1XoA6El27i5UG6jrAw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@revenuecat/purchases-typescript-internal-esm@18.10.0':
+    resolution: {integrity: sha512-vW9adMqUuudMKt7pYhbRrihcA/xbhooHW616n3weVGzJKfaXRUiSzTwmtISS8KyYBpzQsf2i2oGkk9swLI3Tpw==}
 
   '@rolldown/binding-android-arm64@1.0.1':
     resolution: {integrity: sha512-fJI3I0r3C3Oj/zdBCpaCmBRZYf07xpaq4yCfDDoSFm+beWNzbIl26puW8RraUdugoJw/95zerNOn6jasAhzSmg==}
@@ -4001,6 +4012,13 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - immer
+
+  '@revenuecat/purchases-capacitor@13.1.5(@capacitor/core@8.3.4)':
+    dependencies:
+      '@capacitor/core': 8.3.4
+      '@revenuecat/purchases-typescript-internal-esm': 18.10.0
+
+  '@revenuecat/purchases-typescript-internal-esm@18.10.0': {}
 
   '@rolldown/binding-android-arm64@1.0.1':
     optional: true

@@ -16,6 +16,7 @@ import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Card, ButtonPrimary, Badge } from '@/components/ui/primitives';
 import { BottomActionBar } from '@/components/nav/BottomActionBar';
 import { FirstDealBanner } from '@/components/store/FirstDealBanner';
+import { NativeCreditStore } from '@/components/store/NativeCreditStore';
 import {
   CREDIT_COSTS,
   CREDIT_PACKAGES,
@@ -132,6 +133,7 @@ function CreditPageInner() {
   const [loading, setLoading] = useState<CreditPackageId | 'firstdeal' | null>(null);
   const [balance, setBalance] = useState(0);
   const [nativeApp, setNativeApp] = useState(false);
+  const [iapDone, setIapDone] = useState(false);
   const recommended = useMemo(
     () => CREDIT_PACKAGES.find((pkg) => pkg.recommended) ?? CREDIT_PACKAGES[0],
     [],
@@ -184,6 +186,20 @@ function CreditPageInner() {
     } finally {
       setLoading(null);
     }
+  }
+
+  // 네이티브 IAP 결제 성공 후 — 잔액은 RevenueCat 웹훅이 비동기로 올리므로
+  // /api/me 를 몇 번 폴링해 반영되는 즉시 표시한다.
+  function handleIapPurchased() {
+    setIapDone(true);
+    let tries = 0;
+    const id = window.setInterval(() => {
+      tries += 1;
+      void fetch('/api/me')
+        .then((r) => r.json())
+        .then((d) => setBalance(Number(d?.user?.credit_balance ?? 0)));
+      if (tries >= 8) window.clearInterval(id);
+    }, 2000);
   }
 
   return (
@@ -286,6 +302,17 @@ function CreditPageInner() {
             ))}
           </div>
         </Card>
+
+        {nativeApp && (
+          <>
+            {iapDone && (
+              <p className="mt-4 rounded-2xl bg-mint/30 p-3 text-sm font-bold text-navy">
+                결제 완료! 곧 꼬북알이 계정에 반영돼요.
+              </p>
+            )}
+            <NativeCreditStore onPurchased={handleIapPurchased} />
+          </>
+        )}
 
         {!nativeApp && (
           <div className="mt-4 grid gap-2">
