@@ -10,6 +10,22 @@ export function isNativeIOS(): boolean {
 }
 
 /**
+ * Detect if running inside Capacitor Android native shell.
+ *
+ * 안드로이드를 TWA → Capacitor 로 전환한 뒤부터 이게 '진짜 네이티브 안드로이드'다.
+ * (구버전 TWA 설치분은 isTWA() 가 referrer 로 잡는다 — 전환기 동안 둘 다 본다.)
+ * Capacitor 는 remote server.url 을 로드해도 WebView 에 네이티브 브릿지를
+ * 주입하므로 isNativePlatform()/getPlatform() 이 정상 동작한다.
+ * SSR-safe: always returns false on the server.
+ */
+export function isNativeAndroid(): boolean {
+  if (typeof window === "undefined") return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cap = (window as any).Capacitor;
+  return cap?.isNativePlatform?.() === true && cap?.getPlatform?.() === "android";
+}
+
+/**
  * Android Play 배포 TWA(Trusted Web Activity) 감지.
  *
  * 왜 필요한가: 구글플레이로 깔린 앱(TWA)은 디지털 재화(꼬북알) 결제를 반드시
@@ -67,5 +83,5 @@ export function isTWA(): boolean {
  * 카카오페이 웹 결제(=충전/구매) UI 는 이 함수가 true 일 때 전부 숨긴다.
  */
 export function isNativeApp(): boolean {
-  return isNativeIOS() || isTWA();
+  return isNativeIOS() || isNativeAndroid() || isTWA();
 }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">꼬북점</string>
+    <string name="title_activity_main">꼬북점</string>
+    <string name="package_name">com.niceverygood.ggobuk</string>
+    <string name="custom_url_scheme">com.niceverygood.ggobuk</string>
+</resources>
