@@ -172,6 +172,9 @@ export async function POST(req: Request) {
   const { error: insertErr } = await admin.from('credit_purchases').insert({
     user_id: user.id,
     partner_order_id: dedupKey,
+    // credit_purchases.kakao_tid 는 레거시 KakaoPay 기준 NOT NULL. IAP 결제엔 스토어
+    // 트랜잭션 id(dedupKey: gp_/as_)를 넣어 제약을 만족(컬럼 nullable 여부와 무관하게 통과).
+    kakao_tid: dedupKey,
     package_id: grant.packageId,
     credits: grant.totalCredits,
     bonus_credits: 0,
