@@ -19,8 +19,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // ⚠️ Play 의 현재 최고 versionCode 보다 반드시 높아야 업로드 가능.
         // (Play Console → 앱 무결성/번들 explorer 에서 확인 후 필요시 더 올릴 것.)
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.0.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
