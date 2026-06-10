@@ -8,6 +8,7 @@ import {
   generateInterpretation,
 } from '@/lib/llm/interpret';
 import { interpretationCostFor } from '@/lib/credits';
+import { loadUserMemory, formatUserMemory } from '@/lib/llm/memory';
 import {
   addCredits,
   isInsufficientCreditsError,
@@ -108,6 +109,9 @@ export async function POST(req: Request) {
     });
   }
 
+  // 꼬북이가 과거 대화에서 기억한 이 사람의 실제 삶 → 풀이에 녹여 "나를 안다"는 적중감.
+  const memory = formatUserMemory(await loadUserMemory(supabase, user.id));
+
   let result;
   try {
     result = await generateInterpretation(
@@ -118,6 +122,7 @@ export async function POST(req: Request) {
       persona,
       isAppend,
       isAppend ? title : undefined,
+      memory,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';

@@ -976,6 +976,10 @@ export async function generateInterpretation(
   /** Supplement 항목의 짧은 제목. 시작 헤딩으로 박아두면 클라이언트가 본문에서
    *  소비된 항목을 식별할 수 있다. */
   supplementTitle?: string,
+  /** 과거 대화에서 추린 이 사용자의 장기 기억(평문 줄목록, formatUserMemory).
+   *  풀이를 이 사람의 실제 삶에 맞춰 "이 앱이 나를 안다"는 적중감을 주기 위해.
+   *  비면 생략 → 순수 사주 풀이. system 캐시를 깨지 않도록 user 메시지에만 주입. */
+  memory?: string,
 ): Promise<{ content: string; tokensUsed: number; model: string }> {
   const cat = INTERPRETATION_CATEGORIES.find((c) => c.key === category);
   if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
@@ -1002,6 +1006,16 @@ export async function generateInterpretation(
 - 심화 초점(사용자 질문의 의도): ${focus ?? '추가 깊이'}`
     : '';
 
+  // 과거 대화 장기 기억 → 풀이를 이 사람의 실제 삶에 닿게(적중감의 핵심).
+  // 사주에서 원래 읽어낸 듯 자연스럽게 녹이도록 지시 — 대놓고 인용하면 마법이 깨진다.
+  const memoryBlock = memory?.trim()
+    ? `
+
+[꼬북이가 이 사람에 대해 기억하는 것 — 과거 대화에서]
+${memory.trim()}
+→ 이 풀이가 막연한 일반론으로 흐르지 않게, 위 기억(이 사람의 실제 상황·고민·관계·일)과 이 카테고리의 사주 근거가 만나는 지점을 본문에 1-2곳 자연스럽게 녹여라. 단 "당신은 ~라고 했죠"처럼 대놓고 인용하지 말고, 마치 사주에서 원래 읽어낸 것처럼 짚어 "어떻게 이걸 알지?" 싶게 한다. "## 한눈에"의 "이렇게 해봐" 행동도 이 사람의 실제 상황에 맞춘다. 기억이 이 카테고리와 무관하면 억지로 넣지 마라.`
+    : '';
+
   const userMsg = `다음 사주를 "${cat.title}" 관점에서 깊이 풀이해줘. 현재 모드는 ${persona}.
 
 ${context}
@@ -1010,6 +1024,7 @@ ${extraContext ? `\n${extraContext}\n` : ''}
 
 이 카테고리에서 반드시 인용해야 하는 명리 근거(앵커):
 ${anchorLines}
+${memoryBlock}
 
 ${focus ? `\n추가 심화 초점: ${focus}\n이 초점을 중심으로 일반론보다 더 구체적인 판독 근거, 위험 신호, 실전 처방을 강화해줘.\n` : ''}${supplementDirective}
 작성 요구:
