@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Bell, Brain, CalendarCheck, Map, UsersRound } from 'lucide-react';
+import { Bell, Brain, CalendarCheck, ChevronRight, Map, UsersRound } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
@@ -118,7 +118,7 @@ function MoreLink({
         <div className="text-sm font-black text-navy">{title}</div>
         <div className="text-xs font-bold text-muted mt-0.5">{subtitle}</div>
       </div>
-      <span className="text-muted">→</span>
+      <ChevronRight size={18} strokeWidth={2.6} className="shrink-0 text-muted" />
     </Link>
   );
 }

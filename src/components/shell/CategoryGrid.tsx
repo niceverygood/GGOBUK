@@ -45,14 +45,15 @@ export function CategoryGrid() {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="text-2xl leading-none">{ICONS[cat.key] ?? '·'}</div>
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-mint/15 text-navy opacity-0 transition group-hover:opacity-100">
+            {/* 터치 기기에선 hover가 없으므로 탭 가능 화살표를 항상 노출 (hover 시 강조) */}
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-mint/15 text-mint-dark transition group-hover:bg-mint/30 group-hover:text-navy">
               <ArrowRight size={14} strokeWidth={3} />
             </span>
           </div>
           <h4 className="mt-2 text-[15px] font-black text-navy">{cat.title}</h4>
           <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">{SUBTITLES[cat.key]}</p>
-          <span className="mt-auto pt-2 text-[10px] font-extrabold text-mint-dark opacity-0 transition group-hover:opacity-100">
-            바로 보기
+          <span className="mt-auto pt-2 text-[10px] font-extrabold text-mint-dark">
+            바로 보기 →
           </span>
         </Link>
       ))}
