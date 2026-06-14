@@ -144,6 +144,12 @@ export function TodayScoreHero({
             ))}
           </ul>
         )}
+        {oneLiner && (
+          // 진짜 손실회피: 일진은 실제로 날짜 경계로 바뀜(거짓 만료 아님).
+          <p className="mt-2.5 text-[11px] font-bold text-mint-dark">
+            오늘의 일진은 오늘만 · 내일이면 새 흐름이에요
+          </p>
+        )}
         {!oneLiner && <EnsureDaily sajuId={sajuId} />}
       </div>
 

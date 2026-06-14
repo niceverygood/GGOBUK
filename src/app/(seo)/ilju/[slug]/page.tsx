@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Sparkles, ShieldAlert } from 'lucide-react';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { ShareIljuButton } from '@/components/ilju/ShareIljuButton';
+import { IljuSignupCta } from '@/components/ilju/IljuSignupCta';
 import { Badge } from '@/components/ui/primitives';
 import { iljuTheme } from '@/lib/saju/ilju_profile';
 import { SITE_NAME, absoluteUrl } from '@/lib/seo/site';
@@ -159,6 +160,7 @@ export default async function IljuDetailPage({ params }: PageProps) {
                     url={shareUrl}
                     name={profile.name}
                     accent={theme.accent}
+                    slug={e.slug}
                   />
                   <Link
                     href="/preview"
@@ -321,6 +323,10 @@ export default async function IljuDetailPage({ params }: PageProps) {
           </Link>
         </div>
       </section>
+
+      {/* 비로그인 모바일 유입 전용 sticky 가입 CTA + 그만큼의 하단 여백 */}
+      <div className="h-20" aria-hidden />
+      <IljuSignupCta />
     </main>
   );
 }

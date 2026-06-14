@@ -53,6 +53,14 @@ export default async function OnboardingResult() {
         >
           꼬북점 시작하기
         </Link>
+
+        {/* 첫 무료 소비 즉시 유도 — 0알 총평(무료 카테고리)으로 바로 진입 */}
+        <Link
+          href="/shell/overview"
+          className="mt-3 block w-full max-w-md rounded-2xl border border-navy/12 bg-white text-navy text-center py-3.5 font-black"
+        >
+          먼저 무료 총평부터 열어보기 →
+        </Link>
       </div>
     </main>
   );

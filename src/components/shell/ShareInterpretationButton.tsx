@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Share2, Check } from 'lucide-react';
 import type { InterpretationCategory } from '@/types/db';
 import type { PersonaKey } from '@/lib/llm/personas';
+import { track } from '@/lib/analytics/track';
+import { withShareUtm } from '@/lib/seo/share_link';
 
 interface Props {
   category: InterpretationCategory;
@@ -22,11 +24,16 @@ export function ShareInterpretationButton({ category, persona, disabled }: Props
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tracked = useRef(false);
 
   async function handleShare() {
     if (disabled || loading) return;
     setLoading(true);
     setError(null);
+    if (!tracked.current) {
+      tracked.current = true;
+      track('share_click', { kind: 'interp', category, persona });
+    }
     try {
       const res = await fetch('/api/share/create', {
         method: 'POST',
@@ -38,7 +45,10 @@ export function ShareInterpretationButton({ category, persona, disabled }: Props
         setError(data.detail ?? data.error ?? '공유 링크를 만들지 못했어요.');
         return;
       }
-      const url: string = data.shareUrl;
+      const url: string = withShareUtm(data.shareUrl, {
+        campaign: 'interp',
+        content: category,
+      });
       // Native share API (iOS/Android) 우선
       if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
         try {

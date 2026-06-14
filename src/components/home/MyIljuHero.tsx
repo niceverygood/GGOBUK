@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { ArrowRight, Pencil } from 'lucide-react';
 import { Badge, Card } from '@/components/ui/primitives';
-import { iljuProfileOf, iljuSlugOf } from '@/lib/saju/ilju_profile';
+import { iljuProfileOf, iljuSlugOf, iljuTheme } from '@/lib/saju/ilju_profile';
+import { absoluteUrl } from '@/lib/seo/site';
+import { ShareIljuButton } from '@/components/ilju/ShareIljuButton';
 import type { Palja } from '@/lib/saju/types';
 
 interface Props {
@@ -39,6 +41,9 @@ export function MyIljuHero({
   const ilju = iljuProfileOf(day.ganIdx, day.jiIdx);
   const calendar = isLunar ? '음력' : '양력';
   const time = birthTime ? birthTime.slice(0, 5) : '시간 모름';
+  const slug = ilju ? iljuSlugOf(ilju.index) : '';
+  const theme = ilju ? iljuTheme(ilju.index) : null;
+  const shareUrl = absoluteUrl(`/ilju/${slug}`);
 
   return (
     <Card className="mt-1 overflow-hidden p-0">
@@ -131,14 +136,36 @@ export function MyIljuHero({
         </div>
         )}
 
-        {ilju && (
-          <Link
-            href={`/ilju/${iljuSlugOf(ilju.index)}`}
-            className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-mint py-3 text-sm font-black text-[#163438] shadow-[0_10px_18px_rgba(44,62,80,0.12)]"
-          >
-            내 사주 캐릭터 카드 보기 · 공유
-            <ArrowRight size={15} strokeWidth={3} />
-          </Link>
+        {/* 바이럴 진입 — "바로 공유"(원탭)를 primary로, compact 홈에선 공유만 노출 */}
+        {ilju && theme && (
+          compact ? (
+            <ShareIljuButton
+              url={shareUrl}
+              name={ilju.name}
+              accent={theme.accent}
+              slug={slug}
+              label="내 캐릭터 카드 친구한테 보내기"
+              className="mt-4 w-full"
+            />
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <ShareIljuButton
+                url={shareUrl}
+                name={ilju.name}
+                accent={theme.accent}
+                slug={slug}
+                label="친구한테 보내기"
+                className="w-full"
+              />
+              <Link
+                href={`/ilju/${slug}`}
+                className="inline-flex min-h-13 items-center justify-center gap-1.5 rounded-2xl border border-navy/10 bg-ivory text-sm font-black text-navy"
+              >
+                내 카드 자세히 보기
+                <ArrowRight size={15} strokeWidth={3} />
+              </Link>
+            </div>
+          )
         )}
       </div>
     </Card>
