@@ -7,7 +7,7 @@ import {
   generateFallbackInterpretation,
   generateInterpretation,
 } from '@/lib/llm/interpret';
-import { interpretationCostFor } from '@/lib/credits';
+import { interpretationCostFor, isFreeInterpretation } from '@/lib/credits';
 import { loadUserMemory, formatUserMemory } from '@/lib/llm/memory';
 import {
   addCredits,
@@ -86,15 +86,20 @@ export async function POST(req: Request) {
     gender: profile.gender,
   });
 
+  // 무료 카테고리(총평/오행/일주)는 심화(focus)가 아닌 한 과금하지 않는다.
+  // 심화 deep-dive는 무료 카테고리라도 추가 생성이므로 정상 과금.
+  const chargeable = isAppend || !isFreeInterpretation(category);
   let creditsSpent = false;
   try {
-    await spendCredits({
-      userId: user.id,
-      amount: interpretationCostFor(persona),
-      reason: `사주 해설 ${focus ? '심화 ' : ''}생성:${category}`,
-      referenceId: profile.id,
-    });
-    creditsSpent = true;
+    if (chargeable) {
+      await spendCredits({
+        userId: user.id,
+        amount: interpretationCostFor(persona),
+        reason: `사주 해설 ${focus ? '심화 ' : ''}생성:${category}`,
+        referenceId: profile.id,
+      });
+      creditsSpent = true;
+    }
   } catch (e) {
     if (isInsufficientCreditsError(e)) {
       return NextResponse.json(

@@ -1169,6 +1169,55 @@ function sipsungSummary(saju: SajuResult): string {
   return entries.map(([, value]) => value).join(', ') || '십성 미상';
 }
 
+/**
+ * 호기심 갭 "훅" — 잠긴 유료 풀이의 미끼(미리보기). 결론·점수·시기·처방은 절대
+ * 말하지 않고, 이 사람 사주에서 가장 의외이고 개인적인 지점을 콕 집어 2~3문장으로
+ * 호기심만 남기고 말줄임으로 끊는다. cheap 티어(haiku)로 싸고 빠르게.
+ * spendCredits를 호출하지 않으므로 미끼는 항상 무료.
+ */
+export async function generateInterpretationHook(
+  saju: SajuResult,
+  category: InterpretationCategory,
+  name?: string,
+  persona: PersonaKey = 'kkobuk',
+): Promise<{ hook: string; tokensUsed: number; model: string }> {
+  const cat = INTERPRETATION_CATEGORIES.find((c) => c.key === category);
+  if (!cat) throw new Error(`Unknown interpretation category: ${category}`);
+  const context = formatSajuContext(saju, name);
+  const extra = categoryExtraContext(saju, category);
+  const toneHint =
+    persona === 'mudang'
+      ? '직설적이고 시크한 반말'
+      : persona === 'dosa'
+        ? '낮고 묵직한 어른 말투'
+        : persona === 'bosal'
+          ? '다정하고 따뜻한 말투'
+          : '친구처럼 가벼운 반말';
+
+  const system = `너는 "꼬북점"의 사주 상담가다. 지금은 잠긴 유료 풀이의 "맛보기 훅"만 쓴다.
+규칙(엄수):
+- 정확히 2~3문장. ${toneHint}.
+- 이 사람 사주에서 가장 의외이고 개인적인 한 지점을 콕 집어 호기심을 최대로 끌어올린다.
+- 결론·점수·구체적 시기·처방·해결책은 절대 말하지 않는다(그건 전체 풀이에서). "왜 그런지"를 암시만 한다.
+- 마지막은 말줄임(—)이나 "전체 풀이에서 풀어줄게"처럼 다음이 궁금하게 끊는다.
+- 단정적 재앙·불안 조장 금지("망한다/큰일난다" 류 금지). 호기심과 자기이해의 따뜻한 톤.
+- JSON·마크다운·헤딩 없이 평문만.`;
+
+  const userMsg = `다음 사주를 "${cat.title}" 관점에서 볼 때, 전체 풀이를 보고 싶게 만드는 훅 2~3문장만 써줘.
+
+${context}
+${extra ? `\n${extra}\n` : ''}이 카테고리의 초점: ${cat.prompt}`;
+
+  const { text, tokensUsed, model } = await complete({
+    tier: 'cheap',
+    system,
+    messages: [{ role: 'user', content: userMsg }],
+    maxTokens: 240,
+    temperature: 0.75,
+  });
+  return { hook: text.trim(), tokensUsed, model };
+}
+
 export function generateFallbackInterpretation(
   saju: SajuResult,
   category: InterpretationCategory,

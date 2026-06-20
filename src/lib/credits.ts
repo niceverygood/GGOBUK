@@ -129,6 +129,18 @@ export const FREE_DAILY_LIMITS = {
   talismansLifetime: 1,
 } as const;
 
+/**
+ * 무료로 열리는 정밀풀이 카테고리 (12개 중 앞 3개 — 총평/오행/일주).
+ * 이 카테고리는 spendCredits를 건너뛰고(BETA_FREE_MODE 해제 후에도 항상 0알),
+ * UI도 페이월 없이 바로 생성한다. 나머지 9개(유료)는 호기심 갭 페이월
+ * (훅 미리보기 무료 → 결제로 본문 해제)을 거친다. PRICING.md §3 "free 3" 정렬.
+ */
+export const FREE_INTERPRETATION_KEYS = ['overview', 'ohaeng', 'ilju'] as const;
+
+export function isFreeInterpretation(category: string): boolean {
+  return (FREE_INTERPRETATION_KEYS as readonly string[]).includes(category);
+}
+
 // 패키지 perks는 사용자가 카드에서 한눈에 보는 마케팅 카피.
 // 정확한 dynamic 환산은 packageBreakdown() 사용.
 export const CREDIT_PACKAGES: CreditPackage[] = [

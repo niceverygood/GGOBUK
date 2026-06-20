@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Layers3 } from "lucide-react";
 import { InterpretationBody } from "@/components/shell/InterpretationBody";
 import { ComicPanel } from "@/components/shell/ComicPanel";
 import { ShareInterpretationButton } from "@/components/shell/ShareInterpretationButton";
+import { LockedPreview } from "@/components/shell/LockedPreview";
 // import { TalismanPanel } from "@/components/shell/TalismanPanel"; // 부적 만들기 — 임시 숨김
 import { ButtonPrimary } from "@/components/ui/primitives";
 import { AnalysisLoader } from "@/components/ui/AnalysisLoader";
-import { interpretationCostFor } from "@/lib/credits";
+import { interpretationCostFor, isFreeInterpretation } from "@/lib/credits";
 import { isNativeApp } from "@/lib/utils/platform";
 import { track } from "@/lib/analytics/track";
 import { readPersonaMode } from "@/lib/utils/persona-mode";
@@ -596,6 +597,10 @@ export function InterpretationPanel({
   const [loading, setLoading] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState("");
+  // 잠긴 유료 카테고리의 호기심갭 "훅"(무료 미끼) — 마운트 시 1회 fetch.
+  const [hook, setHook] = useState<string | null>(null);
+  const [hookLoading, setHookLoading] = useState(false);
+  const hookFetchedRef = useRef(false);
   const isRichReport =
     content.includes("##") || content.includes("| 사주 근거 |");
 
@@ -675,6 +680,23 @@ export function InterpretationPanel({
     return () => window.clearInterval(timer);
   }, [category, loading]);
 
+  // 잠긴 유료 카테고리 → 마운트 시 무료 "훅"(호기심 미끼) 1회 fetch. 무료 3개는 불필요.
+  useEffect(() => {
+    if (content || isFreeInterpretation(category) || hookFetchedRef.current)
+      return;
+    hookFetchedRef.current = true;
+    setHookLoading(true);
+    fetch("/api/interpretations/hook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, persona: readPersonaMode() }),
+    })
+      .then((r) => r.json())
+      .then((d) => setHook(typeof d?.hook === "string" ? d.hook : null))
+      .catch(() => setHook(null))
+      .finally(() => setHookLoading(false));
+  }, [category, content]);
+
   function generate(focus?: string, title?: string) {
     // 결제 의도 신호 — 유료 해설을 생성하려는 순간이 '여기서 결제했을 지점'.
     // BETA_FREE_MODE 라 실제로는 무료지만, 어느 풀이가 전환을 끄는지 미리 학습한다.
@@ -701,15 +723,32 @@ export function InterpretationPanel({
   }
 
   if (!content) {
+    const free = isFreeInterpretation(category);
+
+    // 잠긴 유료 카테고리 & 생성 전 → 호기심갭 페이월(무료 훅 + 블러 본문 + 해제).
+    if (!free && !loading) {
+      return (
+        <LockedPreview
+          hook={hook}
+          loading={hookLoading}
+          cost={generationCost}
+          onUnlock={() => generate()}
+          error={error}
+        />
+      );
+    }
+
+    // 무료 카테고리, 또는 (유료) 해제 후 생성 중 → 안내 카드 + 버튼/로더.
     return (
       <div className="space-y-4">
         <div>
           <p className="text-sm font-black text-navy">
-            AI 정밀 리포트가 아직 없어
+            {free ? "이 풀이는 무료야" : "AI 정밀 리포트가 아직 없어"}
           </p>
           <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-            꼬북알을 사용하면 원국 근거, 표, 체감 체크포인트까지 묶어서 깊게
-            풀어줄게.
+            {free
+              ? "원국 근거와 체감 체크포인트까지 바로 풀어줄게."
+              : "꼬북알을 사용하면 원국 근거, 표, 체감 체크포인트까지 묶어서 깊게 풀어줄게."}
           </p>
         </div>
         {loading && <AnalysisLoadingIndicator elapsedMs={elapsedMs} />}
@@ -720,7 +759,9 @@ export function InterpretationPanel({
         >
           {loading
             ? ANALYSIS_STEPS[loadingStepIndex(loadingProgress(elapsedMs))].title
-            : `${generationCost}꼬북알로 해설 생성`}
+            : free
+              ? "무료로 해설 받기"
+              : `${generationCost}꼬북알로 해설 생성`}
         </ButtonPrimary>
         {error && (
           <p className="text-center text-xs font-bold text-red">
