@@ -1212,7 +1212,9 @@ ${extra ? `\n${extra}\n` : ''}이 카테고리의 초점: ${cat.prompt}`;
     tier: 'cheap',
     system,
     messages: [{ role: 'user', content: userMsg }],
-    maxTokens: 240,
+    // 한국어 2~3문장 + 호기심 컷이 240토큰에 단어 중간 잘리던 문제 → 여유 확보.
+    // (프롬프트가 "정확히 2~3문장"으로 길이를 self-limit 하므로 과해지지 않음.)
+    maxTokens: 420,
     temperature: 0.75,
   });
   return { hook: text.trim(), tokensUsed, model };
