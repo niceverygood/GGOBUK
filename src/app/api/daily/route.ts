@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { hasAiConsent } from '@/lib/privacy/consent';
+import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { generateDaily } from '@/lib/llm/daily';
 import { loadUserMemory, formatUserMemory } from '@/lib/llm/memory';
 import { buildSajuResult } from '@/lib/saju';
@@ -21,6 +22,10 @@ export async function GET(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const rl = rateLimit(rateLimitKey(user.id, 'daily-get'), 12, 60_000);
+  if (!rl.allowed)
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   const url = new URL(req.url);
   const sajuId = url.searchParams.get('saju_id');

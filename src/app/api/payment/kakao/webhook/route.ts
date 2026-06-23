@@ -20,11 +20,8 @@ async function verifySignature(
   signature: string | null,
 ): Promise<boolean> {
   const secret = process.env.KAKAO_PAY_SECRET_KEY;
-  // If no secret configured, reject all webhooks in production.
-  if (!secret) {
-    if (process.env.NODE_ENV === 'development') return true;
-    return false;
-  }
+  // fail-closed: 시크릿 미설정이면 환경 무관하게 거부 (dev/preview 위조 웹훅으로 Pro 무단 부여 방지).
+  if (!secret) return false;
   if (!signature) return false;
 
   const encoder = new TextEncoder();

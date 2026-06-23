@@ -180,6 +180,7 @@ export function ChatThread({
         for (const line of lines) {
           if (!line.startsWith('data:')) continue;
           const payload = JSON.parse(line.slice(5).trim());
+          if (payload.error) throw new Error(payload.error);
           // Feed the buffer; the typer reveals it smoothly.
           if (payload.delta) target.text += payload.delta;
         }
@@ -190,10 +191,18 @@ export function ChatThread({
       if (!typerRef.current) setStreaming(false);
     } catch {
       streamDone = true;
-      // If nothing was received, stop immediately.
+      // 아무것도 못 받았으면 빈 말풍선 대신 에러 메시지를 보여준다(무표시 방지).
       if (target.text.length === 0) {
         stopTyper();
         setStreaming(false);
+        setMessages((m) => {
+          const cp = m.slice();
+          cp[cp.length - 1] = {
+            role: 'assistant',
+            content: '⚠️ 답변을 받지 못했어요. 잠깐 후 다시 시도해 주세요.',
+          };
+          return cp;
+        });
       }
     }
   }

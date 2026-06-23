@@ -30,6 +30,9 @@ function errorCode(error: unknown) {
 }
 
 export async function POST(req: Request) {
+  // 부적 기능은 UI에서 임시 숨김 상태 — 라우트도 차단(직접 호출 우회 방지). v1.1 재오픈 시 TALISMAN_ENABLED=true.
+  if (process.env.TALISMAN_ENABLED !== 'true')
+    return NextResponse.json({ error: 'not_available' }, { status: 404 });
   const supabase = await createServerClient();
   const {
     data: { user },
