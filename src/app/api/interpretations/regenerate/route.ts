@@ -107,11 +107,13 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    logger.warn('interpretations/regenerate', 'credit spend skipped', {
+    // fail-closed: 차감이 비-잔액 사유로 실패하면 유료 풀이를 공짜로 주지 않는다.
+    logger.error('interpretations/regenerate', 'credit spend failed', {
       userId: user.id,
       category,
       message: e instanceof Error ? e.message : String(e),
     });
+    return NextResponse.json({ error: 'spend_failed' }, { status: 500 });
   }
 
   // 꼬북이가 과거 대화에서 기억한 이 사람의 실제 삶 → 풀이에 녹여 "나를 안다"는 적중감.

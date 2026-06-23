@@ -44,10 +44,12 @@ export async function GET(req: Request) {
     );
   }
 
+  // IDOR 방지: 본인 소유 프로필만 (admin insert 가 RLS 우회하므로 라우트에서 소유권 강제).
   const { data: profile } = await supabase
     .from('saju_profiles')
     .select('*')
     .eq('id', sajuId)
+    .eq('owner_id', user.id)
     .single();
   if (!profile) return NextResponse.json({ error: 'profile not found' }, { status: 404 });
 
@@ -113,9 +115,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   // Cron endpoint. Authenticate via Vercel Cron header or shared secret.
-  const vercelCronAuth = req.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`;
-  const legacyCronAuth = req.headers.get('x-cron-secret') === process.env.CRON_SECRET;
-  if (process.env.CRON_SECRET && !vercelCronAuth && !legacyCronAuth) {
+  // fail-closed: CRON_SECRET 미설정이면 거부(누구나 전체 유저 대량 생성 못 하게).
+  const secret = process.env.CRON_SECRET;
+  const vercelCronAuth = !!secret && req.headers.get('authorization') === `Bearer ${secret}`;
+  const legacyCronAuth = !!secret && req.headers.get('x-cron-secret') === secret;
+  if (!vercelCronAuth && !legacyCronAuth) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

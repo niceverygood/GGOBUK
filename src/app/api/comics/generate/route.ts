@@ -227,11 +227,13 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
-    logger.warn('comics/generate', 'credit spend skipped', {
+    // fail-closed: 차감이 비-잔액 사유로 실패하면 유료 콘텐츠를 공짜로 주지 않는다.
+    logger.error('comics/generate', 'credit spend failed', {
       userId: user.id,
       category,
       message: e instanceof Error ? e.message : String(e),
     });
+    return NextResponse.json({ error: 'spend_failed' }, { status: 500 });
   }
 
   try {

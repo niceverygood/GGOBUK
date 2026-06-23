@@ -26,11 +26,12 @@ export const maxDuration = 60;
  */
 async function handle(req: Request) {
   // Cron 인증
+  // fail-closed: CRON_SECRET 미설정이면 인증 불가 → 거부(누구나 전체 풀이 삭제 못 하게).
+  const secret = process.env.CRON_SECRET;
   const vercelCronAuth =
-    req.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`;
-  const legacyCronAuth =
-    req.headers.get('x-cron-secret') === process.env.CRON_SECRET;
-  if (process.env.CRON_SECRET && !vercelCronAuth && !legacyCronAuth) {
+    !!secret && req.headers.get('authorization') === `Bearer ${secret}`;
+  const legacyCronAuth = !!secret && req.headers.get('x-cron-secret') === secret;
+  if (!vercelCronAuth && !legacyCronAuth) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
