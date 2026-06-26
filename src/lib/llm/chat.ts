@@ -5,15 +5,17 @@ import { formatSajuContext } from './prompts/saju_context';
 import type { SajuResult } from '@/lib/saju/types';
 import type { CitedCard } from '@/types/db';
 
-export async function* chatStream(params: {
+/**
+ * 페르소나 + 사주 컨텍스트 + (선택)장기기억을 묶은 채팅 시스템 프롬프트를 만든다.
+ * chatStream(웹 스트리밍)과 카카오 챗봇(단발 complete)이 동일 프롬프트를 공유하도록
+ * 빌더를 분리해 export 한다. 동작은 종전과 동일.
+ */
+export function buildChatSystem(params: {
   persona: PersonaKey;
   saju: SajuResult;
-  history: Array<{ role: 'user' | 'assistant'; content: string }>;
-  userMessage: string;
   name?: string;
-  /** 과거 대화에서 추린 장기 기억(평문 줄목록). 없으면 블록을 생략. */
   memory?: string;
-}): AsyncIterable<string> {
+}): string {
   const persona = PERSONAS[params.persona];
   const context = formatSajuContext(params.saju, params.name);
   const memoryBlock = params.memory?.trim()
@@ -23,7 +25,7 @@ export async function* chatStream(params: {
 ${params.memory.trim()}
 → 자연스럽게 활용하되, 매번 전부 나열하지 말고 흐름에 맞는 1-2개만 슬쩍 짚어라. 처음 보는 척하지 말 것. 기억이 틀렸다고 정정하면 사용자의 말을 따른다.`
     : '';
-  const system = `${persona.systemPrompt}
+  return `${persona.systemPrompt}
 
 ## 사용자 사주 정보 (반드시 이 데이터에 근거해서 답)
 ${context}${memoryBlock}
@@ -60,6 +62,18 @@ ${PREMIUM_SAJU_GUIDE}
 예시: [[일지:사]] [[월간:정]] [[연지:축]]
 이 마크업은 클라이언트에서 등껍질 카드로 변환된다. 이건 마크다운이 아니라
 앱 전용 인용 카드 마크업이므로 사용해도 된다.`;
+}
+
+export async function* chatStream(params: {
+  persona: PersonaKey;
+  saju: SajuResult;
+  history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  userMessage: string;
+  name?: string;
+  /** 과거 대화에서 추린 장기 기억(평문 줄목록). 없으면 블록을 생략. */
+  memory?: string;
+}): AsyncIterable<string> {
+  const system = buildChatSystem(params);
 
   for await (const chunk of stream({
     tier: 'saju',

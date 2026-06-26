@@ -82,6 +82,23 @@ export interface UserMemoryRow {
   updated_at: string;
 }
 
+/** 카카오톡 채널 챗봇 사용자(앱 회원 아님). bot_user_key = 카카오 봇 스코프 고유키. */
+export interface KakaoChatUserRow {
+  bot_user_key: string;
+  name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  is_lunar: boolean;
+  is_leap_month: boolean;
+  gender: 'M' | 'F' | null;
+  persona: Persona;
+  history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  msg_count: number;
+  count_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserRow {
   id: string;
   nickname: string | null;
