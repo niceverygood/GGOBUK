@@ -213,14 +213,26 @@ export async function GET(
             {`${theme.hanja} ${theme.element}`}
           </div>
           {char ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={char}
-              alt=""
-              width={190}
-              height={190}
-              style={{ marginTop: 18, objectFit: 'contain' }}
-            />
+            // 흰 원형 메달 위에 — 채도 높은 오행 색 패널 위에 캐릭터를 직접 얹으면
+            // 민트 거북이 얼굴이 배경색에 뭉개짐(보색 충돌). 흰 배경으로 제 색 유지.
+            <div
+              style={{
+                display: 'flex',
+                marginTop: 18,
+                background: '#FFFFFF',
+                borderRadius: 999,
+                padding: 20,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={char}
+                alt=""
+                width={190}
+                height={190}
+                style={{ objectFit: 'contain' }}
+              />
+            </div>
           ) : null}
         </div>
         </div>

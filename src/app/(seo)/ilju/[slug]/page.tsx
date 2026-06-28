@@ -171,18 +171,21 @@ export default async function IljuDetailPage({ params }: PageProps) {
                 </div>
               </div>
               <div
-                className="relative flex flex-col items-center justify-center gap-2 p-6"
+                className="relative flex flex-col items-center justify-center gap-4 p-6"
                 style={{ background: theme.accent }}
               >
                 <span className="font-hanja text-[84px] font-black leading-none text-white md:text-[104px]">
                   {profile.hanja}
                 </span>
-                <KkobukSprite
-                  variant="persona-dosa"
-                  size="lg"
-                  ariaLabel={`${profile.name}일주를 설명하는 꼬북도사`}
-                  className="drop-shadow-[0_16px_28px_rgba(0,0,0,0.18)]"
-                />
+                {/* 캐릭터는 흰 원형 메달 위에 — 채도 높은 오행 색 패널(火 빨강·木 초록 등)
+                    위에 직접 얹으면 민트 거북이 얼굴이 배경색에 뭉개져 보임(보색 충돌). */}
+                <div className="grid place-items-center rounded-full bg-white/95 p-4 shadow-[0_16px_28px_rgba(0,0,0,0.20)] ring-1 ring-black/5">
+                  <KkobukSprite
+                    variant="persona-dosa"
+                    size="lg"
+                    ariaLabel={`${profile.name}일주를 설명하는 꼬북도사`}
+                  />
+                </div>
               </div>
             </div>
           </div>
