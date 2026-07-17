@@ -19,8 +19,8 @@ export default function SajuOnboardingPage() {
 
   async function submit() {
     setErr(null);
-    if (!name.trim() || !birthDate) {
-      setErr('이름과 생년월일은 필수야');
+    if (!birthDate) {
+      setErr('생년월일은 필수야');
       return;
     }
     if (!timeUnknown && !birthTime) {
@@ -33,7 +33,9 @@ export default function SajuOnboardingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          // Apple 로그인에서 전달된 계정 이름을 다시 요구하지 않는다.
+          // 사용자가 풀이용 별명을 생략하면 중립적인 호칭으로 저장한다.
+          name: name.trim() || '나',
           birthDate,
           birthTime: timeUnknown ? undefined : birthTime,
           isLunar,
@@ -72,7 +74,7 @@ export default function SajuOnboardingPage() {
 
         <div className="flex items-end gap-3 mt-6 mb-5">
           <div className="flex-1">
-            <SpeechBubble>이름은 별명도 괜찮아. 생시를 모르면 &lsquo;시간 모름&rsquo;으로 봐줄게!</SpeechBubble>
+            <SpeechBubble>풀이에서 부를 별명은 선택이야. 생시를 모르면 &lsquo;시간 모름&rsquo;으로 봐줄게!</SpeechBubble>
           </div>
           <div className="shrink-0">
             <KkobukAvatar size="md" />
@@ -80,11 +82,11 @@ export default function SajuOnboardingPage() {
         </div>
 
         <Card className="p-5 space-y-5">
-          <Field label="이름 또는 닉네임">
+          <Field label="풀이에서 부를 별명 (선택)">
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="꼬북이"
+              placeholder="입력하지 않아도 돼요"
               className="w-full h-12 rounded-2xl bg-white px-4 text-sm font-bold text-navy border border-navy/10 focus:outline-none focus:ring-2 focus:ring-mint"
             />
           </Field>

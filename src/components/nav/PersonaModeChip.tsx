@@ -124,7 +124,7 @@ export function PersonaModeChip() {
             ? '리포트 생성 중이라 모드를 바꿀 수 없어요'
             : '모드 선택. 탭하여 변경.'
         }
-        className={`fixed right-3 top-[calc(env(safe-area-inset-top)+8px)] z-40 inline-flex items-center gap-1.5 rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] pl-1 pr-2.5 py-1 transition active:scale-95 ${ACCENT[persona]} ${
+        className={`fixed right-3 top-[calc(env(safe-area-inset-top)+56px)] z-40 inline-flex items-center gap-1.5 rounded-full border border-navy/12 bg-white/92 backdrop-blur-md shadow-[0_8px_18px_rgba(44,62,80,0.12)] pl-1 pr-2.5 py-1 transition active:scale-95 ${ACCENT[persona]} ${
           busy ? 'opacity-60 cursor-not-allowed' : ''
         }`}
       >
@@ -151,7 +151,7 @@ export function PersonaModeChip() {
       {showLockHint && (
         <div
           role="status"
-          className="fixed right-3 top-[calc(env(safe-area-inset-top)+52px)] z-40 max-w-[78vw] rounded-2xl bg-navy px-3 py-2 text-[11px] font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.24)]"
+          className="fixed right-3 top-[calc(env(safe-area-inset-top)+100px)] z-40 max-w-[78vw] rounded-2xl bg-navy px-3 py-2 text-[11px] font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.24)]"
         >
           <span className="inline-flex items-center gap-1.5">
             <Lock size={11} strokeWidth={3} />
