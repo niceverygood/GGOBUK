@@ -57,7 +57,7 @@ export const SPRITE_MAP: Record<SpriteKey, SpriteAsset> = {
   back: { src: `${BASE}/characters/hires/turnaround_back@2x.png`, w: 1416, h: 1936 },
 
   'persona-kkobuk': { src: `${BASE}/characters/hires/basic_friend_waving@2x.png`, w: 1440, h: 1728 },
-  'persona-dosa': { src: `${BASE}/characters/hires/saju_master_staff@2x.png`, w: 1688, h: 2008 },
+  'persona-dosa': { src: `${BASE}/characters/hires/saju_master_staff-fixed@2x.png`, w: 1145, h: 1374 },
   'persona-mudang': { src: `${BASE}/characters/hires/direct_shaman_bell@2x.png`, w: 1728, h: 1856 },
   'persona-bosal': { src: `${BASE}/characters/hires/comfort_bodhisattva_beads@2x.png`, w: 1464, h: 1856 },
 

@@ -14,7 +14,7 @@ const SCALE = 2;
 // 페르소나별 캐릭터 원본(@2x)과 자연 비율(width/height 계산용).
 const PERSONA_CHAR: Record<PersonaKey, { file: string; w: number; h: number }> = {
   kkobuk: { file: 'basic_friend_waving@2x.png', w: 1440, h: 1728 },
-  dosa: { file: 'saju_master_staff@2x.png', w: 1688, h: 2008 },
+  dosa: { file: 'saju_master_staff-fixed@2x.png', w: 1145, h: 1374 },
   mudang: { file: 'direct_shaman_bell@2x.png', w: 1728, h: 1856 },
   bosal: { file: 'comfort_bodhisattva_beads@2x.png', w: 1464, h: 1856 },
 };
