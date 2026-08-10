@@ -5,7 +5,8 @@
 ## Mission
 
 Build the #1 Korean fortune-telling app. Beat 사주아이.
-Key differentiation: interactive turtle shell UI + persona chat + lifetime timeline + relationship graph.
+v2 (2026-08-10) 전략: **아주 단순하게** — 일주 캐릭터 카드(바이럴) + 오늘의 운세(리텐션) +
+전체 풀이 한 편 + 꼬북이 채팅(수익). 등껍질 UI와 캐릭터 IP가 차별점.
 
 ## Owner Profile
 
@@ -51,18 +52,15 @@ API surface differences between Next 14 → 16 to watch:
 
 ## Persona System
 
-4 personas share one character (꼬북이) with accessory variants:
-- `kkobuk` (none): casual friend
-- `dosa` (beard): scholar grandfather
-- `mudang` (bells): blunt MZ shaman
-- `bosal` (beads): warm bodhisattva
+**v2 (2026-08-10): 꼬북이 단일 페르소나로 고정.** 4-페르소나 선택(도사/무당/보살)과
+모드 전환 UI는 제거됨. `src/lib/llm/personas.ts`는 kkobuk 프롬프트 소스로 유지.
+DB의 `persona` 컬럼들은 'kkobuk' 고정 저장.
 
-System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
+## 과금 (v2)
 
-## Free vs Pro
-
-**Free**: first 3 of 12 interpretation categories · 5 chat messages/day · basic shell · 1 daily fortune · up to 3 relations.
-**Pro (₩7,900/mo or ₩79,000/yr)**: all 12 categories · unlimited chat · dae-un timeline · unlimited relations · daily push · OG export · 길일 finder.
+**무료**: 사주 8자·등껍질·일주 카드 · 오늘의 운세 1회/일 · 채팅 5회/일.
+**꼬북알**: 전체 풀이 5알 · 채팅 추가 질문 1알. 가입 보너스 30알. 구독 없음.
+상세는 PRICING.md (v2.0).
 
 ## Decision Log
 
@@ -89,6 +87,7 @@ System prompts in `src/lib/llm/personas.ts`. Don't drift the tones.
 - **2026-06-01**: **OG 캐릭터 또렷하게 — 2x 슈퍼샘플 렌더 + @3x/@2x 원본.** 공유 카드에서 꼬북이가 "물감 번진 듯" 흐렸음(특히 ilju 화/병오 노래하는 포즈). 원인: satori 텍스트는 벡터라 또렷하나 임베드 캐릭터는 **래스터** — 출력이 ~190px뿐이라 카톡·레티나에서 카드가 확대되면 혼자 뭉갬. 수정: ① **2x 슈퍼샘플** — 디자인 좌표는 1200×630 그대로 두고, 루트를 바깥 래퍼(`size*SCALE`)로 감싼 뒤 내부 디자인 div에 `transform: scale(2)`+`transformOrigin:'top left'`, `ImageResponse` 옵션도 `{width: w*2, height: h*2}` → 출력 **2400×1260**(1.91:1 동일)로 픽셀만 2배 확보. **satori가 scale()+top-left origin 지원함을 실측 확인**(레이아웃·클리핑 무손상). ② 원본도 고해상도 우선 — `poses/hires/${base}@3x.png`(일주 카드), `characters/hires/basic_friend_waving@2x.png`(초대 카드)을 먼저 시도하고 누락 시 표준→null로 우아한 폴백(Vercel `public/` 트레이싱 누락 대비). 두 OG 라우트(`/api/og/ilju/[slug]`, `/api/og/invite/[token]`) 모두 적용. 선언 메타 `og:image` width/height도 1200×630→**2400×1260**으로 일치(`(seo)/ilju/[slug]/page.tsx`, `invite/[token]/layout.tsx`). 검증: 두 카드 200·`image/png`·2400×1260, 화/병오 터틀 480×480 네이티브 크롭에서 선·표정·음표 선명(번짐 제거 확인). 다음: 루프③ 페르소나 데일리 푸시 리텐션 + peak-paywall.
 - **2026-06-01**: **Google Play 결제정책 대응(Option A) — Play TWA 안에서 충전/구매 UI 숨김.** 구글플레이로 배포한 앱은 TWA(Trusted Web Activity)인데, 인앱 디지털 재화(꼬북알) 결제는 **Google Play Billing 강제**다. 우리는 카카오페이 웹 PG만 있어 TWA 안에서 충전 UI를 노출하면 정책 위반(앱 삭제 위험). **APK 재빌드 없이 웹 전용으로** 차단. ① `src/lib/utils/platform.ts`에 `isTWA()`+`isNativeApp()` 추가. `isTWA`는 콜드런치 시 `document.referrer`가 정확히 `android-app://com.niceverygood.ggobuk`(assetlinks `package_name`)인지로 판정 — 카톡/인스타 인앱브라우저(android-app://타패키지)·홈설치 PWA(referrer 빈값, 결제 허용해야 함)·일반 크롬(웹 referrer)과 **오탐 없이** 구분. referrer는 문서 생성 시 1회 고정이라 SPA 소프트내비엔 유지되나 하드리로드 시 https로 바뀌므로 최초 감지값을 **sessionStorage**에 영속(localStorage 아님 — TWA는 같은 오리진 크롬 탭과 localStorage를 *공유*해 거기 저장 시 크롬 결제까지 막히는 오탐 발생; sessionStorage는 브라우징 컨텍스트별 분리). `isNativeApp()=isNativeIOS()||isTWA()`. ② 모든 `isNativeIOS()` **구매 게이트를 `isNativeApp()`로 확장** — pro/page 전체 구매 UI(패키지·번들·바텀바·헤더 카피)·에러 CTA 6곳(ChatThread/Talisman/Comic/Interpretation/ColdRead/UseCase의 "충전하기")·MoreStoreLink(상점→"내 꼬북알" 전환). ③ **신규 게이트(기존 iOS에도 누수였던 곳)**: `FirstDealBanner`(첫충전 카카오페이 트리거 — pro/page 마운트 게이트 + fetch effect 자체 가드 이중방어), auspicious "충전하기" 버튼(needsCredit 분기 안이라 인라인 `!isNativeApp()` — 하이드레이션 안전), PremiumServiceStore "꼬북상점/충전하기" 링크(항상보이는 링크는 useState+effect 관용구로 게이트). **꼬북알 *사용*(=보유분 소비)은 정책 무관이라 그대로 허용** — "X알로 열기" 등은 안 건드림. 검증: tsc green, `next build` green(/more/pro·/store·/more/auspicious 정적 프리렌더), 신규 lint는 코드베이스 기존 SSR-감지 관용구(set-state-in-effect) 1건뿐. **한계/다음**: TWA·iOS 둘 다 인앱 매출 0(웹·카톡 유입이 성장엔진이라 우회됨) — 정식 인앱 매출은 Play Billing/한국 대체결제 프로그램 등록 또는 iOS StoreKit 구현 필요(별도 블로커).
 
+- **2026-08-10**: **🪓 v2 대단순화 — "완전 새로 만든 느낌"으로 최소 기능만 남김.** 원칙: "생년월일 넣으면 → 내 사주 캐릭터가 나오고 → 매일 운세를 말해주고 → 궁금한 건 채팅으로 묻는다"에 안 들어가는 건 전부 제거. ① **남긴 것 4개**: 일주 히어로+공유(홈), 오늘의 운세(홈), **전체 풀이 한 편**(/shell — 12카테고리×4페르소나 → kkobuk 톤 단일 문서, DB 마이그레이션 없이 기존 `category='overview'`·`persona='kkobuk'` 키에 캐시), **꼬북이 채팅 부활**(/chat — 이전 세션에서 삭제됐던 걸 git에서 복원 후 단순화: 단일 세션 get-or-create, 세션 목록·장기기억·모드전환 제거, 인용 pill은 유지). ② **제거**: 인연/궁합·보관함·달력·대운 타임라인·길일·부적·웹툰·콜드리딩·유즈케이스·모드선택·페르소나별 가격차등·장기기억·3일만료 cron·first-deal·초대/공유 라우트·PersonaModeChip·GenerationStatusChip (페이지 15개+, API 16개+, 총 -8,600줄/+2,000줄). ③ **탭 4→2** (홈/내 정보), /shell·/chat은 홈의 스택 페이지. ④ **과금 v2**: reading 5알·chat 1알(하루 5 무료)만. `/store` 신설(구 /more/pro 대체, 카카오페이 리다이렉트 /store로 변경, firstdeal 판매종료·enum 제외). 패키지 5종 id·가격은 IAP 심사본 그대로. ⑤ interpret.ts 1,303줄 → ~250줄 재작성 (formatSajuContext+PREMIUM_SAJU_GUIDE+clash_timing 재사용, "## 한눈에" TLDR 시그니처 유지 — InterpretationBody 렌더러 호환). ⑥ preview/result·AiConsentGate 카피에서 제거 기능 언급 정리. terms/privacy 법률 문서는 미수정(출시 전 변호사 검토 항목). 검증: tsc·vitest·next build green, 로컬 e2e(익명로그인→동의→홈→풀이 생성 48s 200→캐시 재열람→채팅 스트리밍→상점→404 스윕) 통과. SEO(/ilju 60종·(seo) 랜딩·/preview 퍼널)와 admin·payment·push 인프라는 무변경.
 - **2026-06-10**: **⚠️ 프로덕션 스키마 드리프트 발견·해소.** `interpretations.persona` 42703 에러로 발견 — prod DB에 마이그레이션이 **부분 적용** 상태였음(사람이 SQL Editor로 선별 적용해온 결과). 전수 점검 결과 **5(컬럼)·9·11·12·13·16 누락** → 2026-06-10 SQL Editor로 일괄 적용(멱등 번들 + `notify pgrst, 'reload schema'`). 의미: 그동안 **풀이 캐시 저장이 전부 실패**(매번 재생성), **user_memory 부재로 기억 기능이 통째로 inert**, is_service_role 부재였음. mig 5의 package_id 제약은 **의도적으로 제외**(이미 적용된 15가 더 넓은 최신본 — 재실행 시 IAP id가 막힘). **mig 14(match_profiles)는 여전히 미적용**(매칭 미출시라 보류). 교훈: 마이그레이션 적용 여부를 코드 기준으로 추정하지 말 것 — `to_regclass`/`information_schema` 점검 쿼리로 실측. 같은 날: IAP verify insert에 `kakao_tid: dedupKey` 추가(NOT NULL 위반으로 실결제 500 나던 버그, a012a3a), 풀이·오늘운세에 장기기억 주입(dafe322·a9b8226), `OPENROUTER_MODEL_SAJU=anthropic/claude-sonnet-4.5` env로 saju tier를 GPT-5.1→Claude 전환(코드 무변경, env만).
 
 ## 🚀 출시 전 필수 블로커 (Pre-Launch Blockers — 반드시 처리)

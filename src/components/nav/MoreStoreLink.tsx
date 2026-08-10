@@ -15,7 +15,7 @@ export function MoreStoreLink({ credits }: { credits: number }) {
 
   return (
     <Link
-      href="/more/pro"
+      href="/store"
       className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
     >
       <span className="flex h-8 w-8 items-center justify-center text-xl">
@@ -27,12 +27,10 @@ export function MoreStoreLink({ credits }: { credits: number }) {
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-black text-navy">
-          {nativeApp ? '내 꼬북알' : '꼬북상점'}
+          {nativeApp ? '내 꼬북알' : '꼬북알 충전'}
         </div>
         <div className="text-xs font-bold text-muted mt-0.5">
-          {nativeApp
-            ? `충전하기 · 보유 ${credits} ${CREDIT_UNIT}`
-            : '구독 없이 필요한 AI 풀이만 사용'}
+          보유 {credits} {CREDIT_UNIT} · 풀이와 채팅에 사용
         </div>
       </div>
       <span className="text-muted">→</span>

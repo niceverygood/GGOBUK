@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ChatMessage } from './ChatMessage';
-import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
+import { PERSONAS } from '@/lib/llm/personas';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
-import { Badge } from '@/components/ui/primitives';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeApp } from '@/lib/utils/platform';
 import { track } from '@/lib/analytics/track';
@@ -14,13 +13,6 @@ interface InitialMessage {
   role: 'user' | 'assistant';
   content: string;
 }
-
-const PERSONA_SUBTITLE: Record<PersonaKey, string> = {
-  kkobuk: '반말 친구 톤 · 빠른 답',
-  dosa: '한학자 톤 · 정식 풀이',
-  mudang: '직설 시크 톤 · 단도직입',
-  bosal: '따뜻한 위로 톤 · 상담',
-};
 
 const SITUATION_PROMPTS = [
   {
@@ -56,13 +48,13 @@ const SITUATION_PROMPTS = [
 
 export function ChatThread({
   sessionId,
-  persona,
   initialMessages,
 }: {
   sessionId: string;
-  persona: PersonaKey;
   initialMessages: InitialMessage[];
 }) {
+  // v2 단순화: 페르소나는 꼬북이 하나로 고정.
+  const persona = 'kkobuk' as const;
   const [messages, setMessages] = useState<InitialMessage[]>(initialMessages);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -220,13 +212,10 @@ export function ChatThread({
               {personaMeta.displayName}
             </div>
             <div className="text-[11px] font-bold text-muted">
-              {PERSONA_SUBTITLE[persona]}
+              내 사주를 아는 친구 · 무엇이든 물어봐
             </div>
           </div>
         </div>
-        <Link href="/mode?from=/chat" className="inline-flex">
-          <Badge tone="mint">변신</Badge>
-        </Link>
       </header>
 
       <div
@@ -304,7 +293,7 @@ export function ChatThread({
         <div className="relative mx-4 mb-2 rounded-xl bg-gold/30 text-sm font-bold p-3 border border-gold/40">
           꼬북알이 부족해. 추가 질문은 {CREDIT_COSTS.chat}꼬북알을 사용해.
           {!isNativeApp() && (
-            <Link href="/more/pro" className="ml-2 underline underline-offset-4">
+            <Link href="/store" className="ml-2 underline underline-offset-4">
               충전하기
             </Link>
           )}

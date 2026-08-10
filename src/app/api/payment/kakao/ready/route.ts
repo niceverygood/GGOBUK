@@ -6,7 +6,7 @@ import { payReady } from '@/lib/kakao/pay';
 import { creditPackageById, totalCredits } from '@/lib/credits';
 
 const Body = z.object({
-  packageId: z.enum(['firstdeal', 'mini', 'entry', 'focus', 'deep', 'master']),
+  packageId: z.enum(['mini', 'entry', 'focus', 'deep', 'master']),
 });
 
 export const runtime = 'nodejs';
@@ -24,23 +24,9 @@ export async function POST(req: Request) {
   if (!pkg)
     return NextResponse.json({ error: 'unknown_package' }, { status: 400 });
 
-  // First-purchase deal: re-verify eligibility on the server (24h window +
-  // not previously purchased) so it can't be bought by tampering with the
-  // client. Authority is the first_deal_status RPC.
-  if (pkg.firstDealOnly) {
-    const admin = await createServerClient({ admin: true });
-    const { data: statusData, error } = await admin.rpc('first_deal_status', {
-      p_user_id: user.id,
-    });
-    if (error)
-      return NextResponse.json({ error: 'eligibility_check_failed' }, { status: 500 });
-    const status = (statusData ?? { eligible: false }) as { eligible?: boolean };
-    if (!status.eligible)
-      return NextResponse.json(
-        { error: 'first_deal_not_eligible', detail: statusData },
-        { status: 403 },
-      );
-  }
+  // v2: 첫충전 특가(firstdeal)는 판매 종료 — enum에서 제외되어 여기 못 온다.
+  if (pkg.firstDealOnly)
+    return NextResponse.json({ error: 'unknown_package' }, { status: 400 });
 
   const partnerOrderId = `kkobuk_credit_${user.id.slice(0, 8)}_${Date.now()}`;
   const baseUrl = serverAppOrigin();
@@ -51,8 +37,8 @@ export async function POST(req: Request) {
     itemName: `꼬북점 꼬북알 ${totalCredits(pkg)}개`,
     totalAmount: pkg.priceKrw,
     approvalUrl: `${baseUrl}/api/payment/kakao/approve?order=${partnerOrderId}&package=${pkg.id}`,
-    cancelUrl: `${baseUrl}/more/pro?cancelled=1`,
-    failUrl: `${baseUrl}/more/pro?failed=1`,
+    cancelUrl: `${baseUrl}/store?cancelled=1`,
+    failUrl: `${baseUrl}/store?failed=1`,
   });
 
   const admin = await createServerClient({ admin: true });

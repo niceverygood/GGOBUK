@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   CalendarCheck,
   HeartHandshake,
-  MessageCircle,
   ScrollText,
   Sparkles,
   Waypoints,
@@ -74,12 +73,6 @@ const FEATURES = [
     href: "/taegil",
     icon: CalendarCheck,
   },
-  {
-    title: "꼬북 상담",
-    body: "저장된 사주를 바탕으로 연애, 일, 관계 질문을 이어갑니다.",
-    href: "/chat",
-    icon: MessageCircle,
-  },
 ];
 
 const FAQS = [
@@ -91,7 +84,7 @@ const FAQS = [
   {
     question: "로그인 없이 사주를 볼 수 있나요?",
     answer:
-      "로그인 없이 미리보기에서 사주 구조를 확인할 수 있습니다. 저장, 채팅, 정밀 AI 리포트는 로그인 후 이용할 수 있습니다.",
+      "로그인 없이 미리보기에서 사주 구조를 확인할 수 있습니다. 저장과 정밀 AI 리포트는 로그인 후 이용할 수 있습니다.",
   },
   {
     question: "사주와 점은 어떻게 다른가요?",
@@ -132,7 +125,6 @@ function JsonLd() {
         "궁합 보기",
         "대운 타임라인",
         "택일과 길일 추천",
-        "AI 사주 상담",
       ],
     },
     {

@@ -4,52 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
-import { LifeRoad } from '@/components/timeline/LifeRoad';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { Badge, Card } from '@/components/ui/primitives';
-import { PartnerCompare } from '@/components/preview/PartnerCompare';
 import { logger } from '@/lib/utils/logger';
-import { INTERPRETATION_CATEGORIES } from '@/lib/llm/interpret';
 import { computePreview, loadPreviewInput } from '@/lib/saju/preview';
-import type { DaewoonPeriod, SajuResult } from '@/lib/saju/types';
-
-const CATEGORY_ICONS: Record<string, string> = {
-  overview: '📜',
-  ohaeng: '☯',
-  ilju: '🪞',
-  strength: '✨',
-  weakness: '🌿',
-  personality: '🧠',
-  career: '💼',
-  wealth: '💰',
-  love: '💕',
-  family: '🏡',
-  friends: '🤝',
-  direction: '🧭',
-};
-
-const CATEGORY_BLURB: Record<string, string> = {
-  overview: '내 등껍질 전체 흐름',
-  ohaeng: '강한 기운과 부족한 기운',
-  ilju: '본질을 보여주는 한 칸',
-  strength: '타고난 세 가지 강점',
-  weakness: '경계할 약점과 처방',
-  personality: '다정하지만 기준은 뚜렷',
-  career: '말과 콘텐츠에 강점',
-  wealth: '돈이 모이는 타이밍',
-  love: '끌림과 안정감의 패턴',
-  family: '책임감이 묶는 관계',
-  friends: '나를 키우는 인연',
-  direction: '동북 방향의 기운',
-};
+import type { SajuResult } from '@/lib/saju/types';
 
 export default function PreviewResultPage() {
   const router = useRouter();
   const [name, setName] = useState<string>('테스트');
   const [saju, setSaju] = useState<SajuResult | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<DaewoonPeriod | null>(
-    null,
-  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -62,11 +26,6 @@ export default function PreviewResultPage() {
       try {
         const result = computePreview(stored.input);
         setSaju(result);
-        const currentYear = new Date().getFullYear();
-        const curr = result.daewoon.find(
-          (p) => currentYear >= p.startYear && currentYear <= p.startYear + 9,
-        );
-        setSelectedPeriod(curr ?? result.daewoon[0]);
       } catch (e) {
         logger.error('preview', 'saju calc failed', { error: e instanceof Error ? e.message : String(e) });
         router.replace('/preview');
@@ -92,7 +51,6 @@ export default function PreviewResultPage() {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .map((p) => `${p.ganHanja}${p.jiHanja}`)
     .join(' · ');
-  const currentYear = new Date().getFullYear();
 
   return (
     <main className="min-h-dvh w-full max-w-md mx-auto px-5 pt-8 pb-12 relative overflow-x-hidden">
@@ -191,89 +149,49 @@ export default function PreviewResultPage() {
           </section>
         )}
 
-        {/* Daewoon timeline */}
-        <section className="mt-6 rounded-3xl bg-white border border-navy/10 shadow-[0_12px_30px_rgba(44,62,80,0.08)] p-2">
-          <p className="text-sm font-black text-navy mb-1 ml-3 mt-2">
-            대운 타임라인
-          </p>
-          <LifeRoad
-            saju={saju}
-            periods={saju.daewoon}
-            currentYear={currentYear}
-            selectedStartYear={selectedPeriod?.startYear ?? null}
-            onSelect={setSelectedPeriod}
-          />
-        </section>
-
-        {selectedPeriod && (
-          <Card className="mt-4 p-4">
-            <p className="text-sm font-black text-navy">
-              {selectedPeriod.startYear}–{selectedPeriod.startYear + 9} ·{' '}
-              <span className="font-hanja">
-                {selectedPeriod.pillar.ganHanja}
-                {selectedPeriod.pillar.jiHanja}
-              </span>{' '}
-              ({selectedPeriod.sipsung})
-            </p>
-            <p className="mt-1 text-sm font-semibold text-[#82786D]">
-              {selectedPeriod.startAge}세부터 {selectedPeriod.startAge + 9}
-              세까지의 큰 기운. 일간 {saju.ilgan}을 기준으로{' '}
-              {selectedPeriod.sipsung}이 강하게 작용해.
-            </p>
-          </Card>
-        )}
-
-        <PartnerCompare selfSaju={saju} selfName={name} />
-
-        {/* 12 categories — preview only, no LLM call */}
+        {/* 가입하면 받는 것 — 전체 풀이 + 꼬북이 채팅 */}
         <section className="mt-7">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-black text-navy">12가지 등껍질 해설</p>
-            <Badge tone="gold">로그인 후 풀이 가능</Badge>
+            <p className="text-sm font-black text-navy">가입하면 이렇게 풀려요</p>
+            <Badge tone="gold">로그인 후 이용</Badge>
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {INTERPRETATION_CATEGORIES.map((cat) => (
-              <div
-                key={cat.key}
-                className="min-h-[110px] p-3.5 rounded-3xl bg-white border border-navy/10 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
-              >
-                <div className="text-2xl leading-none">
-                  {CATEGORY_ICONS[cat.key] ?? '·'}
-                </div>
-                <h4 className="mt-2 text-[15px] font-black text-navy">
-                  {cat.title}
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-3 rounded-3xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]">
+              <span className="text-2xl leading-none">📜</span>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[15px] font-black text-navy">
+                  내 사주 전체 풀이
                 </h4>
-                <p className="mt-0.5 text-[11px] font-bold text-muted leading-tight">
-                  {CATEGORY_BLURB[cat.key]}
+                <p className="mt-0.5 text-[11px] font-bold text-muted leading-relaxed">
+                  성격 · 강점 · 조심할 점 · 일과 돈 · 사랑 · 지금의 흐름까지 한
+                  편의 리포트로.
                 </p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Persona tour link */}
-        <section className="mt-7">
-          <p className="text-sm font-black text-navy mb-3">꼬북이 페르소나</p>
-          <div className="grid grid-cols-4 gap-1.5">
-            {(['kkobuk', 'dosa', 'mudang', 'bosal'] as const).map((p) => (
-              <div
-                key={p}
-                className="rounded-2xl bg-white border border-navy/10 p-1.5 flex flex-col items-center min-w-0"
-              >
-                <div className="w-12 h-12 rounded-xl bg-mint/20 flex items-center justify-center overflow-hidden">
-                  <KkobukAvatar variant={p} size="sm" />
-                </div>
-                <span className="text-[10px] font-extrabold text-navy mt-1 truncate w-full text-center">
-                  {p === 'kkobuk'
-                    ? '꼬북이'
-                    : p === 'dosa'
-                      ? '꼬북도사'
-                      : p === 'mudang'
-                        ? '꼬북무당'
-                        : '꼬북보살'}
-                </span>
+            </div>
+            <div className="flex items-start gap-3 rounded-3xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-mint/20 flex items-center justify-center overflow-hidden">
+                <KkobukAvatar size="sm" />
               </div>
-            ))}
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[15px] font-black text-navy">
+                  꼬북이랑 대화
+                </h4>
+                <p className="mt-0.5 text-[11px] font-bold text-muted leading-relaxed">
+                  내 사주를 아는 꼬북이에게 연애 · 일 · 돈, 뭐든 바로 물어보기.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 rounded-3xl bg-white border border-navy/10 p-4 shadow-[0_9px_22px_rgba(44,62,80,0.06)]">
+              <span className="text-2xl leading-none">🌅</span>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[15px] font-black text-navy">
+                  매일 아침 오늘의 운세
+                </h4>
+                <p className="mt-0.5 text-[11px] font-bold text-muted leading-relaxed">
+                  내 사주 기준으로 매일 바뀌는 오늘의 흐름과 한 줄 조언.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

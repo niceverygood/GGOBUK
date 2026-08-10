@@ -63,7 +63,7 @@ export function ShellDetail({ position, pillar, isGan, context, onClose }: Props
           href="/chat"
           className="mt-4 block text-center w-full rounded-2xl bg-navy text-white py-3 text-sm font-extrabold"
         >
-          꼬북도사에게 이 글자 물어보기
+          꼬북이에게 이 글자 물어보기
         </Link>
       </motion.div>
     </motion.div>

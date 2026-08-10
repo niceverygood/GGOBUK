@@ -3,7 +3,6 @@ import { createServerClient } from '@/lib/supabase/server';
 import { hasAiConsent } from '@/lib/privacy/consent';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { generateDaily } from '@/lib/llm/daily';
-import { loadUserMemory, formatUserMemory } from '@/lib/llm/memory';
 import { buildSajuResult } from '@/lib/saju';
 import { calculatePalja } from '@/lib/saju/palja';
 import { todayKstIso } from '@/lib/utils/date';
@@ -72,12 +71,6 @@ export async function GET(req: Request) {
     gender: profile.gender,
   });
 
-  // 본인 운세일 때만 사용자 기억 주입 — 지인 프로필 운세에 내 기억이 섞이면 안 됨.
-  const memory =
-    profile.relation_type === 'self'
-      ? formatUserMemory(await loadUserMemory(supabase, user.id))
-      : '';
-
   let fortune;
   try {
     fortune = await generateDaily({
@@ -86,7 +79,6 @@ export async function GET(req: Request) {
       iljiGan: ilji.ganHanja,
       iljiJi: ilji.jiHanja,
       name: profile.name,
-      memory,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
@@ -166,17 +158,12 @@ export async function POST(req: Request) {
         isLeapMonth: profile.is_leap_month,
         gender: profile.gender,
       });
-      // cron 은 전부 self 프로필 — owner 의 기억을 주입해 "나를 아는" 아침 운세로.
-      const memory = formatUserMemory(
-        await loadUserMemory(admin, profile.owner_id),
-      );
       const fortune = await generateDaily({
         saju,
         date: today,
         iljiGan: ilji.ganHanja,
         iljiJi: ilji.jiHanja,
         name: profile.name,
-        memory,
       });
       await admin.from('daily_fortunes').insert({
         saju_id: profile.id,

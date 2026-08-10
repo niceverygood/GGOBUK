@@ -106,7 +106,7 @@ export default function SettingsPage() {
   }
 
   async function revokeAiConsent() {
-    if (!window.confirm('AI 풀이·채팅 사용 동의를 철회할까? 동의 전에는 새 풀이를 받을 수 없어.'))
+    if (!window.confirm('AI 풀이 사용 동의를 철회할까? 동의 전에는 새 풀이를 받을 수 없어.'))
       return;
     setRevoking(true);
     await fetch('/api/me/ai-consent', { method: 'DELETE' });
@@ -198,7 +198,7 @@ export default function SettingsPage() {
       <section className="mt-4 rounded-3xl bg-white shadow-sm p-5 space-y-3">
         <h2 className="text-base font-black text-navy">AI 데이터 사용 동의</h2>
         <p className="text-xs font-bold text-muted leading-6">
-          사주·이름·채팅 메시지를 Anthropic Claude API로 전송해 풀이를 만들고
+          사주·이름 정보를 Anthropic Claude API로 전송해 풀이를 만들고
           있어. 자세한 처리 내역은{' '}
           <Link href="/privacy" className="underline underline-offset-2">
             개인정보 처리방침
@@ -229,7 +229,7 @@ export default function SettingsPage() {
       <section className="mt-4 rounded-3xl bg-white shadow-sm p-5 space-y-3 border border-red/20">
         <h2 className="text-base font-black text-red">계정 삭제</h2>
         <p className="text-xs font-bold text-muted leading-6">
-          내 사주, 등록한 인연, 채팅 기록, 결제 내역, 푸시 토큰 등 모든 데이터가
+          내 사주, 등록한 인연, 기존 대화 기록, 결제 내역, 푸시 토큰 등 모든 데이터가
           즉시 영구 삭제돼. 이 작업은 되돌릴 수 없어.
         </p>
 

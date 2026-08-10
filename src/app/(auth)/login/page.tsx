@@ -215,13 +215,6 @@ export default function LoginPage() {
           </Link>
           에 동의한 것으로 간주합니다.
         </p>
-
-        <Link
-          href="/preview"
-          className="mt-8 text-xs font-extrabold text-muted underline-offset-4 underline"
-        >
-          로그인 없이 등껍질만 펼쳐보기 →
-        </Link>
       </div>
     </main>
   );

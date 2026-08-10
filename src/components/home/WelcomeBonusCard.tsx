@@ -1,17 +1,30 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Gift, X } from 'lucide-react';
 import {
   CREDIT_COSTS,
   CREDIT_UNIT,
-  INTERPRETATION_COST_BY_PERSONA,
   SIGNUP_BONUS_CREDITS,
   packageBreakdown,
 } from '@/lib/credits';
 
 const STORAGE_KEY = 'ggobuk_welcome_dismissed_v1';
+const DISMISS_EVENT = 'ggobuk:welcome-dismissed';
+
+function subscribeDismissed(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange);
+  window.addEventListener(DISMISS_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', onStoreChange);
+    window.removeEventListener(DISMISS_EVENT, onStoreChange);
+  };
+}
+
+function isDismissed() {
+  return window.localStorage.getItem(STORAGE_KEY) === '1';
+}
 
 /**
  * 신규 가입자에게 보너스 30알의 화폐 가치를 환산해 보여주는 카드.
@@ -25,21 +38,19 @@ const STORAGE_KEY = 'ggobuk_welcome_dismissed_v1';
  */
 export function WelcomeBonusCard() {
   const [balance, setBalance] = useState<number | null>(null);
-  const [dismissed, setDismissed] = useState(true); // 기본 true → 사라진 상태로 시작
+  const dismissed = useSyncExternalStore(
+    subscribeDismissed,
+    isDismissed,
+    () => true,
+  );
 
   useEffect(() => {
-    // localStorage가 SSR에선 없으므로 mount 후 체크
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === '1') {
-      setDismissed(true);
-      return;
-    }
-    setDismissed(false);
+    if (dismissed) return;
     void fetch('/api/me')
       .then((r) => r.json())
       .then((d) => setBalance(Number(d?.user?.credit_balance ?? 0)))
       .catch(() => setBalance(0));
-  }, []);
+  }, [dismissed]);
 
   if (dismissed) return null;
   if (balance === null) return null;
@@ -49,7 +60,7 @@ export function WelcomeBonusCard() {
 
   function handleDismiss() {
     window.localStorage.setItem(STORAGE_KEY, '1');
-    setDismissed(true);
+    window.dispatchEvent(new Event(DISMISS_EVENT));
   }
 
   return (
@@ -75,59 +86,35 @@ export function WelcomeBonusCard() {
             {SIGNUP_BONUS_CREDITS} {CREDIT_UNIT} 즉시 충전 완료
           </p>
           <p className="mt-1 text-[11.5px] font-bold leading-relaxed text-navy/85">
-            정밀 풀이 <b>{b.interpretations}개</b>, 또는 궁합 <b>{b.compats}회</b>, 또는 부적 <b>{b.talismans}장</b>까지 받을 수 있어요.
+            전체 풀이 <b>{b.readings}편</b>과 채팅 추가 질문까지 넉넉하게 쓸 수
+            있어요.
           </p>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-white/85 px-1 py-1.5">
           <p className="text-[9px] font-extrabold text-muted leading-none">
-            풀이
+            전체 풀이
           </p>
           <p className="mt-1 text-sm font-black text-navy leading-none">
-            {b.interpretations}
-            <span className="ml-0.5 text-[9px] font-bold">개</span>
+            {b.readings}
+            <span className="ml-0.5 text-[9px] font-bold">편</span>
           </p>
           <p className="mt-0.5 text-[8px] font-bold text-muted leading-none">
-            {Math.min(...Object.values(INTERPRETATION_COST_BY_PERSONA))}~
-            {Math.max(...Object.values(INTERPRETATION_COST_BY_PERSONA))}알/개
+            {CREDIT_COSTS.reading}알/편
           </p>
         </div>
         <div className="rounded-xl bg-white/85 px-1 py-1.5">
           <p className="text-[9px] font-extrabold text-muted leading-none">
-            궁합
-          </p>
-          <p className="mt-1 text-sm font-black text-navy leading-none">
-            {b.compats}
-            <span className="ml-0.5 text-[9px] font-bold">회</span>
-          </p>
-          <p className="mt-0.5 text-[8px] font-bold text-muted leading-none">
-            {CREDIT_COSTS.compatibility}알/회
-          </p>
-        </div>
-        <div className="rounded-xl bg-white/85 px-1 py-1.5">
-          <p className="text-[9px] font-extrabold text-muted leading-none">
-            부적
-          </p>
-          <p className="mt-1 text-sm font-black text-navy leading-none">
-            {b.talismans}
-            <span className="ml-0.5 text-[9px] font-bold">장</span>
-          </p>
-          <p className="mt-0.5 text-[8px] font-bold text-muted leading-none">
-            {CREDIT_COSTS.talisman}알/장
-          </p>
-        </div>
-        <div className="rounded-xl bg-white/85 px-1 py-1.5">
-          <p className="text-[9px] font-extrabold text-muted leading-none">
-            채팅
+            채팅 추가 질문
           </p>
           <p className="mt-1 text-sm font-black text-navy leading-none">
             {b.chats}
             <span className="ml-0.5 text-[9px] font-bold">회</span>
           </p>
           <p className="mt-0.5 text-[8px] font-bold text-muted leading-none">
-            {CREDIT_COSTS.chat}알/회
+            {CREDIT_COSTS.chat}알/회 · 하루 5회 무료
           </p>
         </div>
       </div>

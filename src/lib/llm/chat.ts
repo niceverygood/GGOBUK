@@ -1,32 +1,23 @@
 import { stream } from './client';
-import { PERSONAS, type PersonaKey } from './personas';
+import { PERSONAS } from './personas';
 import { PREMIUM_SAJU_GUIDE } from './prompts/premium_saju';
 import { formatSajuContext } from './prompts/saju_context';
 import type { SajuResult } from '@/lib/saju/types';
 import type { CitedCard } from '@/types/db';
 
 export async function* chatStream(params: {
-  persona: PersonaKey;
   saju: SajuResult;
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
   userMessage: string;
   name?: string;
-  /** 과거 대화에서 추린 장기 기억(평문 줄목록). 없으면 블록을 생략. */
-  memory?: string;
 }): AsyncIterable<string> {
-  const persona = PERSONAS[params.persona];
+  // v2 단순화: 페르소나는 꼬북이 하나로 고정.
+  const persona = PERSONAS.kkobuk;
   const context = formatSajuContext(params.saju, params.name);
-  const memoryBlock = params.memory?.trim()
-    ? `
-
-## 꼬북이가 이 사람에 대해 기억하는 것 (과거 대화에서 — 장기 기억)
-${params.memory.trim()}
-→ 자연스럽게 활용하되, 매번 전부 나열하지 말고 흐름에 맞는 1-2개만 슬쩍 짚어라. 처음 보는 척하지 말 것. 기억이 틀렸다고 정정하면 사용자의 말을 따른다.`
-    : '';
   const system = `${persona.systemPrompt}
 
 ## 사용자 사주 정보 (반드시 이 데이터에 근거해서 답)
-${context}${memoryBlock}
+${context}
 
 ## 프리미엄 답변 기준
 ${PREMIUM_SAJU_GUIDE}

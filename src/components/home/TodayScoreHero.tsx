@@ -79,16 +79,14 @@ export function TodayScoreHero({
         {name}님의 오늘 흐름
       </h2>
 
-      {/* 그제~모레 5일 셀렉터 */}
+      {/* 그제~모레 5일 점수 */}
       <div className="mt-4 grid grid-cols-5 gap-1.5">
         {days.map((d) => {
           const isToday = d.offset === 0;
           return (
-            <Link
+            <div
               key={d.offset}
-              href="/calendar"
-              prefetch
-              className={`flex flex-col items-center rounded-2xl py-2 transition active:scale-95 ${
+              className={`flex flex-col items-center rounded-2xl py-2 ${
                 isToday ? 'bg-navy text-white' : 'bg-ivory text-navy'
               }`}
             >
@@ -100,7 +98,7 @@ export function TodayScoreHero({
               <span className="mt-1 text-[13px] font-black">
                 {d.fortune.score}
               </span>
-            </Link>
+            </div>
           );
         })}
       </div>
@@ -153,13 +151,13 @@ export function TodayScoreHero({
         {!oneLiner && <EnsureDaily sajuId={sajuId} />}
       </div>
 
-      {/* CTA */}
+      {/* CTA — 오늘 흐름이 궁금하면 바로 꼬북이에게 */}
       <Link
-        href="/shell"
+        href="/chat"
         prefetch
         className="mt-4 flex items-center justify-center gap-1 rounded-2xl bg-navy py-3.5 text-[14px] font-black text-white active:scale-[0.99]"
       >
-        오늘 하루 자세히 보기
+        꼬북이에게 오늘 물어보기
         <ChevronRight size={16} strokeWidth={3} />
       </Link>
     </Card>

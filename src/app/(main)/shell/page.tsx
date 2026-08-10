@@ -1,11 +1,33 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
-import { CategoryGrid } from '@/components/shell/CategoryGrid';
+import { FullReadingPanel } from '@/components/shell/FullReadingPanel';
 import { Badge, Card } from '@/components/ui/primitives';
 import { iljuProfileOf } from '@/lib/saju/ilju_profile';
+import { READING_CATEGORY, READING_PERSONA } from '@/lib/llm/interpret';
 import type { Palja } from '@/lib/saju/types';
 
+// 캐시된 풀이/생성 시각이 요청마다 fresh 해야 한다.
+export const dynamic = 'force-dynamic';
+
+function generatedLabelOf(generatedAt: string | null): string | null {
+  if (!generatedAt) return null;
+  const days = Math.floor(
+    (Date.now() - new Date(generatedAt).getTime()) / 86400000,
+  );
+  if (days <= 0) return '오늘 생성';
+  if (days === 1) return '어제 생성';
+  if (days < 7) return `${days}일 전 생성`;
+  if (days < 30) return `${Math.floor(days / 7)}주 전 생성`;
+  return `${Math.floor(days / 30)}개월 전 생성`;
+}
+
+/**
+ * 내 사주 — 등껍질 만세력 + 일주 카드 + 전체 풀이 한 편.
+ * v2 단순화: 12개 카테고리 그리드·운세 도구 링크 제거, 문서 하나로 통합.
+ */
 export default async function ShellPage() {
   const supabase = await createServerClient();
   const {
@@ -24,18 +46,33 @@ export default async function ShellPage() {
   const palja = profile.palja as Palja;
   const ilju = iljuProfileOf(palja.day.ganIdx, palja.day.jiIdx);
 
+  const { data: cached } = await supabase
+    .from('interpretations')
+    .select('content, generated_at')
+    .eq('saju_id', profile.id)
+    .eq('category', READING_CATEGORY)
+    .eq('persona', READING_PERSONA)
+    .maybeSingle();
+
   return (
     <main className="px-5 pt-8 pb-32 relative">
       <div className="hanji-overlay" />
       <div className="relative">
-        <div className="flex items-center justify-between gap-2 pr-28">
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-1 text-xs font-bold text-muted"
+        >
+          <ArrowLeft size={14} strokeWidth={2.6} />홈
+        </Link>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs font-extrabold text-muted">나의 만세력</p>
-            <h1 className="text-2xl font-black tracking-tight text-navy">등껍질 사주</h1>
+            <h1 className="text-2xl font-black tracking-tight text-navy">
+              내 사주
+            </h1>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Badge tone="mint">일간 {palja.day.ganOhaeng}</Badge>
-          </div>
+          <Badge tone="mint">일간 {palja.day.ganOhaeng}</Badge>
         </div>
 
         <div className="mt-6 flex justify-center">
@@ -65,31 +102,19 @@ export default async function ShellPage() {
                 </span>
               ))}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="rounded-2xl bg-white/80 p-3">
-                <p className="text-[10px] font-black text-mint-dark">강점</p>
-                <p className="mt-1 text-[11px] font-bold text-navy leading-snug">
-                  {ilju.strengths.join(' · ')}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/80 p-3">
-                <p className="text-[10px] font-black text-red">주의/그늘</p>
-                <p className="mt-1 text-[11px] font-bold text-navy leading-snug">
-                  {ilju.watch.join(' · ')}
-                </p>
-              </div>
-            </div>
-            <p className="mt-3 text-[11px] font-bold leading-relaxed text-muted">
-              💞 {ilju.love}
-            </p>
-            <p className="mt-1 text-[11px] font-bold leading-relaxed text-muted">
-              💼 {ilju.career}
-            </p>
           </Card>
         )}
 
-        <p className="mt-7 mb-3 text-sm font-black text-navy">풀이 카테고리</p>
-        <CategoryGrid />
+        <section className="mt-8">
+          <p className="text-xs font-extrabold text-muted">꼬북이의 풀이</p>
+          <h2 className="mt-1 text-xl font-black text-navy">전체 풀이</h2>
+          <Card className="mt-3 p-5">
+            <FullReadingPanel
+              initialContent={cached?.content ?? ''}
+              generatedLabel={generatedLabelOf(cached?.generated_at ?? null)}
+            />
+          </Card>
+        </section>
       </div>
     </main>
   );

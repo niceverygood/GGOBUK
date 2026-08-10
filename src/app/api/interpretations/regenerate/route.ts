@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuResult } from '@/lib/saju';
 import {
-  INTERPRETATION_CATEGORIES,
-  generateFallbackInterpretation,
-  generateInterpretation,
+  READING_CATEGORY,
+  READING_PERSONA,
+  generateFallbackReading,
+  generateFullReading,
 } from '@/lib/llm/interpret';
-import { interpretationCostFor, isFreeInterpretation } from '@/lib/credits';
-import { loadUserMemory, formatUserMemory } from '@/lib/llm/memory';
+import { CREDIT_COSTS } from '@/lib/credits';
 import {
   addCredits,
   isInsufficientCreditsError,
@@ -20,24 +19,13 @@ import {
 } from '@/lib/privacy/consent';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 import { logger } from '@/lib/utils/logger';
-import type { InterpretationCategory, SajuProfileRow } from '@/types/db';
-
-const Body = z.object({
-  category: z.string(),
-  focus: z.string().max(300).optional(),
-  persona: z.enum(['kkobuk', 'dosa', 'mudang', 'bosal']).optional(),
-  /** Deep-dive 보충 모드. 사용자가 이미 본문을 보고 있을 때, 그 본문 뒤에
-   *  '심화: focus' 섹션을 이어붙여 저장한다. */
-  appendTo: z.string().max(60000).optional(),
-  /** Deep-dive 항목의 짧은 제목. LLM이 응답 첫 줄에 '## 심화 — {title}'로
-   *  박아두면 클라이언트가 본문에서 grep해 소비된 항목을 식별할 수 있다. */
-  title: z.string().max(100).optional(),
-});
+import type { SajuProfileRow } from '@/types/db';
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
 
-export async function POST(req: Request) {
+/** 내 사주 전체 풀이 생성 (재생성 포함). 바디 없이 POST — 항상 본인 사주 한 편. */
+export async function POST() {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -57,17 +45,9 @@ export async function POST(req: Request) {
     throw e;
   }
 
-  const rl = rateLimit(rateLimitKey(user.id, 'interpretation'), 10, 60_000);
+  const rl = rateLimit(rateLimitKey(user.id, 'interpretation'), 5, 60_000);
   if (!rl.allowed)
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
-
-  const { category, focus, persona: personaInput, appendTo, title } =
-    Body.parse(await req.json());
-  const persona = personaInput ?? 'dosa';
-  const isAppend = Boolean(appendTo && focus);
-  const cat = INTERPRETATION_CATEGORIES.find((item) => item.key === category);
-  if (!cat)
-    return NextResponse.json({ error: 'unknown_category' }, { status: 400 });
 
   const { data: profile } = await supabase
     .from('saju_profiles')
@@ -86,20 +66,15 @@ export async function POST(req: Request) {
     gender: profile.gender,
   });
 
-  // 무료 카테고리(총평/오행/일주)는 심화(focus)가 아닌 한 과금하지 않는다.
-  // 심화 deep-dive는 무료 카테고리라도 추가 생성이므로 정상 과금.
-  const chargeable = isAppend || !isFreeInterpretation(category);
   let creditsSpent = false;
   try {
-    if (chargeable) {
-      await spendCredits({
-        userId: user.id,
-        amount: interpretationCostFor(persona),
-        reason: `사주 해설 ${focus ? '심화 ' : ''}생성:${category}`,
-        referenceId: profile.id,
-      });
-      creditsSpent = true;
-    }
+    await spendCredits({
+      userId: user.id,
+      amount: CREDIT_COSTS.reading,
+      reason: '사주 전체 풀이 생성',
+      referenceId: profile.id,
+    });
+    creditsSpent = true;
   } catch (e) {
     if (isInsufficientCreditsError(e)) {
       return NextResponse.json(
@@ -110,76 +85,39 @@ export async function POST(req: Request) {
     // fail-closed: 차감이 비-잔액 사유로 실패하면 유료 풀이를 공짜로 주지 않는다.
     logger.error('interpretations/regenerate', 'credit spend failed', {
       userId: user.id,
-      category,
       message: e instanceof Error ? e.message : String(e),
     });
     return NextResponse.json({ error: 'spend_failed' }, { status: 500 });
   }
 
-  // 꼬북이가 과거 대화에서 기억한 이 사람의 실제 삶 → 풀이에 녹여 "나를 안다"는 적중감.
-  const memory = formatUserMemory(await loadUserMemory(supabase, user.id));
-
   let result;
   try {
-    result = await generateInterpretation(
-      saju,
-      category as InterpretationCategory,
-      profile.name,
-      focus,
-      persona,
-      isAppend,
-      isAppend ? title : undefined,
-      memory,
-    );
+    result = await generateFullReading(saju, profile.name);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : '';
     logger.error('interpretations/regenerate', 'llm failed; using fallback', {
       userId: user.id,
-      category,
-      message: msg,
+      message: e instanceof Error ? e.message : String(e),
     });
     if (creditsSpent) {
       await addCredits({
         userId: user.id,
-        amount: interpretationCostFor(persona),
-        reason: `사주 해설 AI 실패 환불:${category}`,
+        amount: CREDIT_COSTS.reading,
+        reason: '사주 풀이 AI 실패 환불',
         kind: 'refund',
         referenceId: profile.id,
       }).catch(() => undefined);
       creditsSpent = false;
     }
-    if (
-      msg.includes('OPENROUTER_API_KEY') ||
-      msg.includes('ANTHROPIC_API_KEY')
-    ) {
-      result = generateFallbackInterpretation(
-        saju,
-        category as InterpretationCategory,
-        profile.name,
-        focus,
-      );
-    } else {
-      result = generateFallbackInterpretation(
-        saju,
-        category as InterpretationCategory,
-        profile.name,
-        focus,
-      );
-    }
+    result = generateFallbackReading(saju, profile.name);
   }
-
-  // Supplement append: 기존 본문 + 구분선 + 새 심화 섹션 합쳐 저장.
-  const mergedContent = isAppend && appendTo
-    ? `${appendTo.trim()}\n\n---\n\n${result.content.trim()}`
-    : result.content;
 
   const admin = await createServerClient({ admin: true });
   const { error } = await admin.from('interpretations').upsert(
     {
       saju_id: profile.id,
-      category,
-      persona,
-      content: mergedContent,
+      category: READING_CATEGORY,
+      persona: READING_PERSONA,
+      content: result.content,
       model: result.model,
       tokens_used: result.tokensUsed,
       generated_at: new Date().toISOString(),
@@ -189,21 +127,20 @@ export async function POST(req: Request) {
   if (error) {
     logger.error('interpretations/regenerate', 'cache save failed', {
       userId: user.id,
-      category,
       message: error.message,
     });
+    if (creditsSpent)
+      await addCredits({
+        userId: user.id,
+        amount: CREDIT_COSTS.reading,
+        reason: '사주 풀이 저장 실패 환불',
+        kind: 'refund',
+        referenceId: profile.id,
+      }).catch(() => undefined);
   }
-  if (error && creditsSpent)
-    await addCredits({
-      userId: user.id,
-      amount: interpretationCostFor(persona),
-      reason: `사주 해설 저장 실패 환불:${category}`,
-      kind: 'refund',
-      referenceId: profile.id,
-    }).catch(() => undefined);
 
   return NextResponse.json({
-    content: mergedContent,
+    content: result.content,
     cached: !error,
     model: result.model,
   });

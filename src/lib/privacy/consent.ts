@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 export class AiConsentRequiredError extends Error {
   code = 'AI_CONSENT_REQUIRED' as const;
   constructor() {
-    super('AI 데이터 사용에 동의해야 풀이/채팅을 시작할 수 있어.');
+    super('AI 데이터 사용에 동의해야 풀이를 시작할 수 있어.');
   }
 }
 

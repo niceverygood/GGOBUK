@@ -43,27 +43,27 @@ App Store Connect ▸ 앱 ▸ App Review ▸ Resolution Center ▸ 영문 회신
 
 ### 한국어 (ko)
 - **이름** (≤30자): `꼬북점: 나의 AI 거북이`
-- **부제** (≤30자): `성격 다른 거북이 4마리와의 대화`
-- **프로모션 텍스트** (≤170자): `오늘은 어떤 거북이랑 얘기해볼래? 꼬북섬의 네 마리가 너를 기다려.`
-- **키워드** (≤100자, 쉼표구분/공백없이): `거북이,캐릭터,AI친구,챗봇,대화,일주,성격유형,자기이해,궁합,인연,심리테스트,캐릭터수집,사주,명리`
+- **부제** (≤30자): `오늘 운세·사주·궁합을 한눈에`
+- **프로모션 텍스트** (≤170자): `오늘 운세부터 내 사주와 궁합까지, 원하는 풀이를 쉽고 직관적으로 확인해 보세요.`
+- **키워드** (≤100자, 쉼표구분/공백없이): `거북이,캐릭터,오늘운세,일주,성격유형,자기이해,궁합,인연,심리테스트,사주,명리,대운,길일`
 - **설명**:
 ```
 꼬북섬에는 성격이 제각각인 거북이 네 마리가 살아요.
 
-🐢 꼬북이 — 편하게 수다 떠는 친구
-🧙 꼬북도사 — 점잖게 조언하는 할아버지
-🔮 꼬북무당 — 돌직구 날리는 MZ 무당
-🙏 꼬북보살 — 따뜻하게 다독여 주는 보살
+🐢 꼬북이 — 어려운 말 없이 쉬운 풀이
+🧙 꼬북도사 — 명리 근거까지 깊은 풀이
+🔮 꼬북무당 — 결론부터 빠르고 직설적인 풀이
+🙏 꼬북보살 — 공감을 담은 따뜻한 풀이
 
-네 마리는 모두 같은 거북이지만 말투도 시선도 완전히 달라요.
-오늘 기분에 맞는 거북이를 골라 대화를 시작해 보세요.
+네 마리는 모두 같은 사주를 서로 다른 깊이와 말투로 풀어줘요.
+나에게 가장 편한 풀이 스타일을 골라 보세요.
 
 ■ 나를 닮은 캐릭터, 일주 카드
 태어난 날로 정해지는 '나의 일주' 캐릭터 카드를 만들어 드려요.
 60종 중 하나뿐인 내 카드를 친구에게 공유하고 "넌 무슨 일주야?" 물어보세요.
 
-■ 기억하는 AI 대화
-거북이들은 지난 대화를 기억해요. 이야기를 나눌수록 나를 더 잘 아는 친구가 됩니다.
+■ 쉽고 깊이를 고를 수 있는 AI 풀이
+핵심만 쉽게 보거나, 명리 근거까지 자세히 읽을 수 있어요.
 
 ■ 친구와의 궁합
 링크 하나로 친구를 초대하면 둘의 캐릭터가 얼마나 잘 맞는지 보여드려요.
@@ -77,27 +77,27 @@ App Store Connect ▸ 앱 ▸ App Review ▸ Resolution Center ▸ 영문 회신
 
 ### English (en-US)
 - **Name** (≤30): `Kkobukjeom: My AI Turtles`
-- **Subtitle** (≤30): `Chat with 4 turtle characters`
-- **Promotional text** (≤170): `Which turtle do you feel like talking to today? Four characters on Kkobuk Island are waiting for you.`
-- **Keywords** (≤100): `turtle,character,AI friend,chatbot,companion,personality,self-discovery,compatibility,quiz,collect,daily,zodiac`
+- **Subtitle** (≤30): `Daily fortune, saju and match`
+- **Promotional text** (≤170): `See today's fortune, your saju profile, compatibility, and life timeline in one clear app.`
+- **Keywords** (≤100): `turtle,character,daily,fortune,personality,self-discovery,compatibility,quiz,saju,zodiac,timeline`
 - **Description**:
 ```
 Four turtles with very different personalities live on Kkobuk Island.
 
-🐢 Kkobuk — your easygoing chatty friend
-🧙 Dosa — the calm, wise grandfather
-🔮 Mudang — the blunt, no-filter shaman
-🙏 Bosal — the warm, comforting one
+🐢 Kkobuk — simple, everyday explanations
+🧙 Dosa — deep readings with traditional reasoning
+🔮 Mudang — quick and direct conclusions
+🙏 Bosal — warm, empathetic guidance
 
-They're all the same turtle, but each speaks and sees the world differently.
-Pick the one that fits your mood and start a conversation.
+They're all the same turtle, but each explains your reading at a different depth and tone.
+Pick the style that feels easiest to understand.
 
 ■ A character that's you — your Ilju card
 Get a one-of-60 character identity card based on your birth date.
 Share it with friends and ask, "Which one are you?"
 
-■ AI chats that remember
-The turtles remember past conversations. The more you talk, the better they know you.
+■ AI readings with selectable depth
+Choose a simple summary or a detailed reading with traditional reasoning.
 
 ■ Compatibility with friends
 Invite a friend with a single link and see how well your characters match.
@@ -118,17 +118,17 @@ Hello, and thank you for the review.
 
 We have substantially repositioned Kkobukjeom and would like to clarify what the app actually is.
 
-Kkobukjeom is an original-character AI companion app set on "Kkobuk Island," home to four turtle characters we designed and wrote in-house. Each turtle has a distinct personality and speaking style, and users chat with them in a conversational AI experience that remembers past conversations.
+Kkobukjeom is an original-character fortune app set on "Kkobuk Island," home to four turtle styles we designed and wrote in-house. Each style explains the same calculated saju data with a different level of depth and tone.
 
 The app is meaningfully different from a generic template:
 1. Original IP — the four turtle characters, their artwork, and their world are our own original creations, not a reskinned template.
-2. Conversational AI with persistent memory — users have ongoing, personalized conversations that develop over time.
+2. Selectable AI reading depth — users can choose simple, direct, empathetic, or traditional explanations.
 3. Personality identity cards — each user receives a collectible character card based on their birth data (a "16Personalities-style" identity) that is designed to be shared.
 4. Social compatibility — users invite friends with a link to see how their characters match.
 
 We have updated the listing to reflect this:
 - Primary category changed to Entertainment (secondary: Lifestyle).
-- Name, subtitle, description, keywords, and screenshots now lead with the characters and the conversational experience.
+- Name, subtitle, description, keywords, and screenshots now lead with the characters and the clear fortune-reading experience.
 - Any astrology-derived content is presented as entertainment content.
 
 Additional notes for review:
@@ -148,15 +148,15 @@ iPhone 전용이라 6.9" 한 사이즈만 있으면 됨(iPad 스크린샷 불필
 
 | # | 화면 | 캡션(예시) | 라우트 |
 |---|------|-----------|--------|
-| 1 | 캐릭터 선택 | 성격 다른 네 마리, 오늘은 누구랑? | `/mode` 또는 `/persona` |
-| 2 | 대화(채팅) | 기억하는 AI 친구와 수다 | `/chat` |
+| 1 | 풀이 스타일 선택 | 쉬운 풀이부터 깊은 풀이까지 | `/mode` |
+| 2 | 사주 풀이 | 원하는 주제만 골라서 보기 | `/shell` |
 | 3 | 일주 캐릭터 카드 | 태어난 날로 만든 나만의 캐릭터 | `/ilju/[slug]` (공개) |
-| 4 | 친구 궁합 | 우린 얼마나 잘 맞을까? | `/people` 또는 `/relations` |
+| 4 | 친구 궁합 | 우린 얼마나 잘 맞을까? | `/relations` |
 | 5 | 오늘의 흐름 | 오늘 하루, 이렇게 보내봐 | `/home` (오늘의 흐름 카드) |
 | 6 | 운세 달력 | 한 달의 흐름을 한눈에 | `/calendar` |
 
 **규칙**
-- ❗ **1번(첫 장)에 운세 결과표/점괘를 두지 말 것** — 4.3 트리거. 반드시 캐릭터·대화 화면을 앞에.
+- ❗ **1번(첫 장)에 복잡한 결과표를 두지 말 것** — 풀이 스타일과 캐릭터를 먼저 보여줄 것.
 - 캡션은 이미지에 텍스트 오버레이로(스토어가 자동으로 안 넣음).
 
 **캡처 방법 (정확한 해상도)**

@@ -165,9 +165,6 @@ export async function generateDaily(params: {
   iljiGan: string;
   iljiJi: string;
   name?: string;
-  /** 과거 대화에서 추린 이 사용자의 장기 기억(평문 줄목록, formatUserMemory).
-   *  오늘의 한 줄·추천이 이 사람의 실제 하루에 닿게. 비면 순수 일진 운세. */
-  memory?: string;
 }): Promise<DailyFortuneOutput> {
   const context = formatSajuContext(params.saju, params.name);
   const analysis = analyzeSaju(params.saju);
@@ -203,20 +200,9 @@ export async function generateDaily(params: {
   const sw = analysis.currentSewoon;
   const swLine = `${sw.pillar.gan}${sw.pillar.ji}(${sw.pillar.ganHanja}${sw.pillar.jiHanja}, ${sw.sipsung})`;
 
-  // 장기 기억 → 오늘 운세가 이 사람의 실제 하루(면접·이사·연애 고민 등)에 닿게.
-  // 출력엔 기억 인용 흔적을 남기지 않는다 — 사주가 오늘 그 일을 짚은 것처럼.
-  const memoryBlock = params.memory?.trim()
-    ? `
-## 이 사람에 대해 기억하는 것 (과거 대화에서)
-${params.memory.trim()}
-→ 오늘 일진 분석과 위 기억이 만나는 지점이 있으면 one_liner 또는 recommend 중 1개를 그 실제 상황에 맞춰 쓴다 (예: 면접 앞둔 사람이면 "중요한 자리에선 결론부터 말해봐" 같은 결). 단 "네가 말했던"처럼 기억을 대놓고 인용하지 말고, 오늘 운세가 자연히 그 일을 짚은 것처럼. 기억이 오늘과 무관하면 무시하고 순수 일진 운세로.
-`
-    : '';
-
   const userMsg = `오늘은 ${params.date}, 일진은 ${iljiGanKo}${iljiJiKo}(${iljiGanHj}${iljiJiHj})이야.
 
 ${context}
-${memoryBlock}
 ## 오늘 일진 × 본인 분석
 - 일진 천간↔일간 관계: ${rel.ganSipsung}${rel.hap ? ' (천간합)' : rel.chung ? ' (천간충)' : ''}
 - 일진 지지 오행: ${rel.jiOhaeng}

@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Clock3,
   Pencil,
-  Plus,
   Save,
   Trash2,
   UserRound,
@@ -67,18 +66,6 @@ const RELATION_OPTIONS: Array<{ value: RelationType; label: string }> = [
   { value: 'colleague', label: '동료' },
   { value: 'other', label: '기타' },
 ];
-
-const EMPTY_DRAFT: Draft = {
-  name: '',
-  birthDate: '',
-  birthTime: '',
-  timeUnknown: false,
-  isLunar: false,
-  isLeapMonth: false,
-  gender: 'M',
-  relationType: 'friend',
-  relationLabel: '',
-};
 
 function toTimeInput(value: string | null) {
   return value ? value.slice(0, 5) : '';
@@ -164,15 +151,6 @@ export default function PeoplePage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function startCreate() {
-    setError('');
-    setDraft({
-      ...EMPTY_DRAFT,
-      relationType: hasSelf ? 'friend' : 'self',
-      relationLabel: hasSelf ? '' : '본인',
-    });
   }
 
   function startEdit(profile: ProfileRow) {
@@ -278,25 +256,15 @@ export default function PeoplePage() {
               className="inline-flex items-center gap-1 text-xs font-black text-muted"
             >
               <ArrowLeft size={14} strokeWidth={3} />
-              더보기
+              내 정보
             </Link>
             <h1 className="mt-2 text-[30px] font-black tracking-tight text-navy">
-              인원 관리
+              내 정보 수정
             </h1>
             <p className="mt-1 text-xs font-bold leading-relaxed text-muted">
-              나와 인연의 이름, 생년월일시, 관계를 관리해.
+              이름·생년월일시·음양력 정보를 수정해요.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={startCreate}
-            className="shrink-0 rounded-full bg-navy px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_18px_rgba(44,62,80,0.16)]"
-          >
-            <span className="inline-flex items-center gap-1">
-              <Plus size={14} strokeWidth={3} />
-              등록
-            </span>
-          </button>
         </div>
 
         {!hasSelf && !loading && (
@@ -322,7 +290,7 @@ export default function PeoplePage() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-black text-navy">
-                  {draft.id ? '인원 수정' : '새 인원 등록'}
+                  {draft.id ? '정보 수정' : '새 정보 등록'}
                 </p>
                 <p className="mt-1 text-xs font-bold text-muted">
                   수정 후 기존 AI 해설과 궁합은 새 정보 기준으로 다시 만들게 돼.
@@ -522,7 +490,7 @@ export default function PeoplePage() {
             <Card className="p-7 text-center">
               <Badge tone="mint">등록된 인원 없음</Badge>
               <p className="mt-3 text-sm font-bold text-muted">
-                등록 버튼으로 내 사주부터 만들어줘.
+                먼저 온보딩에서 내 사주를 등록해 주세요.
               </p>
             </Card>
           ) : (

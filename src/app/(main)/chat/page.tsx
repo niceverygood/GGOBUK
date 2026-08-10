@@ -1,81 +1,70 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createServerClient } from '@/lib/supabase/server';
+import { ChatThread } from '@/components/chat/ChatThread';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { PERSONAS, type PersonaKey } from '@/lib/llm/personas';
-import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
-import { Badge, ButtonPrimary } from '@/components/ui/primitives';
+// 세션 get-or-create가 요청마다 살아있어야 해서 정적 캐시 금지.
+export const dynamic = 'force-dynamic';
 
-interface SessionRow {
-  id: string;
-  persona: PersonaKey;
-  title: string | null;
-  /** 첫 사용자 메시지에서 뽑은 대화 주제 미리보기 (title 없을 때) */
-  preview: string | null;
-  updated_at: string;
-}
+/**
+ * 꼬북이와 대화 — 단일 스레드.
+ * v2 단순화: 세션 목록/새 대화 만들기 없이, 사용자당 꼬북이 세션 하나를
+ * 서버에서 get-or-create 해서 바로 이어 대화한다.
+ */
+export default async function ChatPage() {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
-export default function ChatListPage() {
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const { data: profile } = await supabase
+    .from('saju_profiles')
+    .select('id')
+    .eq('owner_id', user.id)
+    .eq('relation_type', 'self')
+    .maybeSingle();
+  if (!profile) redirect('/onboarding/saju');
 
-  useEffect(() => {
-    void fetch('/api/chat/sessions')
-      .then((r) => r.json())
-      .then((d) => setSessions(d.sessions ?? []));
-  }, []);
+  let { data: session } = await supabase
+    .from('chat_sessions')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('persona', 'kkobuk')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!session) {
+    const { data: created, error } = await supabase
+      .from('chat_sessions')
+      .insert({
+        user_id: user.id,
+        saju_id: profile.id,
+        persona: 'kkobuk',
+        title: null,
+      })
+      .select('id')
+      .single();
+    if (error || !created) redirect('/home');
+    session = created;
+  }
+
+  const { data: messages } = await supabase
+    .from('chat_messages')
+    .select('role, content')
+    .eq('session_id', session.id)
+    .order('created_at', { ascending: true })
+    .limit(100);
 
   return (
-    <main className="px-5 pt-8 pb-32 relative">
-      <div className="hanji-overlay" />
-      <div className="relative">
-        <Badge>대화</Badge>
-        <h1 className="mt-3 text-2xl font-black tracking-tight text-navy">꼬북이와 대화</h1>
-        <p className="mt-1 text-sm font-semibold text-[#82786D]">페르소나를 골라 새 대화를 시작해</p>
-
-        {/* 모드 선택은 사주풀이·채팅 통합 경로(/mode)로 보낸다.
-            from=/chat 으로 가면 모드 선택 후 새 chat session 자동 생성. */}
-        <Link href="/mode?from=/chat" className="block mt-6">
-          <ButtonPrimary tone="mint">＋ 새 대화 시작하기</ButtonPrimary>
-        </Link>
-
-        <section className="mt-8">
-          <p className="text-sm font-black text-navy mb-3">최근 대화</p>
-          {sessions.length === 0 ? (
-            <p className="text-xs font-bold text-muted">아직 대화가 없어. 위에서 시작해봐.</p>
-          ) : (
-            <ul className="space-y-2">
-              {sessions.map((s) => {
-                const topic = s.title ?? s.preview;
-                const persona = PERSONAS[s.persona].displayName;
-                const when = new Date(s.updated_at).toLocaleString('ko-KR', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                });
-                return (
-                  <li key={s.id}>
-                    <Link
-                      href={`/chat/${s.id}`}
-                      className="flex items-center gap-3 rounded-2xl bg-white border border-navy/10 p-3 shadow-[0_9px_22px_rgba(44,62,80,0.06)]"
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-mint/30 border border-navy/10 flex items-center justify-center overflow-hidden shrink-0">
-                        <KkobukAvatar variant={s.persona} size="sm" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-black text-navy truncate">
-                          {topic ?? persona}
-                        </div>
-                        <div className="text-[11px] font-bold text-muted truncate">
-                          {topic ? `${persona} · ${when}` : when}
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      </div>
-    </main>
+    <ChatThread
+      sessionId={session.id}
+      initialMessages={
+        (messages ?? []) as Array<{
+          role: 'user' | 'assistant';
+          content: string;
+        }>
+      }
+    />
   );
 }

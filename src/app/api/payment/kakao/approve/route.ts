@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const requestedPackage = creditPackageById(packageId);
   const pgToken = url.searchParams.get('pg_token');
   if (!partnerOrderId || !pgToken || !requestedPackage) {
-    return NextResponse.redirect(new URL('/more/pro?failed=1', req.url));
+    return NextResponse.redirect(new URL('/store?failed=1', req.url));
   }
 
   const admin = await createServerClient({ admin: true });
@@ -36,10 +36,10 @@ export async function GET(req: Request) {
     .limit(1)
     .maybeSingle();
   if (!pending)
-    return NextResponse.redirect(new URL('/more/pro?failed=1', req.url));
+    return NextResponse.redirect(new URL('/store?failed=1', req.url));
   const pkg = creditPackageById(String(pending.package_id));
   if (!pkg || pkg.id !== requestedPackage.id) {
-    return NextResponse.redirect(new URL('/more/pro?failed=1', req.url));
+    return NextResponse.redirect(new URL('/store?failed=1', req.url));
   }
 
   try {
@@ -114,7 +114,7 @@ export async function GET(req: Request) {
 
     return NextResponse.redirect(
       new URL(
-        `/more/pro?success=1&credits=${totalCredits(pkg)}&pid=${pending.id}&amt=${amount}`,
+        `/store?success=1&credits=${totalCredits(pkg)}&pid=${pending.id}&amt=${amount}`,
         req.url,
       ),
     );
@@ -123,6 +123,6 @@ export async function GET(req: Request) {
       .from('credit_purchases')
       .update({ status: 'failed' })
       .eq('id', pending.id);
-    return NextResponse.redirect(new URL('/more/pro?failed=1', req.url));
+    return NextResponse.redirect(new URL('/store?failed=1', req.url));
   }
 }

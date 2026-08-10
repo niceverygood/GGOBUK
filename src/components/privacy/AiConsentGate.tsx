@@ -7,7 +7,7 @@ import Link from 'next/link';
  * App Store 5.1.1(i)/5.1.2(i) 대응.
  *
  * 로그인 후 메인 영역 진입 시 한 번, AI 전송 정보·전송 대상·이용 목적을
- * 명시한 모달을 띄워 동의를 받는다. 동의 전까지는 채팅·풀이·궁합 등
+ * 명시한 모달을 띄워 동의를 받는다. 동의 전까지는 풀이·궁합 등
  * AI 호출 API 가 412 ai_consent_required 로 거절된다.
  */
 
@@ -80,8 +80,7 @@ export function AiConsentGate() {
             </p>
             <ul className="mt-1 list-inside list-disc text-sm font-bold text-ink">
               <li>이름(또는 별칭)·생년월일시·성별·음양력</li>
-              <li>등록한 인연의 같은 정보 (궁합 풀이 시)</li>
-              <li>채팅에 직접 입력한 메시지</li>
+              <li>채팅으로 직접 입력한 질문 내용</li>
             </ul>
           </div>
 
@@ -102,14 +101,14 @@ export function AiConsentGate() {
               이용 목적
             </p>
             <p className="mt-1 text-sm font-bold text-ink">
-              사주 풀이 문장, 페르소나 채팅 답변, 궁합·길일·웹툰 생성에만
+              사주 풀이·오늘의 운세·채팅 답변 생성에만
               사용돼. 광고·프로파일링에는 절대 쓰지 않아.
             </p>
           </div>
 
           <p className="text-xs font-bold text-muted">
             동의를 거부하면 사주 계산·등껍질 시각화는 그대로 사용할 수 있지만,
-            AI 풀이·채팅 기능은 사용할 수 없어. 동의 후에도 언제든
+            AI 풀이 기능은 사용할 수 없어. 동의 후에도 언제든
             <Link
               href="/more/settings"
               className="underline underline-offset-2"
