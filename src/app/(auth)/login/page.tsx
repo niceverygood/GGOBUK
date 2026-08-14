@@ -7,18 +7,15 @@ import { createClient } from '@/lib/supabase/client';
 import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
 import { browserAppOrigin } from '@/lib/app-url';
 import { track } from '@/lib/analytics/track';
-// ⚠️ TEMP (App Store 심사용) — 심사 통과 후 제거 예정. 익명 게스트 로그인 복원.
-import { loadPreviewInput, clearPreviewInput } from '@/lib/saju/preview';
+import { isKakaoUser } from '@/lib/auth/provider';
 
 function loginErrorMessage(error: string): string {
   if (error === 'kakao_oauth_failed')
     return '카카오 로그인 연결에 실패했어. 잠시 후 다시 시도해줘.';
   if (error === 'kakao_callback_failed')
     return '카카오 인증은 됐지만 세션 생성에 실패했어. 설정을 다시 확인해줘.';
-  if (error === 'apple_oauth_failed')
-    return 'Apple 로그인 연결에 실패했어. 잠시 후 다시 시도해줘.';
-  if (error === 'apple_callback_failed')
-    return 'Apple 인증은 됐지만 세션 생성에 실패했어. 설정을 다시 확인해줘.';
+  if (error === 'kakao_required')
+    return '꼬북점은 카카오 로그인만 이용할 수 있어.';
   if (error === 'missing_oauth_code')
     return '로그인 응답이 올바르지 않았어. 다시 시도해줘.';
   return error;
@@ -26,7 +23,7 @@ function loginErrorMessage(error: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState<'kakao' | 'apple' | 'test' | null>(null);
+  const [loading, setLoading] = useState<'kakao' | null>(null);
   const [err, setErr] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -48,7 +45,14 @@ export default function LoginPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!cancelled && user) router.replace('/home');
+        if (cancelled || !user) return;
+        if (isKakaoUser(user)) {
+          router.replace('/home');
+          return;
+        }
+
+        await supabase.auth.signOut({ scope: 'local' });
+        if (!cancelled) setErr(loginErrorMessage('kakao_required'));
       } catch {
         // 세션 없음 — 로그인 화면 그대로 유지.
       }
@@ -67,86 +71,12 @@ export default function LoginPage() {
       const baseUrl = browserAppOrigin();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
-        options: { redirectTo: `${baseUrl}/callback?next=/home&provider=kakao` },
+        options: { redirectTo: `${baseUrl}/callback?next=/home` },
       });
       if (error) throw error;
     } catch (e) {
       const msg = e instanceof Error ? e.message : '카카오 로그인 실패';
       setErr(msg);
-      setLoading(null);
-    }
-  }
-
-  async function signInWithApple() {
-    setErr(null);
-    setLoading('apple');
-    track('login_cta_click', { provider: 'apple' });
-    try {
-      const supabase = createClient();
-      const baseUrl = browserAppOrigin();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${baseUrl}/callback?next=/home&provider=apple`,
-          // Apple Sign-In 의 최소 스코프 — 이름과 이메일만.
-          scopes: 'name email',
-        },
-      });
-      if (error) throw error;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Apple 로그인 실패';
-      setErr(msg);
-      setLoading(null);
-    }
-  }
-
-  // ⚠️ TEMP (App Store 심사용) — 심사 통과 후 이 함수·버튼·import 제거.
-  // OAuth 없이 익명 게스트 세션으로 앱 전체를 체험하게 한다(심사관 진입로).
-  // 프로덕션 동작 조건: ① Supabase 'Allow anonymous sign-ins' ON
-  // ② Vercel env ALLOW_TEST_BOOTSTRAP=1 (없으면 /api/test/bootstrap 이 404).
-  async function testLogin() {
-    setErr(null);
-    setLoading('test');
-    track('login_cta_click', { provider: 'test' });
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInAnonymously({
-        options: { data: { nickname: '테스트 꼬북이', test_account: true } },
-      });
-      if (error) throw error;
-      if (!data.user) throw new Error('user not returned');
-
-      const preview = loadPreviewInput();
-      const bootstrap = await fetch('/api/test/bootstrap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: preview
-            ? {
-                name: preview.name,
-                birthDate: preview.input.birthDate,
-                birthTime: preview.input.birthTime,
-                isLunar: preview.input.isLunar,
-                isLeapMonth: preview.input.isLeapMonth,
-                gender: preview.input.gender,
-              }
-            : undefined,
-        }),
-      });
-      if (!bootstrap.ok) {
-        const detail = await bootstrap.json().catch(() => null);
-        throw new Error(detail?.error ?? '테스트 계정 준비에 실패했어');
-      }
-      clearPreviewInput();
-      router.replace('/home');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '테스트 로그인 실패';
-      setErr(
-        msg.toLowerCase().includes('anonymous')
-          ? 'Supabase Dashboard → Authentication → Sign In / Providers 에서 "Allow anonymous sign-ins"를 켜고 Save changes를 눌러줘.'
-          : msg,
-      );
-    } finally {
       setLoading(null);
     }
   }
@@ -169,30 +99,7 @@ export default function LoginPage() {
           className="mt-12 w-full max-w-xs rounded-2xl bg-[#FEE500] py-4 text-[#191919] font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(0,0,0,0.10)]"
         >
           <span aria-hidden>💬</span>
-          {loading === 'kakao' ? '이동 중…' : '카카오로 3초 시작'}
-        </button>
-
-        <button
-          onClick={signInWithApple}
-          disabled={!!loading}
-          className="mt-3 w-full max-w-xs rounded-2xl bg-black py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(0,0,0,0.18)]"
-        >
-          <span aria-hidden></span>
-          {loading === 'apple' ? '이동 중…' : 'Apple로 계속하기'}
-        </button>
-
-        {/* ⚠️ TEMP (App Store 심사용) — 심사 통과 후 이 버튼 제거 */}
-        <button
-          onClick={testLogin}
-          disabled={!!loading}
-          className="mt-3 w-full max-w-xs rounded-2xl bg-navy py-4 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_14px_26px_rgba(44,62,80,0.22)]"
-        >
-          <KkobukSprite
-            variant="persona-kkobuk"
-            size="xs"
-            ariaLabel="테스트 꼬북이"
-          />
-          {loading === 'test' ? '꼬북이 깨우는 중…' : '테스트 로그인 (익명)'}
+          {loading === 'kakao' ? '카카오로 이동 중…' : '카카오로 로그인'}
         </button>
 
         {err && (

@@ -15,7 +15,7 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | 사주·점·궁합·오늘의 운세 AI 풀이`,
+    default: `${SITE_NAME} | 사주풀이·오늘의 운세·일주 캐릭터 AI 사주`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   authors: [{ name: SITE_NAME, url: absoluteUrl('/') }],
   creator: SITE_NAME,
   publisher: SITE_NAME,
-  category: '사주, 운세, 궁합',
+  category: '사주, 운세, 라이프스타일',
   alternates: {
     canonical: absoluteUrl('/'),
   },

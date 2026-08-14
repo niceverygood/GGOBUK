@@ -1,12 +1,15 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const serverUrl =
+  process.env.CAPACITOR_SERVER_URL ?? 'https://ggobuk.vercel.app/splash';
+
 const config: CapacitorConfig = {
   appId: 'com.niceverygood.ggobuk',
   appName: '꼬북점',
   webDir: 'app-shell',
   server: {
-    url: 'https://ggobuk.vercel.app',
-    cleartext: false,
+    url: serverUrl,
+    cleartext: serverUrl.startsWith('http://'),
     allowNavigation: [
       'ggobuk.vercel.app',
       '*.supabase.co',
@@ -14,9 +17,6 @@ const config: CapacitorConfig = {
       'kapi.kakao.com',
       '*.kakao.com',
       '*.kakaopay.com',
-      'appleid.apple.com',
-      'idmsa.apple.com',
-      '*.apple.com',
     ],
   },
 };

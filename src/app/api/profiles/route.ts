@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
 import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import type { SajuProfileRow } from '@/types/db';
 
 const ProfileBody = z.object({
@@ -71,30 +72,27 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: selfProfile } = await supabase
-    .from('saju_profiles')
-    .select('id')
-    .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
-    .maybeSingle<{ id: string }>();
+  // 관계(궁합) 엣지의 기준점 = 대표프로필. 예전엔 유일 self 를 기준으로 삼았다.
+  const anchorResolved = await resolveRepresentativeProfile(supabase, user.id);
+  const anchor = anchorResolved.ok ? anchorResolved.profile : null;
 
-  if (body.relationType === 'self' && selfProfile) {
-    return NextResponse.json({ error: 'self_exists' }, { status: 409 });
-  }
-
+  // ⚠️ 다중 '본인' 허용 (Phase 1). 예전에는 self 가 이미 있으면 409 로 막았는데,
+  //    한 사람이 "시간 아는 버전 / 모르는 버전"을 함께 두는 등 정당한 사례가 있다.
+  //    대표 여부는 relation_type 이 아니라 users.representative_profile_id 가 정한다.
   const payload = buildSajuProfilePayload(body);
 
-  // 같은 사람을 여러 번 등록하는 중복을 막는다. 동일 인물 프로필이 이미 있으면
-  // 새로 만들지 않고 기존 행을 재사용한다(멱등). self 는 위에서 409 로 처리.
-  if (body.relationType !== 'self') {
+  // 같은 사람을 여러 번 등록하는 중복은 막는다(관계 유형 무관). 동일 인물 프로필이
+  // 이미 있으면 새로 만들지 않고 기존 행을 재사용한다(멱등).
+  // 경합은 migration 20 의 saju_profiles_identity_uniq 부분 unique 인덱스가 막는다.
+  {
     const existing = await findDuplicateProfile(supabase, user.id, payload);
     if (existing) {
-      if (selfProfile) {
+      if (anchor) {
         // 관계가 아직 없으면만 연결한다. ignoreDuplicates 로 기존 궁합 점수 보존.
         await supabase.from('relations').upsert(
           {
             user_id: user.id,
-            saju_a_id: selfProfile.id,
+            saju_a_id: anchor.id,
             saju_b_id: existing.id,
             compatibility: null,
           },
@@ -117,11 +115,11 @@ export async function POST(req: Request) {
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (profile.relation_type !== 'self' && selfProfile) {
+  if (anchor && profile.id !== anchor.id) {
     const { error: relationError } = await supabase.from('relations').upsert(
       {
         user_id: user.id,
-        saju_a_id: selfProfile.id,
+        saju_a_id: anchor.id,
         saju_b_id: profile.id,
         compatibility: null,
       },

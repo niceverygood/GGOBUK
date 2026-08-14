@@ -1,42 +1,77 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { KkobukSprite } from '@/components/kkobuk/KkobukSprite';
+import { createClient } from '@/lib/supabase/client';
+import { isKakaoUser } from '@/lib/auth/provider';
+
+const MIN_SPLASH_MS = 1400;
 
 export default function SplashPage() {
   const router = useRouter();
+
   useEffect(() => {
-    const t = setTimeout(() => router.replace('/login'), 1800);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    async function continueToApp() {
+      const supabase = createClient();
+      let destination = '/login';
+
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (isKakaoUser(user)) {
+          destination = '/home';
+        } else if (user) {
+          await supabase.auth.signOut({ scope: 'local' });
+        }
+      } catch {
+        // 네트워크 오류나 세션 없음은 로그인 화면에서 다시 시도한다.
+      }
+
+      const remaining = Math.max(0, MIN_SPLASH_MS - (Date.now() - startedAt));
+      await new Promise((resolve) => window.setTimeout(resolve, remaining));
+      if (cancelled) return;
+
+      router.replace(destination);
+      router.refresh();
+    }
+
+    void continueToApp();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
-      <div className="relative mb-8 flex items-center justify-center">
-        <KkobukSprite variant="hero" size="hero" ariaLabel="꼬북이" />
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/80 border border-navy/10 text-xs font-black text-navy whitespace-nowrap">
-          등껍질 로딩 중...
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-[#A6E2DC] px-6 text-center">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,rgba(255,255,255,0.82),rgba(255,255,255,0)_56%)]" />
+      <div className="relative flex flex-col items-center">
+        <Image
+          src="/icons/icon-1024.png"
+          alt="꼬북점"
+          width={1024}
+          height={1024}
+          priority
+          className="h-56 w-56 rounded-[3rem] shadow-[0_24px_55px_rgba(27,74,78,0.18)]"
+        />
+        <h1 className="logo-brush mt-7 text-6xl leading-none text-navy">
+          꼬북점 <span className="text-lg align-top">占</span>
+        </h1>
+        <p className="mt-3 text-sm font-bold text-[#4C7773]">
+          등껍질을 두드리면 답이 나온다
+        </p>
+
+        <div className="mt-10 flex gap-2" aria-label="앱을 여는 중">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-navy/70" />
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-navy/45 [animation-delay:200ms]" />
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-navy/25 [animation-delay:400ms]" />
         </div>
       </div>
-      <h1 className="logo-brush text-6xl leading-none">
-        꼬북점 <span className="text-lg align-top">占</span>
-      </h1>
-      <p className="mt-3 text-sm font-bold text-[#7E7468]">등껍질을 두드리면 답이 나온다</p>
-
-      <div className="mt-12 flex gap-2">
-        <span className="w-3 h-3 rounded-full bg-mint animate-pulse" />
-        <span className="w-3 h-3 rounded-full bg-mint/50 animate-pulse [animation-delay:200ms]" />
-        <span className="w-3 h-3 rounded-full bg-mint/25 animate-pulse [animation-delay:400ms]" />
-      </div>
-
-      <Link
-        href="/preview"
-        className="mt-10 text-xs font-extrabold text-mint-dark underline-offset-4 underline"
-      >
-        로그인 없이 미리 둘러보기 →
-      </Link>
     </main>
   );
 }

@@ -28,6 +28,10 @@ export const TRACKABLE_EVENTS = [
   'share_click', // 공유 버튼 탭
   'paywall_view', // 결제했을 순간(유료 해설 생성·프리미엄 상품 열기 클릭) — BETA 중 결제의도 학습. props.peak 로 지점 구분.
   'reading_generate', // 전체 풀이 생성 시도. props.first 로 첫 생성/재생성 구분.
+  'bread_open', // 거북빵 오픈(=일일 출석). 리텐션 핵심 지표.
+  'bread_reward', // 거북빵 도장 완성/황금 거북빵 보상 지급.
+  'push_optin', // 알림 수신 동의 토글 ON.
+  'reading_complete', // 유료 결과가 화면에 완성되어 노출된 시점.
 ] as const;
 
 export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];

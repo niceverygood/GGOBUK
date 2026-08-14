@@ -33,7 +33,6 @@ export default function SajuOnboardingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Apple 로그인에서 전달된 계정 이름을 다시 요구하지 않는다.
           // 사용자가 풀이용 별명을 생략하면 중립적인 호칭으로 저장한다.
           name: name.trim() || '나',
           birthDate,

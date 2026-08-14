@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import { TortoiseShell } from '@/components/shell/TortoiseShell';
 import { FullReadingPanel } from '@/components/shell/FullReadingPanel';
 import { Badge, Card } from '@/components/ui/primitives';
@@ -35,13 +36,9 @@ export default async function ShellPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('saju_profiles')
-    .select('*')
-    .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
-    .maybeSingle();
-  if (!profile) redirect('/onboarding/saju');
+  const resolved = await resolveRepresentativeProfile(supabase, user.id);
+  if (!resolved.ok) redirect('/onboarding/saju');
+  const profile = resolved.profile;
 
   const palja = profile.palja as Palja;
   const ilju = iljuProfileOf(palja.day.ganIdx, palja.day.jiIdx);

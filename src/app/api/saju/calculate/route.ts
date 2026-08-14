@@ -5,6 +5,7 @@ import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
 import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
 import { logger } from '@/lib/utils/logger';
 import { recordEvent } from '@/lib/analytics/events';
+import { isKakaoUser } from '@/lib/auth/provider';
 
 const Body = z.object({
   name: z.string().min(1),
@@ -42,7 +43,7 @@ async function handleCalculate(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user)
+  if (!isKakaoUser(user))
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   let body;
@@ -55,7 +56,7 @@ async function handleCalculate(req: Request) {
     );
   }
 
-  // 카카오 OAuth 또는 anonymous 로그인으로 막 가입한 사용자는 auth.users는
+  // 카카오 OAuth로 막 가입한 사용자는 auth.users는
   // 있어도 public.users 행이 아직 없을 수 있다. saju_profiles.owner_id가
   // public.users(id)를 참조하므로 먼저 보장. 이미 있으면 no-op.
   try {

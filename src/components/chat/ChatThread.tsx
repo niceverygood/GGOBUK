@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ChatMessage } from './ChatMessage';
-import { PERSONAS } from '@/lib/llm/personas';
+// ⚠️ lib/llm/personas 를 import 하면 systemPrompt 전문(안전가드 포함)이 클라이언트 번들에 실린다.
+// 표시용 이름만 필요하므로 순수 모듈을 쓴다.
+import { personaDisplay } from '@/domain/persona/display';
 import { KkobukAvatar } from '@/components/kkobuk/KkobukAvatar';
 import { CREDIT_COSTS } from '@/lib/credits';
 import { isNativeApp } from '@/lib/utils/platform';
@@ -65,7 +67,7 @@ export function ChatThread({
   // 사용자가 타이핑 중간에 탭하면 true가 되어, 이후로는 받는 텍스트 전부를
   // 즉시 노출한다 (스트림은 그대로 계속 받음).
   const skipRef = useRef(false);
-  const personaMeta = PERSONAS[persona];
+  const personaMeta = personaDisplay(persona);
 
   function skipTyping() {
     if (streaming) skipRef.current = true;

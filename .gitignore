@@ -44,3 +44,6 @@ next-env.d.ts
 
 # App Store marketing screenshots (not source)
 appstore-shots/
+
+# 로컬 스크래치 (캡처·중간 산출물)
+tmp/

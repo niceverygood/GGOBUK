@@ -2,11 +2,14 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { MessageCircle, ScrollText } from 'lucide-react';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import { MyIljuHero } from '@/components/home/MyIljuHero';
 import { TodayScoreHero } from '@/components/home/TodayScoreHero';
+import { TurtleBread } from '@/components/home/TurtleBread';
+import { MonthlyTeaser } from '@/components/home/MonthlyTeaser';
 import { WelcomeBonusCard } from '@/components/home/WelcomeBonusCard';
 import { BetaFreeBadge } from '@/components/home/BetaFreeBadge';
-import { todayKstIso } from '@/lib/utils/date';
+import { todayKstIso, currentYearMonthKst } from '@/lib/utils/date';
 import type { Palja, SajuInput } from '@/lib/saju/types';
 
 /**
@@ -20,21 +23,45 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('saju_profiles')
-    .select('*')
-    .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
-    .maybeSingle();
-  if (!profile) redirect('/onboarding/saju');
+  const resolved = await resolveRepresentativeProfile(supabase, user.id);
+  if (!resolved.ok) redirect('/onboarding/saju');
+  const profile = resolved.profile;
 
   const today = todayKstIso();
-  const { data: daily } = await supabase
-    .from('daily_fortunes')
-    .select('*')
-    .eq('saju_id', profile.id)
-    .eq('date', today)
-    .maybeSingle();
+  const yearMonth = currentYearMonthKst();
+
+  const [{ data: daily }, { data: breadOpen }, { data: userRow }, { data: monthly }] =
+    await Promise.all([
+      supabase
+        .from('daily_fortunes')
+        .select('*')
+        .eq('saju_id', profile.id)
+        .eq('date', today)
+        .maybeSingle(),
+      supabase
+        .from('bread_opens')
+        .select('is_golden')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle(),
+      supabase
+        .from('users')
+        .select('bread_stamps')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('monthly_readings')
+        .select('tier, content')
+        .eq('saju_id', profile.id)
+        .eq('year_month', yearMonth),
+    ]);
+
+  // 거북빵을 열어야 그날 운세가 보인다. 이미 열었으면(=bread_opens 행 존재) 내용 노출.
+  const openedToday = Boolean(breadOpen);
+  const monthlyRows = monthly ?? [];
+  const monthlySummary =
+    monthlyRows.find((r) => r.tier === 'summary')?.content ?? null;
+  const hasMonthlyDetail = monthlyRows.some((r) => r.tier === 'detail');
 
   const palja = profile.palja as Palja;
   const calendarInput: SajuInput = {
@@ -66,15 +93,39 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* ════════ 오늘의 나 (매일 바뀌는 일진) ════════ */}
+      {/* ════════ 오늘의 거북빵 — 매일 무료로 여는 하루 1회 의식 ════════ */}
       <div className="mt-7">
-        <TodayScoreHero
-          name={profile.name}
-          sajuInput={calendarInput}
-          sajuId={profile.id}
-          oneLiner={daily?.one_liner ?? null}
-          recommend={daily?.recommend ?? []}
+        <TurtleBread
+          openedToday={openedToday}
+          initialDaily={
+            openedToday && daily
+              ? {
+                  one_liner: daily.one_liner,
+                  lucky_color: daily.lucky_color ?? null,
+                  lucky_number: daily.lucky_number ?? null,
+                  lucky_food: daily.lucky_food ?? null,
+                  mood: daily.mood ?? null,
+                  recommend: (daily.recommend as string[] | null) ?? [],
+                }
+              : null
+          }
+          initialStamps={Number(userRow?.bread_stamps ?? 0)}
+          initialGolden={Boolean(breadOpen?.is_golden)}
         />
+      </div>
+
+      {/* ════════ 이번 달 흐름 — 무료 3줄 요약 + 유료 상세 진입 ════════ */}
+      <div className="mt-7">
+        <MonthlyTeaser
+          yearMonth={yearMonth}
+          summary={monthlySummary}
+          hasDetail={hasMonthlyDetail}
+        />
+      </div>
+
+      {/* ════════ 오늘의 흐름 (일진 점수) ════════ */}
+      <div className="mt-7">
+        <TodayScoreHero name={profile.name} sajuInput={calendarInput} />
       </div>
 
       {/* ════════ 할 수 있는 일 2가지 — 풀이 · 채팅 ════════ */}

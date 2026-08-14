@@ -13,7 +13,8 @@ export async function GET() {
     .from('saju_profiles')
     .select('id, name, ilgan, palja, ohaeng_count')
     .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle();
   return NextResponse.json({ profile: data });
 }

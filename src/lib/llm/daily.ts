@@ -61,6 +61,8 @@ ${PREMIUM_SAJU_GUIDE}
 - 행운 컬러: 빨강·초록·노랑·파랑·검정·흰색·민트 등 일상 색 이름으로.
 - 행운 숫자: 1-9 중 하나
 - 행운 방향: 동/서/남/북/중앙 중 하나
+- 행운 음식: 오늘 먹으면 좋은 음식 하나를 6-14자로. 편의점·식당에서 실제로 고를 수 있는
+  구체적인 것으로. 예: "따뜻한 국물 요리" (○) / "붉은 기운의 음식" (✗ — 추상적)
 - 추천 행동 3개는 각각 18-32자, 바로 따라 할 수 있는 구체적 행동을 쉬운 말로.
   예: "점심 먹고 30분 산책하며 머리 식히기" (○) / "정인 시간이라 독서" (✗ — 용어)
 - 주의 행동 1-2개는 각각 18-32자, "왜 조심해야 하는지"가 일상어로 살짝 드러나게.
@@ -82,6 +84,7 @@ JSON으로만 답한다. 다른 텍스트 금지.
   "lucky_color": "...",
   "lucky_number": 0,
   "lucky_direction": "...",
+  "lucky_food": "...",
   "recommend": ["...", "...", "..."],
   "avoid": ["..."],
   "mood": "..."
@@ -92,6 +95,7 @@ export interface DailyFortuneOutput {
   lucky_color: string;
   lucky_number: number;
   lucky_direction: string;
+  lucky_food: string;
   recommend: string[];
   avoid: string[];
   mood: DailyMood;
@@ -153,6 +157,7 @@ function normalizeDaily(raw: unknown): DailyFortuneOutput {
       Math.min(9, Number.isFinite(luckyNumber) ? luckyNumber : 7),
     ),
     lucky_direction: String(value.lucky_direction ?? '동').trim(),
+    lucky_food: stripHanja(String(value.lucky_food ?? '따뜻한 국물 요리').trim()),
     recommend,
     avoid,
     mood,

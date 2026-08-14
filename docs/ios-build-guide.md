@@ -89,8 +89,8 @@ Xcode Simulator에서 캡처:
 ### Review Notes
 ```
 테스트 방법:
-1. 앱 실행 → 로그인 화면의 "테스트 로그인" 버튼 탭
-2. 자동으로 테스트 계정 생성 + 30 크레딧 지급
+1. 앱 실행 → 스플래시 다음 카카오 로그인 버튼 탭
+2. 심사용으로 제공한 카카오 계정으로 로그인
 3. 홈 화면에서 일일운세, 등껍질 해설, 채팅 등 체험 가능
 
 참고: iOS 앱 내 결제 기능은 비활성화되어 있습니다.
@@ -102,7 +102,7 @@ Xcode Simulator에서 캡처:
 - **이용약관**: https://ggobuk.vercel.app/terms
 - **지원 URL**: https://ggobuk.vercel.app
 
-## 심사 통과 후
+## 로그인 정책
 
-1. Vercel에서 `ALLOW_TEST_BOOTSTRAP` 환경변수 **삭제**
-2. Redeploy
+- 앱 로그인은 카카오 OAuth 하나만 제공한다.
+- iOS 제출 전 App Review의 외부 로그인 서비스 정책을 다시 확인한다.

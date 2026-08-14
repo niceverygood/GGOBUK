@@ -82,16 +82,10 @@ export default async function SeoKeywordPage({ params }: PageProps) {
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/preview"
-                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-mint px-5 text-sm font-black text-[#163438] shadow-[0_12px_22px_rgba(44,62,80,0.14)]"
-              >
-                사주 미리보기
-              </Link>
-              <Link
                 href="/login"
-                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-navy px-5 text-sm font-black text-white"
+                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-[#FEE500] px-5 text-sm font-black text-[#191919] shadow-[0_12px_22px_rgba(44,62,80,0.14)]"
               >
-                앱에서 자세히 보기
+                카카오로 로그인하고 자세히 보기
               </Link>
             </div>
           </div>
@@ -176,14 +170,14 @@ export default async function SeoKeywordPage({ params }: PageProps) {
               내 사주를 직접 펼쳐볼까요?
             </h2>
             <p className="mt-2 text-sm font-semibold text-white/70">
-              로그인 없이 미리 보고, 저장이 필요하면 앱에서 이어갈 수 있어요.
+              카카오 로그인 후 내 사주를 저장하고 언제든 이어서 볼 수 있어요.
             </p>
           </div>
           <Link
-            href="/preview"
+            href="/login"
             className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-black text-navy"
           >
-            무료 미리보기
+            카카오로 로그인
             <ArrowRight size={16} strokeWidth={3} />
           </Link>
         </div>

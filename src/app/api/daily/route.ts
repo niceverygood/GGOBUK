@@ -2,9 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { hasAiConsent } from '@/lib/privacy/consent';
 import { rateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
-import { generateDaily } from '@/lib/llm/daily';
-import { buildSajuResult } from '@/lib/saju';
-import { calculatePalja } from '@/lib/saju/palja';
+import { ensureDailyFortune } from '@/lib/daily/ensure';
 import { todayKstIso } from '@/lib/utils/date';
 import { logger } from '@/lib/utils/logger';
 import { sendPush, isPushConfigured } from '@/lib/push/send';
@@ -15,7 +13,26 @@ export const maxDuration = 60;
 
 // On-demand: GET /api/daily?saju_id=...
 // Bulk:     POST /api/daily  (cron — generates for all self profiles for today)
+/**
+ * Vercel Cron 인증. fail-closed — CRON_SECRET 미설정이면 항상 거부한다.
+ *
+ * ⚠️ Vercel Cron 은 스케줄된 경로를 **GET** 으로 호출한다(vercel.json 에 method 필드가 없다).
+ * 벌크 생성 로직은 원래 POST 에만 있어 크론이 GET → 401 로 끝나고 있었다.
+ * 그래서 GET 도 크론 인증이 통과하면 같은 벌크 작업을 수행한다.
+ */
+function isCronRequest(req: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return (
+    req.headers.get('authorization') === `Bearer ${secret}` ||
+    req.headers.get('x-cron-secret') === secret
+  );
+}
+
 export async function GET(req: Request) {
+  // 크론(세션 없음)이면 벌크 생성 경로로 위임한다.
+  if (isCronRequest(req)) return runDailyBulk();
+
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -54,72 +71,34 @@ export async function GET(req: Request) {
     .select('*')
     .eq('id', sajuId)
     .eq('owner_id', user.id)
-    .single();
+    .single<SajuProfileRow>();
   if (!profile) return NextResponse.json({ error: 'profile not found' }, { status: 404 });
 
-  const ilji = calculatePalja({
-    birthDate: today,
-    isLunar: false,
-    gender: 'M',
-  }).day;
-
-  const saju = buildSajuResult({
-    birthDate: profile.birth_date,
-    birthTime: profile.birth_time ?? undefined,
-    isLunar: profile.is_lunar,
-    isLeapMonth: profile.is_leap_month,
-    gender: profile.gender,
-  });
-
-  let fortune;
-  try {
-    fortune = await generateDaily({
-      saju,
-      date: today,
-      iljiGan: ilji.ganHanja,
-      iljiJi: ilji.jiHanja,
-      name: profile.name,
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : '';
-    if (msg.includes('OPENROUTER_API_KEY') || msg.includes('ANTHROPIC_API_KEY')) {
-      return NextResponse.json({ daily: null, error: 'llm_not_configured' }, { status: 503 });
+  const result = await ensureDailyFortune({ profile, date: today });
+  if (!result.ok) {
+    if (result.reason === 'llm_not_configured') {
+      return NextResponse.json(
+        { daily: null, error: 'llm_not_configured' },
+        { status: 503 },
+      );
     }
-    return NextResponse.json({ error: msg || 'daily failed' }, { status: 500 });
+    return NextResponse.json({ error: result.message }, { status: 500 });
   }
 
-  const admin = await createServerClient({ admin: true });
-  const { data: inserted } = await admin
-    .from('daily_fortunes')
-    .insert({
-      saju_id: sajuId,
-      date: today,
-      ilji_gan: ilji.gan,
-      ilji_ji: ilji.ji,
-      one_liner: fortune.one_liner,
-      lucky_color: fortune.lucky_color,
-      lucky_number: fortune.lucky_number,
-      lucky_direction: fortune.lucky_direction,
-      recommend: fortune.recommend,
-      avoid: fortune.avoid,
-      mood: fortune.mood,
-    })
-    .select()
-    .single();
-
-  return NextResponse.json({ daily: inserted, cached: false });
+  return NextResponse.json({ daily: result.daily, cached: result.cached });
 }
 
 export async function POST(req: Request) {
   // Cron endpoint. Authenticate via Vercel Cron header or shared secret.
   // fail-closed: CRON_SECRET 미설정이면 거부(누구나 전체 유저 대량 생성 못 하게).
-  const secret = process.env.CRON_SECRET;
-  const vercelCronAuth = !!secret && req.headers.get('authorization') === `Bearer ${secret}`;
-  const legacyCronAuth = !!secret && req.headers.get('x-cron-secret') === secret;
-  if (!vercelCronAuth && !legacyCronAuth) {
+  if (!isCronRequest(req)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
+  return runDailyBulk();
+}
 
+/** 전체 사용자 일일 운세 생성 + 푸시. GET(크론)·POST 공용. */
+async function runDailyBulk() {
   const admin = await createServerClient({ admin: true });
   const today = todayKstIso();
 
@@ -130,59 +109,67 @@ export async function POST(req: Request) {
     .not('ai_consent_at', 'is', null);
   const consentedIds = new Set((consentedUsers ?? []).map((u) => u.id));
 
-  const { data: allProfiles } = await admin
-    .from('saju_profiles')
-    .select('*')
-    .eq('relation_type', 'self')
-    .returns<SajuProfileRow[]>();
-  const profiles = (allProfiles ?? []).filter((p) => consentedIds.has(p.owner_id));
+  // 사용자당 **대표프로필 1개**만 생성한다. 예전에는 relation_type='self' 를 전부 긁어
+  // 다중 self 사용자에게 중복 생성·중복 푸시가 나갔다.
+  const { data: repRows, error: repErr } = await admin
+    .from('users')
+    .select('id, representative_profile_id')
+    .not('representative_profile_id', 'is', null)
+    .returns<{ id: string; representative_profile_id: string }[]>();
+
+  const profiles: SajuProfileRow[] = [];
+
+  // ⚠️ migration 20 미적용 환경에서는 representative_profile_id 컬럼이 없다.
+  //    그대로 두면 대상이 0건이 되어 **일일 운세가 조용히 아무것도 생성하지 않는다.**
+  //    컬럼이 생기기 전까지는 기존 방식(self 프로필)으로 폴백한다.
+  const hasRepColumn = !repErr;
+
+  if (hasRepColumn) {
+    const repIds = (repRows ?? [])
+      .filter((r) => consentedIds.has(r.id))
+      .map((r) => r.representative_profile_id);
+
+    // Postgrest in() 인자 길이 제한을 피하려 청크로 나눈다.
+    for (let i = 0; i < repIds.length; i += 200) {
+      const { data } = await admin
+        .from('saju_profiles')
+        .select('*')
+        .in('id', repIds.slice(i, i + 200))
+        .returns<SajuProfileRow[]>();
+      if (data) profiles.push(...data);
+    }
+  } else {
+    logger.warn('daily', 'representative_profile_id 없음 — self 프로필로 폴백', {});
+    const { data } = await admin
+      .from('saju_profiles')
+      .select('*')
+      .eq('relation_type', 'self')
+      .returns<SajuProfileRow[]>();
+    // 사용자당 1건만 (다중 self 대비 최초 생성 우선)
+    const seen = new Set<string>();
+    for (const p of data ?? []) {
+      if (!consentedIds.has(p.owner_id) || seen.has(p.owner_id)) continue;
+      seen.add(p.owner_id);
+      profiles.push(p);
+    }
+  }
 
   let generated = 0;
   let failed = 0;
 
   for (const profile of profiles) {
-    const { data: existing } = await admin
-      .from('daily_fortunes')
-      .select('id')
-      .eq('saju_id', profile.id)
-      .eq('date', today)
-      .maybeSingle();
-    if (existing) continue;
-
-    try {
-      const ilji = calculatePalja({ birthDate: today, isLunar: false, gender: 'M' }).day;
-      const saju = buildSajuResult({
-        birthDate: profile.birth_date,
-        birthTime: profile.birth_time ?? undefined,
-        isLunar: profile.is_lunar,
-        isLeapMonth: profile.is_leap_month,
-        gender: profile.gender,
-      });
-      const fortune = await generateDaily({
-        saju,
-        date: today,
-        iljiGan: ilji.ganHanja,
-        iljiJi: ilji.jiHanja,
-        name: profile.name,
-      });
-      await admin.from('daily_fortunes').insert({
-        saju_id: profile.id,
-        date: today,
-        ilji_gan: ilji.gan,
-        ilji_ji: ilji.ji,
-        one_liner: fortune.one_liner,
-        lucky_color: fortune.lucky_color,
-        lucky_number: fortune.lucky_number,
-        lucky_direction: fortune.lucky_direction,
-        recommend: fortune.recommend,
-        avoid: fortune.avoid,
-        mood: fortune.mood,
-      });
-      generated++;
-    } catch (e) {
+    // ensureDailyFortune 이 캐시 확인·생성·저장·컬럼 폴백을 모두 처리한다.
+    const r = await ensureDailyFortune({ profile, date: today });
+    if (!r.ok) {
       failed++;
-      logger.error('daily', 'generation failed', { profileId: profile.id, error: e instanceof Error ? e.message : String(e) });
+      logger.error('daily', 'generation failed', {
+        profileId: profile.id,
+        reason: r.reason,
+        error: r.message,
+      });
+      continue;
     }
+    if (!r.cached) generated++;
   }
 
   // ── 푸시 발송 — push 켠 사용자에게 그날의 한 줄 운세 ──

@@ -39,6 +39,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Play 설치본을 지우지 않고 실기기 QA 빌드를 나란히 설치한다.
+            applicationIdSuffix ".debug"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

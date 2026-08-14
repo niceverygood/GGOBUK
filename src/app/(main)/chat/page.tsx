@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import { ChatThread } from '@/components/chat/ChatThread';
 
 // 세션 get-or-create가 요청마다 살아있어야 해서 정적 캐시 금지.
@@ -17,13 +18,9 @@ export default async function ChatPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('saju_profiles')
-    .select('id')
-    .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
-    .maybeSingle();
-  if (!profile) redirect('/onboarding/saju');
+  const resolved = await resolveRepresentativeProfile(supabase, user.id);
+  if (!resolved.ok) redirect('/onboarding/saju');
+  const profile = resolved.profile;
 
   let { data: session } = await supabase
     .from('chat_sessions')

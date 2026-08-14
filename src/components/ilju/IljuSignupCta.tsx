@@ -33,10 +33,10 @@ export function IljuSignupCta() {
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-3 backdrop-blur">
       <div className="mx-auto max-w-md">
         <Link
-          href="/preview"
+          href="/login"
           className="flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-navy text-sm font-black text-white shadow-[0_12px_24px_rgba(44,62,80,0.22)]"
         >
-          30초면 끝나요 · 무료로 내 일주 확인하기
+          카카오로 로그인하고 내 일주 확인하기
           <ArrowRight size={16} strokeWidth={3} />
         </Link>
         <p className="mt-1.5 text-center text-[11px] font-bold text-muted">

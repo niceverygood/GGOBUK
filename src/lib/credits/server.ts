@@ -141,9 +141,9 @@ export async function addCredits(params: {
 /**
  * Grant the new-user signup bonus (PRICING.md §4). Idempotent: relies on
  * grant_signup_bonus() in migration 5 which uses users.signup_bonus_granted
- * as a once-only flag. Safe to call from /api/test/bootstrap and from the
- * kakao OAuth callback — at most one of them will actually credit the
- * account. Falls back to a no-op (returns null) when the RPC is not yet
+ * as a once-only flag. Safe to call repeatedly from the Kakao OAuth callback;
+ * only the first successful call credits the account. Falls back to a no-op
+ * (returns null) when the RPC is not yet
  * deployed on the connected Supabase project so production stays alive.
  */
 export async function grantSignupBonusIfNeeded(

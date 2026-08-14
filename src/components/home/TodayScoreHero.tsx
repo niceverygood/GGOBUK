@@ -1,8 +1,4 @@
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/primitives';
-import { LoadingDots } from '@/components/ui/LoadingDots';
-import { EnsureDaily } from '@/components/home/EnsureDaily';
 import { dayFortune, type FortuneGrade } from '@/lib/saju/fortune_calendar';
 import { buildSajuResult } from '@/lib/saju';
 import type { SajuInput } from '@/lib/saju/types';
@@ -10,11 +6,6 @@ import type { SajuInput } from '@/lib/saju/types';
 interface Props {
   name: string;
   sajuInput: SajuInput;
-  sajuId: string;
-  /** AI 생성된 오늘의 한 줄 (없으면 EnsureDaily가 생성 트리거) */
-  oneLiner: string | null;
-  /** 추천 행동 (있으면 최대 3개 노출) */
-  recommend: string[];
 }
 
 const REL_DAYS = [
@@ -49,19 +40,12 @@ function addDays(iso: string, n: number): string {
 }
 
 /**
- * 점신식 "오늘 점수" 히어로. 한 화면의 단일 초점.
+ * 오늘 일진 점수 — 순수 계산 결과(LLM 아님)라 거북빵을 열지 않아도 항상 보인다.
  *
- * 큰 점수 + 그제~모레 5일 셀렉터 + 오늘 한 줄 + 추천을 하나의 클린 카드로 묶어
- * 기존의 (일진 스프라이트 카드 + 한 줄 카드 + 주간 스트립) 3장을 1장으로 합친다.
- * 그라데이션 없이 플랫 화이트 + 등급 단일 액센트만 사용.
+ * AI가 쓴 "오늘의 한 줄"과 추천 행동은 거북빵(TurtleBread) 안으로 옮겼다.
+ * 여기는 점수와 5일 흐름만 담당한다.
  */
-export function TodayScoreHero({
-  name,
-  sajuInput,
-  sajuId,
-  oneLiner,
-  recommend,
-}: Props) {
+export function TodayScoreHero({ name, sajuInput }: Props) {
   const saju = buildSajuResult(sajuInput);
   const today = todayKstIso();
   const days = REL_DAYS.map((d) => ({
@@ -73,14 +57,30 @@ export function TodayScoreHero({
 
   return (
     <Card className="mt-3 p-5">
-      {/* eyebrow + title */}
-      <p className="text-[12px] font-extrabold text-muted">오늘의 운세</p>
-      <h2 className="mt-0.5 text-[22px] font-black leading-tight text-navy">
-        {name}님의 오늘 흐름
+      <p className="text-[12px] font-extrabold text-muted">오늘의 흐름</p>
+      <h2 className="mt-0.5 text-[20px] font-black leading-tight text-navy">
+        {name}님의 일진 점수
       </h2>
 
+      {/* 큰 점수 — 단일 액센트 원 */}
+      <div className="mt-5 flex flex-col items-center">
+        <div className="relative grid place-items-center">
+          <span
+            className={`absolute h-24 w-24 translate-x-7 -translate-y-2 rounded-full ${accent.ring}`}
+          />
+          <span className="relative text-[64px] font-black leading-none text-navy">
+            {todayFortune.score}
+          </span>
+        </div>
+        <span
+          className={`mt-3 rounded-full px-3 py-1 text-[11px] font-black ${accent.chip}`}
+        >
+          {accent.label} · 오늘 일진 {todayFortune.note}
+        </span>
+      </div>
+
       {/* 그제~모레 5일 점수 */}
-      <div className="mt-4 grid grid-cols-5 gap-1.5">
+      <div className="mt-5 grid grid-cols-5 gap-1.5">
         {days.map((d) => {
           const isToday = d.offset === 0;
           return (
@@ -102,64 +102,6 @@ export function TodayScoreHero({
           );
         })}
       </div>
-
-      {/* 큰 점수 — 단일 액센트 원 */}
-      <div className="mt-6 flex flex-col items-center">
-        <div className="relative grid place-items-center">
-          <span
-            className={`absolute h-24 w-24 translate-x-7 -translate-y-2 rounded-full ${accent.ring}`}
-          />
-          <span className="relative text-[64px] font-black leading-none text-navy">
-            {todayFortune.score}
-          </span>
-        </div>
-        <span
-          className={`mt-3 rounded-full px-3 py-1 text-[11px] font-black ${accent.chip}`}
-        >
-          {accent.label} · 오늘 일진 {todayFortune.note}
-        </span>
-      </div>
-
-      {/* 오늘의 한 줄 */}
-      <div className="mt-5 rounded-2xl bg-ivory px-4 py-3.5">
-        <p className="text-[11px] font-extrabold text-muted">오늘의 한 줄</p>
-        <p className="mt-1 text-[15px] font-black leading-snug text-navy">
-          {oneLiner ? (
-            oneLiner
-          ) : (
-            <>
-              오늘의 운세를 가져오는 중이야
-              <LoadingDots />
-            </>
-          )}
-        </p>
-        {recommend.length > 0 && (
-          <ul className="mt-2.5 space-y-1 text-[12px] font-bold text-[#3C4650]">
-            {recommend.slice(0, 3).map((r) => (
-              <li key={r} className="leading-snug">
-                ✓ {r}
-              </li>
-            ))}
-          </ul>
-        )}
-        {oneLiner && (
-          // 진짜 손실회피: 일진은 실제로 날짜 경계로 바뀜(거짓 만료 아님).
-          <p className="mt-2.5 text-[11px] font-bold text-mint-dark">
-            오늘의 일진은 오늘만 · 내일이면 새 흐름이에요
-          </p>
-        )}
-        {!oneLiner && <EnsureDaily sajuId={sajuId} />}
-      </div>
-
-      {/* CTA — 오늘 흐름이 궁금하면 바로 꼬북이에게 */}
-      <Link
-        href="/chat"
-        prefetch
-        className="mt-4 flex items-center justify-center gap-1 rounded-2xl bg-navy py-3.5 text-[14px] font-black text-white active:scale-[0.99]"
-      >
-        꼬북이에게 오늘 물어보기
-        <ChevronRight size={16} strokeWidth={3} />
-      </Link>
     </Card>
   );
 }

@@ -42,36 +42,46 @@ App Store Connect ▸ 앱 ▸ App Review ▸ Resolution Center ▸ 영문 회신
 ## ② 메타데이터 (복붙용)
 
 ### 한국어 (ko)
-- **이름** (≤30자): `꼬북점: 나의 AI 거북이`
-- **부제** (≤30자): `오늘 운세·사주·궁합을 한눈에`
-- **프로모션 텍스트** (≤170자): `오늘 운세부터 내 사주와 궁합까지, 원하는 풀이를 쉽고 직관적으로 확인해 보세요.`
-- **키워드** (≤100자, 쉼표구분/공백없이): `거북이,캐릭터,오늘운세,일주,성격유형,자기이해,궁합,인연,심리테스트,사주,명리,대운,길일`
+
+> ⚠️ **2026-08-14 동기화.** 이전 리스팅은 `/mode`(풀이 스타일 선택)·`/relations`(친구 궁합)·
+> `/calendar`(운세 달력)를 광고했으나 v2 대단순화로 **세 라우트가 모두 삭제**되어
+> App Review Guideline 2.3(부정확한 메타데이터) 위반 상태였다. 실제 기능만 남기도록 재작성.
+> 앱 **이름은 바꾸지 않는다** — 4.3(b) 리젝(2026-05-22) 을 캐릭터 IP 포지셔닝으로 통과했기 때문에,
+> 이름을 사주 키워드로 바꾸면 그 근거가 무너진다. 사주 키워드는 부제·키워드 필드로만 태운다.
+
+- **이름** (≤30자): `꼬북점: 나의 AI 거북이`  ← 변경 금지
+- **부제** (≤30자): `매일 무료 운세와 내 일주 카드`
+- **프로모션 텍스트** (≤170자, 심사 없이 교체 가능):
+  `매일 무료로 여는 오늘의 운세와, 60종 중 하나인 내 일주 캐릭터 카드. 내 사주를 아는 꼬북이와 대화로 이어가 보세요.`
+- **키워드** (≤100자, 쉼표구분/공백없이):
+  `거북이,캐릭터,오늘운세,일주,60갑자,성격유형,자기이해,심리테스트,사주,사주풀이,만세력,명리,운세앱,오행`
+  - ⚠️ `궁합`·`대운`·`길일`·`인연` 제거 — 앱에 없는 기능이라 2.3 리젝 사유이자 유입 후 이탈 요인
 - **설명**:
 ```
-꼬북섬에는 성격이 제각각인 거북이 네 마리가 살아요.
-
-🐢 꼬북이 — 어려운 말 없이 쉬운 풀이
-🧙 꼬북도사 — 명리 근거까지 깊은 풀이
-🔮 꼬북무당 — 결론부터 빠르고 직설적인 풀이
-🙏 꼬북보살 — 공감을 담은 따뜻한 풀이
-
-네 마리는 모두 같은 사주를 서로 다른 깊이와 말투로 풀어줘요.
-나에게 가장 편한 풀이 스타일을 골라 보세요.
+꼬북섬에 사는 거북이 꼬북이가 당신의 사주를 읽어드려요.
 
 ■ 나를 닮은 캐릭터, 일주 카드
 태어난 날로 정해지는 '나의 일주' 캐릭터 카드를 만들어 드려요.
 60종 중 하나뿐인 내 카드를 친구에게 공유하고 "넌 무슨 일주야?" 물어보세요.
 
-■ 쉽고 깊이를 고를 수 있는 AI 풀이
-핵심만 쉽게 보거나, 명리 근거까지 자세히 읽을 수 있어요.
+■ 매일 열어보는 오늘의 거북빵
+하루 한 번 무료로 거북빵을 열면 오늘의 흐름, 행운의 색과 숫자,
+오늘 해보면 좋은 일이 들어 있어요. 매일 열면 도장이 쌓여요.
 
-■ 친구와의 궁합
-링크 하나로 친구를 초대하면 둘의 캐릭터가 얼마나 잘 맞는지 보여드려요.
+■ 내 사주 전체 풀이
+사주팔자 여덟 글자와 오행을 근거로, 나라는 사람 · 타고난 강점 ·
+조심할 그늘 · 일과 돈 · 사랑과 관계 · 지금의 흐름을 한 편으로 정리해 드려요.
 
-■ 오늘의 흐름
-매일, 오늘 하루를 어떻게 보내면 좋을지 짧은 가이드를 받아보세요.
+■ 이번 달 흐름
+매달 새로 갱신되는 이번 달 운세를 무료 요약으로 확인하고,
+더 궁금하면 분야별 상세 풀이로 이어서 볼 수 있어요.
 
-· 구독 없이 시작할 수 있어요.
+■ 꼬북이와 대화
+풀이를 읽고 궁금한 게 생기면 바로 물어보세요.
+내 사주를 알고 있는 꼬북이가 이어서 답해줘요.
+
+· 카카오 계정으로 3초 만에 시작할 수 있어요.
+· 구독 없이, 필요한 풀이만 골라 볼 수 있어요.
 · 사주·명리를 모티프로 한 엔터테인먼트 콘텐츠입니다. 재미로 즐겨주세요.
 ```
 
@@ -133,7 +143,7 @@ We have updated the listing to reflect this:
 
 Additional notes for review:
 - The app is free to use for the review; there is no subscription wall.
-- We offer Sign in with Apple alongside our other sign-in option.
+- The current app uses Kakao OAuth as its single login method.
 
 We respectfully request a re-review under the updated metadata. If a concern remains, we would welcome the opportunity to discuss it with the App Review Board.
 
@@ -146,17 +156,21 @@ Thank you for your time.
 
 iPhone 전용이라 6.9" 한 사이즈만 있으면 됨(iPad 스크린샷 불필요).
 
+> ⚠️ **2026-08-14 갱신.** 이전 플랜의 `/mode`·`/relations`·`/calendar` 는 **삭제된 라우트**라
+> 재촬영이 불가능하다. `appstore-shots/` 의 기존 캡처도 그 화면들을 담고 있어 재사용 불가.
+
 | # | 화면 | 캡션(예시) | 라우트 |
 |---|------|-----------|--------|
-| 1 | 풀이 스타일 선택 | 쉬운 풀이부터 깊은 풀이까지 | `/mode` |
-| 2 | 사주 풀이 | 원하는 주제만 골라서 보기 | `/shell` |
-| 3 | 일주 캐릭터 카드 | 태어난 날로 만든 나만의 캐릭터 | `/ilju/[slug]` (공개) |
-| 4 | 친구 궁합 | 우린 얼마나 잘 맞을까? | `/relations` |
-| 5 | 오늘의 흐름 | 오늘 하루, 이렇게 보내봐 | `/home` (오늘의 흐름 카드) |
-| 6 | 운세 달력 | 한 달의 흐름을 한눈에 | `/calendar` |
+| 1 | 일주 캐릭터 카드 | 태어난 날로 만든 나만의 캐릭터 | `/ilju/[slug]` (공개) |
+| 2 | 오늘의 거북빵 | 하루 한 번, 무료로 열어보는 오늘 | `/home` (거북빵 카드) |
+| 3 | 내 사주 전체 풀이 | 여덟 글자로 읽는 나라는 사람 | `/shell` |
+| 4 | 이번 달 흐름 | 매달 새로 갱신되는 이번 달 운세 | `/home` (이번 달 흐름 카드) |
+| 5 | 꼬북이와 대화 | 내 사주를 아는 친구에게 물어보기 | `/chat` |
+| 6 | 만세력 등껍질 | 사주 여덟 글자를 한눈에 | `/shell` (등껍질 상단) |
 
 **규칙**
-- ❗ **1번(첫 장)에 복잡한 결과표를 두지 말 것** — 풀이 스타일과 캐릭터를 먼저 보여줄 것.
+- ❗ **1번(첫 장)에 복잡한 결과표를 두지 말 것** — 캐릭터 카드를 먼저 보여줄 것.
+- ❗ 검색 결과에는 첫 1~3장만 노출된다. 1~3번에 핵심을 다 담을 것.
 - 캡션은 이미지에 텍스트 오버레이로(스토어가 자동으로 안 넣음).
 
 **캡처 방법 (정확한 해상도)**
@@ -166,27 +180,11 @@ iPhone 전용이라 6.9" 한 사이즈만 있으면 됨(iPad 스크린샷 불필
 
 ---
 
-## ⑤ Sign in with Apple — 외부 설정 체크리스트
+## ⑤ 로그인 정책
 
-> 코드는 **이미 구현 완료**(`login/page.tsx`의 `signInWithApple()` + "Apple로 계속하기" 버튼, `callback/route.ts`의 `provider=apple` 분기). 남은 건 **포털/대시보드 설정뿐** — 전부 시크릿이라 네가 직접 입력(절대 커밋 금지).
-
-### Apple Developer (developer.apple.com)
-1. Certificates, IDs & Profiles ▸ Identifiers ▸ `com.niceverygood.ggobuk` ▸ **Sign in with Apple** capability 체크 ▸ Save.
-2. Identifiers ▸ `+` ▸ **Services IDs** 생성 (예: `com.niceverygood.ggobuk.web`) ▸ Sign in with Apple 활성 ▸ Configure:
-   - Primary App ID: `com.niceverygood.ggobuk`
-   - Domains and Subdomains: `zaifbeulgqmhzeewkbtd.supabase.co` (필수 — 아래 Return URL의 도메인)
-   - Return URLs: `https://zaifbeulgqmhzeewkbtd.supabase.co/auth/v1/callback`
-3. Keys ▸ `+` ▸ Sign in with Apple 활성 ▸ 생성 ▸ **.p8 키 다운로드(1회뿐)** + **Key ID** 기록 (Team ID = `7AXRWTV5YW`).
-
-### Supabase (Dashboard ▸ Authentication ▸ Providers ▸ Apple)
-- Apple 활성화
-- **Client IDs** = `com.niceverygood.ggobuk.web,com.niceverygood.ggobuk` (웹 Services ID + 네이티브 번들 ID, 쉼표구분)
-- **Secret Key (for OAuth)** = `.p8` + Key ID + Team ID(`7AXRWTV5YW`) + Services ID로 생성한 client secret JWT (Supabase 문서의 생성기 사용; **≤6개월 만료 → 갱신 필요**)
-- Save
-- Authentication ▸ URL Configuration: Site URL `https://ggobuk.vercel.app`, redirect 허용목록에 `https://ggobuk.vercel.app/callback` 포함 — **카카오가 동일 패턴을 쓰므로 이미 설정돼 있을 것**(확인만).
-
-> 프로젝트 ref `zaifbeulgqmhzeewkbtd` 는 `NEXT_PUBLIC_SUPABASE_URL`(`https://zaifbeulgqmhzeewkbtd.supabase.co`)에서 확인됨.
-> ⚠️ 웹뷰(WKWebView) 안에서 Apple 웹 OAuth가 막히면 `@capacitor-community/apple-sign-in` 네이티브 플러그인 + nonce 플로우로 전환(별도 작업). 우선 웹 플로우로 시도.
+2026-08-11부터 앱 로그인은 카카오 OAuth 하나만 제공한다. Apple 로그인과 익명
+테스트 로그인 코드는 제거했다. iOS App Store 제출 전에는 외부 로그인 서비스에
+관한 최신 App Review 정책을 다시 확인한다.
 
 ---
 

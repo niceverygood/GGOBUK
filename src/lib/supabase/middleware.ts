@@ -10,6 +10,7 @@ import {
   parseAttributionFromQuery,
   serializeAttribution,
 } from '@/lib/analytics/attribution';
+import { isKakaoUser } from '@/lib/auth/provider';
 
 interface CookieToSet {
   name: string;
@@ -82,16 +83,11 @@ export async function updateSession(request: NextRequest) {
     path === '/privacy' ||
     path === '/terms' ||
     path === '/saju' ||
-    path === '/gunghap' ||
     path === '/today-fortune' ||
-    path === '/daewoon' ||
-    path === '/taegil' ||
     // 60갑자 일주 사전 + 공유형 캐릭터 카드 — 검색 유입·바이럴 진입점이므로
     // 로그인 없이도 200 으로 열려야 한다(공유 링크를 받은 비로그인 친구 포함).
     path === '/ilju' ||
     path.startsWith('/ilju/') ||
-    path.startsWith('/preview') ||
-    path.startsWith('/api/preview') ||
     path.startsWith('/_next') ||
     path.startsWith('/icons') ||
     path.startsWith('/characters') ||
@@ -100,10 +96,18 @@ export async function updateSession(request: NextRequest) {
     // plain 200 to unauthenticated crawlers (Google TWA verifier, Apple). Never
     // redirect these to /login or the TWA address bar won't verify.
     path.startsWith('/.well-known/');
+  const isPublicApi =
+    path.startsWith('/api/og/') ||
+    path === '/api/track' ||
+    path === '/api/payment/kakao/webhook' ||
+    // Vercel Cron 은 세션 쿠키 없이 호출한다. 미들웨어에서 막으면 라우트 핸들러의
+    // CRON_SECRET 검증에 도달조차 못 한다(일일 운세 벌크 생성·푸시가 통째로 죽음).
+    // 핸들러가 GET(세션 필수)·POST(CRON_SECRET 필수) 양쪽을 자체 인증하므로 통과시켜도 안전하다.
+    path === '/api/daily';
 
   let response = NextResponse.next({ request });
 
-  if (isPublic || path.startsWith('/api/')) {
+  if (isPublic || isPublicApi) {
     applyCookies(response, attrCookies);
     return response;
   }
@@ -132,11 +136,21 @@ export async function updateSession(request: NextRequest) {
   });
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!isKakaoUser(user)) {
+    if (path.startsWith('/api/')) {
+      const unauthorized = NextResponse.json(
+        { error: user ? 'kakao_login_required' : 'unauthorized' },
+        { status: 401 },
+      );
+      applyCookies(unauthorized, attrCookies);
+      return unauthorized;
+    }
+
     url.pathname = '/login';
+    if (user) url.searchParams.set('error', 'kakao_required');
     const redirect = NextResponse.redirect(url);
     applyCookies(redirect, attrCookies);
     return redirect;

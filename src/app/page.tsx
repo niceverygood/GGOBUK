@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CalendarCheck,
-  HeartHandshake,
-  ScrollText,
-  Sparkles,
-  Waypoints,
-} from "lucide-react";
+import { Hexagon, MessageCircle, ScrollText, Sparkles } from "lucide-react";
 import { KkobukSprite } from "@/components/kkobuk/KkobukSprite";
 import { Badge } from "@/components/ui/primitives";
 import {
@@ -19,13 +13,13 @@ import { SEO_PAGES } from "@/lib/seo/pages";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "꼬북점 | 사주·점·궁합·오늘의 운세 AI 풀이",
+    absolute: "꼬북점 | 사주풀이·오늘의 운세·일주 캐릭터 AI 사주",
   },
   description: SITE_DESCRIPTION,
   alternates: { canonical: absoluteUrl("/") },
   keywords: SITE_KEYWORDS,
   openGraph: {
-    title: "꼬북점 | 사주·점·궁합·오늘의 운세 AI 풀이",
+    title: "꼬북점 | 사주풀이·오늘의 운세·일주 캐릭터 AI 사주",
     description: SITE_DESCRIPTION,
     url: absoluteUrl("/"),
     siteName: SITE_NAME,
@@ -44,34 +38,28 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
-    title: "사주 풀이",
-    body: "사주팔자, 오행, 십성, 일주를 근거표와 함께 풀어줍니다.",
+    title: "내 사주 전체 풀이",
+    body: "사주팔자, 오행, 십성, 일주를 근거와 함께 한 편의 리포트로 풀어줍니다.",
     href: "/saju",
     icon: ScrollText,
   },
   {
-    title: "궁합 보기",
-    body: "연인, 친구, 가족의 오행 보완과 합충을 관계 언어로 설명합니다.",
-    href: "/gunghap",
-    icon: HeartHandshake,
-  },
-  {
     title: "오늘의 운세",
-    body: "오늘의 일진을 내 사주와 연결해 하루의 힌트를 제공합니다.",
+    body: "매일 무료로 여는 거북빵 안에 오늘의 흐름과 행운 정보가 들어 있습니다.",
     href: "/today-fortune",
     icon: Sparkles,
   },
   {
-    title: "대운 타임라인",
-    body: "10년 단위 인생 흐름과 다음 시기의 준비 방향을 보여줍니다.",
-    href: "/daewoon",
-    icon: Waypoints,
+    title: "꼬북이와 대화",
+    body: "내 사주를 아는 꼬북이에게 연애, 일, 돈 무엇이든 바로 물어봅니다.",
+    href: "/login",
+    icon: MessageCircle,
   },
   {
-    title: "택일·길일",
-    body: "이사, 계약, 시작일처럼 중요한 날짜의 후보를 비교합니다.",
-    href: "/taegil",
-    icon: CalendarCheck,
+    title: "내 일주 캐릭터",
+    body: "60갑자 중 내 일주가 어떤 유형인지 확인하고 친구와 비교해봅니다.",
+    href: "/ilju",
+    icon: Hexagon,
   },
 ];
 
@@ -79,12 +67,12 @@ const FAQS = [
   {
     question: "꼬북점은 어떤 사주 서비스인가요?",
     answer:
-      "꼬북점은 생년월일과 태어난 시간을 바탕으로 사주팔자, 오행, 십성, 궁합, 대운, 오늘의 운세를 AI가 풀이하는 온라인 사주 서비스입니다.",
+      "꼬북점은 생년월일과 태어난 시간을 바탕으로 사주팔자, 오행, 십성, 일주와 오늘의 운세를 AI가 풀이하는 온라인 사주 서비스입니다. 풀이를 읽은 뒤에는 내 사주를 아는 꼬북이와 대화로 이어서 물어볼 수 있습니다.",
   },
   {
     question: "로그인 없이 사주를 볼 수 있나요?",
     answer:
-      "로그인 없이 미리보기에서 사주 구조를 확인할 수 있습니다. 저장과 정밀 AI 리포트는 로그인 후 이용할 수 있습니다.",
+      "아니요. 개인정보와 사주 결과를 안전하게 연결하기 위해 카카오 로그인 후에만 사주를 볼 수 있습니다.",
   },
   {
     question: "사주와 점은 어떻게 다른가요?",
@@ -122,9 +110,9 @@ function JsonLd() {
       featureList: [
         "사주 풀이",
         "오늘의 운세",
-        "궁합 보기",
-        "대운 타임라인",
-        "택일과 길일 추천",
+        "내 일주 캐릭터 카드",
+        "꼬북이와 사주 채팅",
+        "이번 달 흐름 풀이",
       ],
     },
     {
@@ -164,33 +152,27 @@ export default function LandingPage() {
         <div className="hanji-overlay" />
         <div className="relative mx-auto grid w-full max-w-5xl gap-8 md:grid-cols-[1.05fr_0.95fr] md:items-center">
           <div>
-            <Badge tone="mint">AI 사주 · 궁합 · 오늘의 운세</Badge>
+            <Badge tone="mint">AI 사주 · 오늘의 운세 · 사주 채팅</Badge>
             <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-navy md:text-6xl">
               꼬북점 사주,
               <br />
               등껍질에 새겨진 흐름을 읽다
             </h1>
             <p className="mt-5 max-w-2xl text-base font-bold leading-relaxed text-[#6F665E] md:text-lg">
-              생년월일과 태어난 시간을 넣으면 사주팔자, 오행, 십성, 궁합, 대운,
-              오늘의 운세를 근거가 보이는 리포트로 풀어줍니다. 막연한 점괘보다
-              내 삶에서 체감되는 선택 포인트를 확인해보세요.
+              생년월일과 태어난 시간을 넣으면 사주팔자, 오행, 십성, 일주를
+              근거가 보이는 리포트로 풀어줍니다. 매일 오늘의 운세를 열고,
+              내 사주를 아는 꼬북이와 대화하며 궁금한 걸 바로 물어보세요.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/preview"
-                className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-mint px-6 text-base font-black text-[#163438] shadow-[0_14px_26px_rgba(44,62,80,0.16)]"
-              >
-                로그인 없이 사주 미리보기
-              </Link>
-              <Link
                 href="/login"
-                className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-navy px-6 text-base font-black text-white shadow-[0_14px_26px_rgba(44,62,80,0.20)]"
+                className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-[#FEE500] px-6 text-base font-black text-[#191919] shadow-[0_14px_26px_rgba(44,62,80,0.16)]"
               >
-                내 꼬북점 시작하기
+                카카오로 로그인하고 사주 보기
               </Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-2 text-[12px] font-black text-navy">
-              {["사주", "점", "궁합", "오늘의 운세", "대운", "택일"].map(
+              {["사주", "사주풀이", "오늘의 운세", "일주", "60갑자"].map(
                 (keyword) => (
                   <span
                     key={keyword}
@@ -218,7 +200,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl">
           <p className="text-sm font-black text-mint-dark">검색 의도별 안내</p>
           <h2 className="mt-2 text-2xl font-black text-navy">
-            사주, 점, 궁합, 운세를 한 곳에서
+사주 풀이부터 오늘의 운세까지, 한 곳에서
           </h2>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ title, body, href, icon: Icon }) => (
@@ -248,12 +230,12 @@ export default function LandingPage() {
                 왜 꼬북점인가요
               </p>
               <h2 className="mt-2 text-2xl font-black leading-snug text-navy">
-                검색엔진과 AI가 이해하기 쉬운, 근거 중심 사주 콘텐츠
+                &ldquo;왜 그런 말이 나왔는지&rdquo;가 보이는 사주 풀이
               </h2>
               <p className="mt-3 text-sm font-bold leading-relaxed text-muted">
-                꼬북점은 사용자가 보는 화면뿐 아니라 검색로봇과 AI가 읽는 구조도
-                함께 정리합니다. 사주 관련 질문에 답할 수 있도록 카테고리별
-                설명, FAQ, 구조화 데이터를 공개 페이지에 담았습니다.
+                꼬북점은 결론만 던지지 않습니다. 사주팔자 여덟 글자와 오행 분포를
+                먼저 계산해 보여주고, 그 근거에서 어떤 성향과 흐름이 나오는지
+                이어서 설명합니다. 읽다가 궁금해지면 꼬북이에게 바로 물어보세요.
               </p>
             </div>
             <div className="grid gap-3">

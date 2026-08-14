@@ -38,13 +38,26 @@ export const SIGNUP_BONUS_CREDITS = 30;
 export const REFUND_WINDOW_DAYS = 7;
 
 /**
- * Per-feature credit cost — v2는 두 개뿐.
- * reading: 내 사주 전체 풀이 한 편 (재생성도 동일가).
- * chat: 하루 무료 한도(FREE_DAILY_LIMITS.chat) 초과분 메시지당.
+ * Per-feature credit cost.
+ *
+ * v2.1 (2026-08-11) 확장 — 무료 콘텐츠로 매일 방문 → 출석으로 꼬북알 적립 →
+ * 월별·주제별 유료 풀이 → 꼬북이 후속 상담 이라는 흐름에 맞춰 상품을 나눴다.
+ * 월별 상세(4알)는 한 달 출석 보상 상한(4알)과 같게 잡아, 꾸준히 방문한
+ * 사용자는 매달 한 편을 무료로 볼 수 있게 한다.
  */
 export const CREDIT_COSTS = {
+  /** 채팅 추가 질문 (하루 무료 한도 초과분) */
   chat: 1,
+  /** 내 사주 전체 풀이 한 편 (재생성도 동일가) */
   reading: 5,
+  /** 월별 상세 사주풀이 (그 달 1회 구매, 보관함에 영구 보관) */
+  monthly: 4,
+  /** 주제별 풀이 — 이직/직업·면접·연애·재회 */
+  topic: 5,
+  /** 꿈해몽 상세 풀이 */
+  dream: 2,
+  /** 중요한 날 비교 (후보 날짜 2~3개) */
+  luckyDay: 3,
 } as const;
 
 /** Per-day free quota before credits get spent. Resets at KST midnight. */
@@ -53,6 +66,25 @@ export const FREE_DAILY_LIMITS = {
   chat: 5,
   /** daily fortune messages/day (always 1, free) */
   dailyFortune: 1,
+  /** 거북빵 오픈 (하루 1회, 무료) */
+  bread: 1,
+} as const;
+
+/**
+ * 행운의 거북빵 — 매일 무료 오픈 + 출석 보상 규칙.
+ * 값을 바꾸면 `open_bread()` RPC 호출 인자도 함께 바뀐다 (기본값은 마이그레이션 18).
+ */
+export const BREAD = {
+  /** 도장 N개마다 보상 지급 */
+  stampsPerReward: 7,
+  /** 사이클 완성 시 지급 꼬북알 */
+  creditsPerReward: 1,
+  /** 한 달에 거북빵으로 받을 수 있는 꼬북알 상한 (황금 거북빵 포함) */
+  monthlyRewardCap: 4,
+  /** 황금 거북빵 등장 확률 */
+  goldenChance: 0.07,
+  /** 황금 거북빵 보너스 꼬북알 */
+  goldenBonus: 1,
 } as const;
 
 // ⚠️ 패키지 id·알 수·가격은 네이티브 IAP 상품(심사 제출본)과 1:1 매핑 —

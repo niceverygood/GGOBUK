@@ -10,13 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: absoluteUrl(path),
     lastModified: now,
     changeFrequency: path === '/' ? 'weekly' : 'monthly',
-    priority:
-      path === '/'
-        ? 1
-        : path === '/preview'
-          ? 0.7
-          : path.startsWith('/ilju/')
-            ? 0.6
-            : 0.85,
+    priority: path === '/' ? 1 : path.startsWith('/ilju/') ? 0.6 : 0.85,
   }));
 }

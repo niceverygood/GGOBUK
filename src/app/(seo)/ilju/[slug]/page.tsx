@@ -163,10 +163,10 @@ export default async function IljuDetailPage({ params }: PageProps) {
                     slug={e.slug}
                   />
                   <Link
-                    href="/preview"
+                    href="/login"
                     className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-navy px-5 text-sm font-black text-white"
                   >
-                    내 일주 무료로 확인
+                    로그인하고 내 일주 확인
                   </Link>
                 </div>
               </div>
@@ -237,7 +237,11 @@ export default async function IljuDetailPage({ params }: PageProps) {
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <article className="rounded-3xl border border-mint/30 bg-mint/8 p-5">
               <div className="flex items-center gap-2">
-                <Sparkles size={18} strokeWidth={2.5} className="text-mint-dark" />
+                <Sparkles
+                  size={18}
+                  strokeWidth={2.5}
+                  className="text-mint-dark"
+                />
                 <h3 className="text-base font-black text-navy">강점</h3>
               </div>
               <ul className="mt-3 space-y-1.5">
@@ -318,10 +322,10 @@ export default async function IljuDetailPage({ params }: PageProps) {
             </p>
           </div>
           <Link
-            href="/preview"
+            href="/login"
             className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-black text-navy"
           >
-            무료로 내 일주 보기
+            카카오로 로그인하고 내 일주 보기
             <ArrowRight size={16} strokeWidth={3} />
           </Link>
         </div>

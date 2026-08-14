@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import { buildSajuResult } from '@/lib/saju';
 import {
   READING_CATEGORY,
@@ -49,14 +50,10 @@ export async function POST() {
   if (!rl.allowed)
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
-  const { data: profile } = await supabase
-    .from('saju_profiles')
-    .select('*')
-    .eq('owner_id', user.id)
-    .eq('relation_type', 'self')
-    .maybeSingle<SajuProfileRow>();
-  if (!profile)
-    return NextResponse.json({ error: 'no profile' }, { status: 404 });
+  const resolved = await resolveRepresentativeProfile(supabase, user.id);
+  if (!resolved.ok)
+    return NextResponse.json({ error: 'no_profile' }, { status: 404 });
+  const profile = resolved.profile;
 
   const saju = buildSajuResult({
     birthDate: profile.birth_date,
