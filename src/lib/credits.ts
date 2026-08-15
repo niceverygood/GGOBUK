@@ -1,3 +1,5 @@
+import { CONSUMABLE, SERVICE_CATALOG } from '@/domain/policy/catalog';
+
 // 꼬북점 가격정책 v2 (2026-08-10 단순화) — single source of truth.
 // 과금 대상은 딱 두 개: 전체 풀이(reading) · 채팅(chat). 나머지 기능/패키지
 // 상수는 과거 결제 row 해석용으로만 유지한다.
@@ -45,19 +47,24 @@ export const REFUND_WINDOW_DAYS = 7;
  * 월별 상세(4알)는 한 달 출석 보상 상한(4알)과 같게 잡아, 꾸준히 방문한
  * 사용자는 매달 한 편을 무료로 볼 수 있게 한다.
  */
+// ⚠️ 가격의 단일 진실은 `src/domain/policy/catalog.ts` 다 (§2.4 PolicyConfig).
+//    이 상수는 기존 호출부 호환을 위한 **파생값**이며, 직접 숫자를 적지 않는다.
+//    카탈로그와 어긋나면 src/lib/__tests__/credits-catalog.test.ts 가 실패한다.
 export const CREDIT_COSTS = {
   /** 채팅 추가 질문 (하루 무료 한도 초과분) */
-  chat: 1,
+  chat: CONSUMABLE.chatTurn.price,
   /** 내 사주 전체 풀이 한 편 (재생성도 동일가) */
-  reading: 5,
-  /** 월별 상세 사주풀이 (그 달 1회 구매, 보관함에 영구 보관) */
-  monthly: 4,
-  /** 주제별 풀이 — 이직/직업·면접·연애·재회 */
-  topic: 5,
-  /** 꿈해몽 상세 풀이 */
-  dream: 2,
-  /** 중요한 날 비교 (후보 날짜 2~3개) */
-  luckyDay: 3,
+  reading: SERVICE_CATALOG.full_saju.price,
+  /** 월별 상세 사주풀이 */
+  monthly: SERVICE_CATALOG.monthly.price,
+  /** 궁합 */
+  compatibility: SERVICE_CATALOG.compatibility.price,
+  /** 대운 상세 */
+  daewoon: SERVICE_CATALOG.daewoon.price,
+  /** 연도별 운세 상세 */
+  yearly: SERVICE_CATALOG.yearly.price,
+  /** 택일 상세 */
+  luckyDay: SERVICE_CATALOG.lucky_day.price,
 } as const;
 
 /** Per-day free quota before credits get spent. Resets at KST midnight. */

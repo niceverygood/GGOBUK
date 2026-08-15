@@ -35,7 +35,7 @@ pnpm run verify   →  typecheck 0 errors
 
 | # | 항목 | 이유 |
 |---|---|---|
-| A-1 | **migration 18·19·20 프로덕션 적용** | 권한 축소 + 스키마 확장. 각 파일 상단 preflight SQL 을 먼저 실행할 것 |
+| A-1 | **migration 18·19·20·21 프로덕션 적용** | 권한 축소 + 스키마 확장. 각 파일 상단 preflight SQL 을 먼저 실행할 것. **순서: 18 → 20 → 21 → 19**(19가 권한 축소라 마지막) |
 | A-2 | **배포 순서 필수** | `callback/route.ts`(admin upsert) **코드 배포 → migration 19 적용**. 반대면 그 사이 신규 가입 실패 |
 | ~~A-3~~ | ~~`/preview` 복구 여부~~ | ✅ **해소** — 2026-08-14 사용자 지시로 "비로그인 진입 없음" 확정 (`DECISIONS.md` D-7) |
 | A-4 | 무료 채팅 5회 → 1일 1질문권 전환 | 기존 사용자 고지 + 데이터 마이그레이션 |
@@ -52,8 +52,10 @@ pnpm run verify   →  typecheck 0 errors
 | **대표프로필** | ✅ **완료** — migration 20 + `lib/profiles/resolve.ts` + `PATCH /api/me/representative-profile` + 테스트 9건 |
 | 다중 '본인' 허용 | ✅ 완료 — `api/profiles` 의 409 제거, 중복은 identity_hash unique 로 방지 |
 | `relation_type='self'` 가정 제거 | ✅ 완료 — 11개 호출부 전부 이관 (admin 통계 1곳만 의도적 잔존) |
-| `reports` / `report_jobs` | ⬜ 미착수 |
-| 꼬북잎/entitlement/wallet v2 | 🟡 컬럼만 추가(`leaf_balance`, `paid_chat_turns`). 원장·교환 RPC 미착수 |
+| **서비스 카탈로그·에러코드·플래그** | ✅ **완료** — `domain/policy/catalog.ts`(가격 단일진실+POLICY_VERSION), `domain/errors.ts`(31개 코드), `lib/flags.ts`(server-only) |
+| **`reports` / `report_jobs`** | 🟡 **DB·도메인 완료** — migration 21 + `report_transition()` CAS RPC + `domain/reports/state.ts` + SQL↔TS 동기화 테스트. **application use case·라우트 미착수** |
+| **entitlements (무료권)** | 🟡 **DB·도메인 완료** — reserve/consume/release RPC + KST window 계산 + 경계 테스트 14건. **채팅/오늘운세 연결 미착수** |
+| 꼬북잎 wallet v2 | 🟡 컬럼만 추가(`leaf_balance`, `paid_chat_turns`). 원장·교환 RPC 미착수 |
 | CI 스크립트 | ✅ `typecheck`·`test`·`test:watch`·`verify` 추가 |
 | **상용 수준 정리** | ✅ **완료** — 비로그인 미리보기/테스트로그인 제거, 없는 기능 마케팅 표면 전부 제거, 308 리다이렉트, robots·메타·스토어 리스팅 동기화 (D-7·D-8) |
 
@@ -63,13 +65,12 @@ pnpm run verify   →  typecheck 0 errors
 
 ```
 GGOBUK 리빌드 이어서. repo: /Users/seungsoohan/Projects/GGOBUK/kkobukjeom
-Phase 0 완료 + Phase 1 대표프로필까지 완료. `pnpm run verify` 통과(37 tests).
-docs/parity-rebuild/{BASELINE,DECISIONS,STATUS,MASTER_PLAN}.md 를 먼저 읽어라.
-worktree dirty — android/**, capacitor.config.ts, (auth)/login·splash, lib/auth/provider.ts,
-(seo)/**, preview/** 는 사용자 작업이니 되돌리지 마라.
-migration 18·19·20 은 작성만 됐고 프로덕션 미적용(승인 A-1/A-2). 라이브는 mig 1~17만 적용됨.
-다음: Phase 1 잔여 — (1) reports/report_jobs 테이블 + 상태머신 + 기존 interpretations adapter,
-(2) 꼬북잎 원장(1알↔3잎 원자 교환 RPC) + entitlement(무료 질문권 KST 23:00 window),
-(3) FEATURE_* 플래그 인프라.
-먼저 손댈 파일: supabase/migrations/…21_reports.sql, src/domain/wallet/, src/application/
+Phase 0 완료·배포됨(2b37d01). Phase 1 은 대표프로필·카탈로그·상태머신·무료권 DB 까지 완료.
+`pnpm run verify` 통과 (84 tests). docs/parity-rebuild/{BASELINE,DECISIONS,STATUS,MASTER_PLAN}.md 먼저 읽어라.
+migration 18·19·20·21 은 작성만 됐고 프로덕션 미적용(승인 A-1). 라이브는 mig 1~17만 적용.
+코드는 마이그레이션 전에도 동작하도록 컬럼 부재 폴백이 들어가 있다 — 지우지 마라.
+다음: Phase 1 마무리 — (1) src/application/reports/ use case(preview→purchase→job→result→refund),
+(2) 기존 full_saju 를 reports 파이프라인 adapter 로 이관, (3) 꼬북잎 원장 + 1알↔3잎 교환 RPC(migration 22).
+먼저 손댈 파일: src/application/reports/generate.ts(신규), src/app/api/reports/route.ts(신규),
+supabase/migrations/…22_wallet_leaf.sql(신규)
 ```

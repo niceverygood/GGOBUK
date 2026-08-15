@@ -123,3 +123,62 @@ v2 에서 삭제된 궁합·대운·택일을 계속 광고하고 있었다.
   통과했으므로 이름을 사주 키워드로 바꾸면 그 근거가 무너진다. 사주 키워드는 부제·키워드 필드로만.
 - 랜딩의 "검색엔진과 AI가 이해하기 쉬운…" 섹션을 **사용자 대상 카피**로 교체
   (SEO 자기소개를 사용자에게 보여주는 건 상용 앱 품질이 아니다)
+
+
+---
+
+## D-9. 가격의 단일 진실 = `src/domain/policy/catalog.ts`
+
+명세 §2.4 는 "가격·무료권·재화 교환·환불·동의 문안은 `effective_at`·`policy_version` 을 가진
+서버 소유 PolicyConfig 에서 파생한다"를 요구한다.
+
+**선택**: DB 테이블이 아니라 **코드 상수 + `POLICY_VERSION`** 으로 시작한다.
+
+- 지금 규모에서 가격 변경 빈도는 낮고, DB 테이블로 만들면 조회 1회가 모든 과금 경로에 붙는다.
+- 대신 **구매 시점 스냅샷**(`price_asset`·`price_amount`·`policy_version`)을 `reports` 에 저장해
+  소급 적용을 막는다. 이게 §2.4 의 실질 요구사항이다.
+- 운영 중 가격을 바꿔야 하면 `POLICY_VERSION` 을 올리고 배포한다. DB 설정으로의 이행은
+  운영 요구가 생겼을 때 (Phase 8).
+
+`src/lib/credits.ts` 의 `CREDIT_COSTS` 는 **파생값**으로 바꿨고,
+`src/lib/__tests__/credits-catalog.test.ts` 가 두 값의 일치를 강제한다.
+
+⚠️ 택일 가격이 `PRICING.md` v2.1(3알)과 명세 §5.2(4알)에서 달랐다. §2.4 우선순위상
+"이 프롬프트의 새 제품 결정"(4순위)이 `PRICING.md`(7순위)를 이기므로 **4알**을 채택했다.
+`PRICING.md` 동기화는 Phase 8.
+
+---
+
+## D-10. 상태 전이는 DB CAS 로만, 허용표는 SQL↔TS 이중 정의 + 테스트로 동기화
+
+`reports.state` 전이를 앱에서 `UPDATE ... SET state = ?` 로 하면 동시 요청 시 두 워커가
+같은 리포트를 생성하거나, 결제 전 상태에서 생성으로 건너뛸 수 있다.
+
+**선택**: `report_transition(report_id, from, to, patch)` RPC 하나만 두고
+`WHERE id = ? AND state = ?` 로 **compare-and-swap** 한다. 앱은 직접 UPDATE 하지 않는다.
+
+허용표가 SQL(migration 21)과 TS(`src/domain/reports/state.ts`) 두 곳에 존재하는데,
+이건 의도적이다 — DB 는 최종 방어선이고 TS 는 UI 판단에 필요하다.
+대신 `src/domain/__tests__/report-state.test.ts` 가 **SQL 파일을 파싱해 TS 허용표와 대조**하므로
+둘이 갈라지면 테스트가 실패한다.
+
+`failed` 를 terminal 로 두지 않은 이유: 재시도(§6.3)가 필요하다. 단 같은 idempotency key 를
+쓰므로 이중 과금이 나지 않는다.
+
+---
+
+## D-11. 무료권은 reserve → consume | release 3단계
+
+명세 §8.7: "AI 호출 전 entitlement 를 reserve 한다. 성공 시 consume 한다.
+실패/timeout 이면 정확히 한 번 release/refund 한다."
+
+`granted / reserved / consumed / released` 4개 카운터를 두고,
+가용분 = `granted - reserved - consumed` 로 계산한다.
+DB `check (reserved + consumed <= granted)` 가 초과 소비를 최종 차단한다.
+
+`release` 는 `reserved > 0` 조건을 WHERE 에 넣어 **이미 consume 된 건은 반환하지 않는다**
+(이중 반환 방지). 동시에 두 번 release 를 호출해도 한 번만 성공한다.
+
+window 는 KST 벽시계 기준으로 계산하되 저장은 UTC timestamptz 다.
+채팅 질문권 23:00, 오늘의 운세 00:00 경계는
+`src/domain/__tests__/entitlement-window.test.ts` 14건이 지킨다.
