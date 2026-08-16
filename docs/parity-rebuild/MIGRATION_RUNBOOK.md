@@ -5,9 +5,17 @@
 
 ## 표준 절차 (2026-08-16~)
 
+**최초 1회만** — `.env.local` 에 아래 한 줄을 추가한다(gitignore 됨). 그 뒤로는 그냥 명령만 치면 된다.
+
+```
+SUPABASE_PAT=sbp_실제토큰
+```
+
+토큰은 https://supabase.com/dashboard/account/tokens 에서 발급한다.
+**계정 전체 권한**이므로 작업이 끝나면 Revoke 하고 이 줄을 비운다.
+
 ```bash
 cd /Users/seungsoohan/Projects/GGOBUK/kkobukjeom
-export SUPABASE_PAT='sbp_...'
 pnpm db:status
 ```
 

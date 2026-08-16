@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 // 운영 스크립트(scripts/db.mjs)의 순수 함수만 가져온다 — CLI 는 직접 실행할 때만 돈다.
 import {
+  looksLikeToken,
   stripFunctionBodies,
   summarize,
   touchesUserData,
@@ -107,3 +108,33 @@ describe('실제 마이그레이션의 UPDATE 건수', () => {
     }
   });
 });
+
+/**
+ * 토큰 자리표시자 감지.
+ *
+ * 2026-08-16 에 두 번 — `발급받은_토큰`, `sbp_...` — 안내 문서의 자리표시자가
+ * 그대로 실행됐다. 당시 검증이 `startsWith('sbp_')` 뿐이라 `sbp_...` 가 통과했고,
+ * Management API 가 "JWT could not be decoded" 라는 원인 불명 에러를 돌려줬다.
+ * 자리표시자는 **API 에 보내기 전에** 잡아야 한다.
+ */
+describe('토큰 자리표시자 감지', () => {
+  it('실제로 발생했던 자리표시자를 거부한다', () => {
+    for (const bad of ['sbp_...', '발급받은_토큰', 'sbp_여기에실제토큰', '']) {
+      expect(looksLikeToken(bad), `${bad} 를 통과시켰다`).toBe(false);
+    }
+  });
+
+  it('값이 없는 경우도 거부한다', () => {
+    expect(looksLikeToken(undefined)).toBe(false);
+    expect(looksLikeToken(null)).toBe(false);
+  });
+
+  it('토큰 형태(sbp_ + 40자리 영숫자)는 통과시킨다', () => {
+    expect(looksLikeToken(`sbp_${'a1b2c3d4e5'.repeat(4)}`)).toBe(true);
+  });
+
+  it('앞뒤 공백은 허용한다 (셸 복사 시 흔하다)', () => {
+    expect(looksLikeToken(`  sbp_${'0f'.repeat(20)}\n`)).toBe(true);
+  });
+});
+

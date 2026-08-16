@@ -7,8 +7,9 @@
  *   pnpm db:apply <번호|파일>    마이그레이션 하나 적용 (--yes 필요)
  *   pnpm db:query "<sql>"       읽기 전용 조회
  *
- * ⚠️ 토큰은 **환경변수로만** 받는다. 코드·저장소에 넣지 않는다.
- *    SUPABASE_PAT — https://supabase.com/dashboard/account/tokens 에서 발급.
+ * ⚠️ 토큰(SUPABASE_PAT)은 환경변수 또는 **gitignore 된 .env.local** 에서만 받는다.
+ *    코드·저장소·문서·로그에 넣지 않는다. 값을 화면에 출력하지도 않는다.
+ *    https://supabase.com/dashboard/account/tokens 에서 발급.
  *    계정 전체 권한이므로 작업이 끝나면 폐기(Revoke)할 것.
  *
  * 왜 이 도구가 필요한가
@@ -27,33 +28,61 @@ const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations');
 
 // ─── 설정 ────────────────────────────────────────────────────────────────────
 
-function projectRef() {
-  // .env.local 의 NEXT_PUBLIC_SUPABASE_URL 에서 ref 를 뽑는다 (값은 출력하지 않는다).
+/** `.env.local` 에서 키 하나를 읽는다. **값은 절대 출력하지 않는다.** */
+function envLocal(key) {
   try {
     const env = readFileSync(join(ROOT, '.env.local'), 'utf8');
-    const m = env.match(/NEXT_PUBLIC_SUPABASE_URL\s*=\s*https:\/\/([a-z0-9]+)\.supabase\.co/);
-    if (m) return m[1];
+    const m = env.match(
+      new RegExp(`^\\s*${key}\\s*=\\s*["']?([^"'\\s#]+)`, 'm'),
+    );
+    return m?.[1];
   } catch {
-    /* .env.local 이 없으면 아래 env 로 폴백 */
+    return undefined; // .env.local 이 없으면 호출부가 env 로 폴백한다
   }
+}
+
+function projectRef() {
+  const url = envLocal('NEXT_PUBLIC_SUPABASE_URL');
+  const m = url?.match(/^https:\/\/([a-z0-9]+)\.supabase\.co/);
+  if (m) return m[1];
   if (process.env.SUPABASE_PROJECT_REF) return process.env.SUPABASE_PROJECT_REF;
   fail(
     'project ref 를 찾지 못했다. .env.local 의 NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_PROJECT_REF 를 설정하라.',
   );
 }
 
+const SETUP_HINT =
+  '  해결:\n' +
+  '    1) https://supabase.com/dashboard/account/tokens 에서 토큰 발급\n' +
+  '    2) .env.local 에 아래 한 줄 추가 (gitignore 됨. 한 번만 하면 된다)\n' +
+  '         SUPABASE_PAT=sbp_여기에실제토큰\n' +
+  '  ⚠️ 계정 전체 권한이다. 작업이 끝나면 Revoke 하고 이 줄을 지워라.';
+
+/**
+ * 토큰을 찾는다. 우선순위: 환경변수 → `.env.local`.
+ *
+ * `.env.local` 을 폴백으로 두는 이유 — 매번 `export` 하게 만들면 안내 문서의
+ * `sbp_...` 같은 **자리표시자를 그대로 붙여넣는 사고**가 반복된다(2026-08-16, 2회).
+ * 한 번 적어두면 그 뒤로는 `pnpm db:verify` 만 치면 된다.
+ */
+/** 토큰처럼 생겼는가. 자리표시자를 걸러내기 위한 것 — 유효성 검사가 아니다. */
+export function looksLikeToken(t) {
+  return typeof t === 'string' && /^sbp_[a-z0-9]{20,}$/i.test(t.trim());
+}
+
 function token() {
-  const t = process.env.SUPABASE_PAT;
-  if (!t) {
+  const t = process.env.SUPABASE_PAT?.trim() || envLocal('SUPABASE_PAT');
+  if (!t) fail(`SUPABASE_PAT 를 찾지 못했다 (환경변수·.env.local 둘 다 없음).\n${SETUP_HINT}`);
+
+  // ⚠️ 자리표시자를 여기서 잡아야 한다. 통과시키면 Management API 가
+  //    "JWT could not be decoded" 라는, 원인을 알 수 없는 에러를 돌려준다.
+  if (!looksLikeToken(t)) {
     fail(
-      'SUPABASE_PAT 가 없다.\n' +
-        '  1) https://supabase.com/dashboard/account/tokens 에서 발급 (sbp_ 로 시작)\n' +
-        "  2) export SUPABASE_PAT='sbp_...'\n" +
-        '  ⚠️ 계정 전체 권한이다. 작업이 끝나면 반드시 Revoke 하라.',
+      '토큰이 아니라 **자리표시자**를 넣은 것 같다.\n' +
+        `  받은 값의 형태: ${t.slice(0, 4)}${'*'.repeat(Math.max(0, Math.min(t.length - 4, 8)))} (길이 ${t.length})\n` +
+        '  실제 토큰은 sbp_ 뒤에 40자리 영숫자가 붙는다.\n' +
+        SETUP_HINT,
     );
-  }
-  if (!t.startsWith('sbp_')) {
-    fail('SUPABASE_PAT 형식이 이상하다 (sbp_ 로 시작해야 한다).');
   }
   return t;
 }
@@ -423,7 +452,8 @@ if (!cmd || !(cmd in commands)) {
   pnpm db:apply <번호> --yes   마이그레이션 적용 (--yes 없으면 미리보기)
   pnpm db:query "<sql>"       읽기 전용 조회
 
-필요: export SUPABASE_PAT='sbp_...'
+토큰: .env.local 에 SUPABASE_PAT=sbp_... 한 줄 (권장, gitignore 됨)
+      또는 환경변수 SUPABASE_PAT
 `);
   process.exit(cmd ? 1 : 0);
 }
