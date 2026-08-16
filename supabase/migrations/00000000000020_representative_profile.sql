@@ -22,7 +22,7 @@
 --  alter table public.users drop column if exists representative_profile_id;
 --  alter table public.users drop column if exists leaf_balance;
 --  alter table public.users drop column if exists paid_chat_turns;
---  drop index if exists saju_profiles_identity_uniq;
+--  drop index if exists saju_profiles_identity_idx;
 --  alter table public.saju_profiles drop column if exists identity_hash;
 --  alter table public.saju_profiles drop column if exists calculation_version;
 --  alter table public.saju_profiles drop column if exists deleted_at;
@@ -44,13 +44,20 @@ comment on column public.saju_profiles.calculation_version is
 
 -- 동일 인물 중복 등록 방지 — 경합까지 DB 가 막는다.
 -- 이름은 공백 제거 + 소문자로 정규화한다. 쌍둥이처럼 생년정보가 같고 이름이 다른 경우는 허용된다.
+--
+-- ⚠️ generated column 은 **IMMUTABLE 표현식만** 허용한다.
+--    `birth_date::text` 는 내부적으로 `date_out()` 을 쓰는데 이 함수는 STABLE 이다
+--    (출력이 DateStyle GUC 에 의존). 그대로 쓰면 42P17 "generation expression is not immutable".
+--    (`to_char(date, text)` 도 STABLE 이라 대안이 못 된다.)
+--    → 고정 기준일로부터의 **일수(integer)** 로 바꾼다. `date_mi`·`int4out` 은 둘 다 IMMUTABLE 이고
+--      기준일이 상수라 값이 영구히 결정적이다. `birth_time::text`(`time_out`)는 IMMUTABLE 이라 그대로 둔다.
 alter table public.saju_profiles
   add column if not exists identity_hash text
   generated always as (
     md5(
       owner_id::text || '|' ||
       lower(regexp_replace(coalesce(name, ''), '\s+', '', 'g')) || '|' ||
-      birth_date::text || '|' ||
+      (birth_date - DATE '1900-01-01')::text || '|' ||
       coalesce(birth_time::text, 'unknown') || '|' ||
       is_lunar::text || '|' ||
       is_leap_month::text || '|' ||
@@ -58,8 +65,13 @@ alter table public.saju_profiles
     )
   ) stored;
 
--- 살아있는 프로필끼리만 유일. soft delete 된 행은 재등록을 막지 않는다.
-create unique index if not exists saju_profiles_identity_uniq
+-- ⚠️ **UNIQUE 인덱스는 여기서 만들지 않는다.** migration 22 로 분리했다.
+--    2026-08-14 프로덕션 적용 시도에서 23505 로 실패했다 — 이미 중복 프로필이 존재한다:
+--      158행 중 17행이 중복(11개 그룹, 대부분 수십 초 내 이중 제출 = select-then-insert 경합).
+--    unique 인덱스를 만들려면 **기존 사용자 데이터를 먼저 정리**해야 하는데,
+--    그건 스키마 변경이 아니라 데이터 변경이라 별도 승인 대상이다(마스터 명세 §19).
+--    → 조회용 일반 인덱스만 만들고, 정리 + unique 전환은 migration 22 에서 한다.
+create index if not exists saju_profiles_identity_idx
   on public.saju_profiles (identity_hash)
   where deleted_at is null;
 

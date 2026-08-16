@@ -182,3 +182,38 @@ DB `check (reserved + consumed <= granted)` 가 초과 소비를 최종 차단�
 window 는 KST 벽시계 기준으로 계산하되 저장은 UTC timestamptz 다.
 채팅 질문권 23:00, 오늘의 운세 00:00 경계는
 `src/domain/__tests__/entitlement-window.test.ts` 14건이 지킨다.
+
+---
+
+## D-12. `identity_hash` 를 IMMUTABLE 표현식으로 (프로덕션 적용 중 발견)
+
+migration 20 첫 적용이 `42P17: generation expression is not immutable` 로 실패했다.
+
+**원인**: generated column 은 IMMUTABLE 표현식만 허용하는데, `birth_date::text` 가 내부적으로
+`date_out()` 을 호출하고 이 함수는 **STABLE** 이다(출력이 `DateStyle` GUC 에 의존).
+프로덕션에서 `pg_proc.provolatile` 로 실측 확인: `date_out` = `s`, `time_out` = `i`.
+`to_char(date, text)` 도 `s` 라 대안이 못 된다.
+
+**선택**: `(birth_date - DATE '1900-01-01')::text` — 고정 기준일로부터의 일수(integer).
+`date_mi` 와 `int4out` 둘 다 `i`(IMMUTABLE) 이고 기준일이 상수라 값이 영구히 결정적이다.
+`birth_time::text` 는 `time_out` 이 IMMUTABLE 이라 그대로 뒀다.
+
+대안이었던 트리거 방식은 채택하지 않았다 — generated column 이 더 강하다(우회 불가).
+
+---
+
+## D-13. 중복 프로필 정리를 migration 22 로 분리
+
+migration 20 재적용이 `23505` 로 실패했다 — **프로덕션에 이미 중복 프로필이 있다**.
+158행 중 17행(11개 그룹). 대부분 수십 초 내 연속 생성 = select-then-insert 경합의 실제 피해다.
+
+**선택**: UNIQUE 인덱스를 20 에서 빼고 일반 인덱스만 남긴 뒤, 정리 + unique 전환을 **migration 22** 로 분리.
+
+이유: 20~21 은 순수 스키마 변경이라 자동 적용해도 안전하지만, 중복 정리는 **사용자 데이터 변경**이라
+§19 승인 대상이다. 스키마를 인질로 잡고 데이터 결정을 강요하지 않는 게 맞다.
+
+정리 전에 영향도를 실측했다 — 중복 행에 붙은 `interpretations` **0건**(유료 산출물 손실 없음),
+`daily_fortunes` 2건, `relations` 1건. 보존 대상(최초 생성 행)이 유료 풀이 6건 전부를 갖고 있다.
+
+22 는 hard delete 가 아니라 `deleted_at` + `deleted_reason='dedupe_2026_08_14'` 로 soft delete 하고,
+정리된 프로필을 가리키던 대표포인터를 **동일 인물의 생존 행으로 옮긴다**(사용자가 다시 고르지 않아도 되게).
