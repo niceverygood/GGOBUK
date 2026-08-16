@@ -19,6 +19,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -124,13 +125,22 @@ function resolveMigration(arg) {
 }
 
 /** 주석을 제외한 실제 구문의 종류를 센다 — 적용 전에 무엇을 하는지 보여주기 위함. */
-function summarize(sql) {
+/** `$$ … $$` / `$tag$ … $tag$` 로 감싼 함수 본문을 지운다. */
+export function stripFunctionBodies(code) {
+  return code.replace(/\$([a-z_]*)\$[\s\S]*?\$\1\$/g, '$$$$BODY$$$$');
+}
+
+export function summarize(sql) {
   const code = sql
     .split('\n')
     .filter((l) => !l.trimStart().startsWith('--'))
     .join('\n')
     .toLowerCase();
-  const count = (re) => (code.match(re) ?? []).length;
+  // ⚠️ 함수 본문 안의 UPDATE/DELETE 는 **정의를 저장할 뿐 데이터를 바꾸지 않는다.**
+  //    그대로 세면 RPC 를 만드는 마이그레이션이 전부 "데이터 변경"으로 잡혀
+  //    경고가 일상이 되고, 결국 사람이 경고를 읽지 않게 된다 → 게이트가 무력해진다.
+  const top = stripFunctionBodies(code);
+  const count = (re) => (top.match(re) ?? []).length;
   return {
     createTable: count(/create table/g),
     alterTable: count(/alter table/g),
@@ -142,6 +152,24 @@ function summarize(sql) {
     update: count(/^\s*update /gm),
     deleteFrom: count(/delete from/g),
     dropTable: count(/drop table/g),
+  };
+}
+
+/**
+ * 이 마이그레이션이 **기존 사용자 데이터를 건드리는가**.
+ *
+ * 스키마 추가(테이블·컬럼·인덱스·RPC·권한)는 되돌리기 쉽고 기존 행을 바꾸지 않는다.
+ * 반면 top-level UPDATE/DELETE 는 사람 데이터를 고친다 — 다른 게이트가 필요하다.
+ */
+export function touchesUserData(sql) {
+  const s = summarize(sql);
+  return {
+    marked: /🔴[^\n]*승인/.test(sql),
+    update: s.update,
+    deleteFrom: s.deleteFrom,
+    get yes() {
+      return this.marked || this.update > 0 || this.deleteFrom > 0;
+    },
   };
 }
 
@@ -277,10 +305,39 @@ async function cmdVerify() {
 
 // ─── 명령: apply ─────────────────────────────────────────────────────────────
 
+/**
+ * 사람이 **직접 타이핑**해야만 통과하는 확인.
+ *
+ * 왜 플래그가 아니라 타이핑인가 — 2026-08-16 사고.
+ * migration 22(사용자 데이터 변경, 승인 대기)가 `--yes` 하나로 프로덕션에 적용됐다.
+ * 원인은 안내 문서의 코드블록에 `--yes` 가 들어 있었고 사용자가 블록을 통째로
+ * 붙여넣은 것. **플래그는 복사·붙여넣기로 전파되지만 타이핑은 전파되지 않는다.**
+ * 그래서 이 게이트만은 인자로 우회할 수 없게 만든다.
+ */
+async function confirmByTyping(expected, reason) {
+  if (!process.stdin.isTTY) {
+    fail(
+      `${reason}\n` +
+        '  이 마이그레이션은 사람이 직접 확인해야 한다. 대화형 터미널에서 실행하라.\n' +
+        '  플래그로는 통과할 수 없다 — 붙여넣기 사고를 막기 위해 일부러 그렇게 만들었다.',
+    );
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question(
+    `\n  적용하려면 마이그레이션 번호 "${expected}" 를 직접 입력하라 (취소하려면 그냥 Enter): `,
+  );
+  rl.close();
+  if (answer.trim() !== expected) {
+    console.log('\n  취소했다. 아무것도 적용하지 않았다.\n');
+    process.exit(1);
+  }
+}
+
 async function cmdApply(arg, flags) {
   const file = resolveMigration(arg);
   const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
   const s = summarize(sql);
+  const num = String(Number(file.slice(0, 14)));
 
   console.log(`\n적용 대상: ${file}`);
   console.log('  이 파일이 하는 일:');
@@ -295,15 +352,28 @@ async function cmdApply(arg, flags) {
         '  데이터가 사라질 수 있다. 내용을 직접 확인한 뒤 --force 를 붙여라.',
     );
   }
-  if (s.update > 0) {
-    console.log(
-      `\n  ⚠️ UPDATE 문 ${s.update}건 — **사용자 데이터를 변경**한다. 적용 전 파일 상단 PREFLIGHT 를 읽어라.`,
-    );
-  }
+
+  // 스키마 변경(additive)과 **사용자 데이터 변경**을 다르게 취급한다.
+  // 후자는 파일 상단에 🔴 승인 표시가 있거나 UPDATE/DELETE 를 포함하는 경우다.
+  const { marked, yes: touchesData } = touchesUserData(sql);
 
   if (!flags.yes) {
-    console.log('\n  실제로 적용하려면 --yes 를 붙여라. (지금은 미리보기만 했다)\n');
+    console.log(
+      touchesData
+        ? '\n  ⚠️ 이 마이그레이션은 **사용자 데이터를 변경**한다.' +
+            `${s.update ? ` (UPDATE ${s.update}건)` : ''}${marked ? ' 파일에 🔴 승인 필요 표시가 있다.' : ''}\n` +
+            '     적용 전 파일 상단 PREFLIGHT 쿼리를 db:query 로 먼저 돌려 영향 범위를 실측하라.\n' +
+            '     실제로 적용하려면 --yes 를 붙인 뒤, 번호를 직접 타이핑해 한 번 더 확인해야 한다.\n'
+        : '\n  실제로 적용하려면 --yes 를 붙여라. (지금은 미리보기만 했다)\n',
+    );
     return;
+  }
+
+  if (touchesData) {
+    await confirmByTyping(
+      num,
+      `🔴 migration ${num} 은 사용자 데이터를 변경한다 — --yes 만으로는 적용하지 않는다.`,
+    );
   }
 
   console.log('\n  적용 중...');
@@ -326,7 +396,11 @@ async function cmdQuery(sql) {
 }
 
 // ─── 진입점 ──────────────────────────────────────────────────────────────────
+// 직접 실행할 때만 돈다. 테스트가 순수 함수만 import 할 수 있어야 하기 때문이다.
 
+if (process.argv[1] !== fileURLToPath(import.meta.url)) {
+  // 모듈로 import 된 경우 — 아래 CLI 디스패치를 건너뛴다.
+} else {
 const [, , cmd, ...rest] = process.argv;
 const flags = {
   yes: rest.includes('--yes'),
@@ -355,3 +429,4 @@ if (!cmd || !(cmd in commands)) {
 }
 
 await commands[cmd]();
+}
