@@ -11,12 +11,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "db:status": "node scripts/db.mjs status",
+    "db:verify": "node scripts/db.mjs verify",
+    "db:apply": "node scripts/db.mjs apply",
+    "db:query": "node scripts/db.mjs query",
+    "db:types": "npx supabase gen types typescript --linked > src/types/supabase.ts",
     "app:assets": "bash scripts/generate-ios-assets.sh",
     "app:ios:add": "cap add ios",
     "app:ios:prepare": "pnpm run build && pnpm run app:assets && pnpm run app:ios:sync",
     "app:ios:sync": "cap sync ios",
-    "app:ios:open": "cap open ios",
-    "db:types": "npx supabase gen types typescript --linked > src/types/supabase.ts"
+    "app:ios:open": "cap open ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
