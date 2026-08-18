@@ -2,7 +2,10 @@ import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
-import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
+import {
+  findDuplicateProfile,
+  isIdentityConflict,
+} from '@/lib/saju/profile_dedup';
 import { logger } from '@/lib/utils/logger';
 import { recordEvent } from '@/lib/analytics/events';
 import { isKakaoUser } from '@/lib/auth/provider';
@@ -120,6 +123,11 @@ async function handleCalculate(req: Request) {
       details: error.details,
       userId: user.id,
     });
+    // 동시 요청 경합 — DB unique 인덱스가 막았다. 이긴 쪽 행을 돌려준다.
+    if (isIdentityConflict(error)) {
+      const winner = await findDuplicateProfile(supabase, user.id, payload);
+      if (winner) return NextResponse.json({ saju: winner, deduped: true });
+    }
     if (error.code === '23503') {
       return NextResponse.json(
         {

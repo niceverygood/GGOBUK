@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { buildSajuProfilePayload } from '@/lib/saju/profile_payload';
-import { findDuplicateProfile } from '@/lib/saju/profile_dedup';
+import {
+  findDuplicateProfile,
+  isIdentityConflict,
+} from '@/lib/saju/profile_dedup';
 import { createServerClient } from '@/lib/supabase/server';
 import { resolveRepresentativeProfile } from '@/lib/profiles/resolve';
 import type { SajuProfileRow } from '@/types/db';
@@ -39,6 +42,7 @@ export async function GET() {
       'id, name, birth_date, birth_time, is_lunar, is_leap_month, gender, relation_type, relation_label, created_at, updated_at, ilgan, palja',
     )
     .eq('owner_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: true })
     .returns<SajuProfileRow[]>();
 
@@ -112,8 +116,15 @@ export async function POST(req: Request) {
     .select()
     .single<SajuProfileRow>();
 
-  if (error)
+  if (error) {
+    // 동시 요청 경합 — DB unique 인덱스가 막았다. 진 쪽은 이긴 쪽 행을 돌려준다.
+    // (이 경합이 2026-08-14 이전 중복 17행을 만든 원인이다)
+    if (isIdentityConflict(error)) {
+      const winner = await findDuplicateProfile(supabase, user.id, payload);
+      if (winner) return NextResponse.json({ profile: winner, deduped: true });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   if (anchor && profile.id !== anchor.id) {
     const { error: relationError } = await supabase.from('relations').upsert(

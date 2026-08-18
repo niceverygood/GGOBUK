@@ -135,6 +135,7 @@ async function runDailyBulk() {
         .from('saju_profiles')
         .select('*')
         .in('id', repIds.slice(i, i + 200))
+        .is('deleted_at', null)
         .returns<SajuProfileRow[]>();
       if (data) profiles.push(...data);
     }
@@ -144,6 +145,7 @@ async function runDailyBulk() {
       .from('saju_profiles')
       .select('*')
       .eq('relation_type', 'self')
+      .is('deleted_at', null)
       .returns<SajuProfileRow[]>();
     // 사용자당 1건만 (다중 self 대비 최초 생성 우선)
     const seen = new Set<string>();

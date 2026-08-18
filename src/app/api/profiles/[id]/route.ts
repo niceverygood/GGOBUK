@@ -103,6 +103,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     .select('id, relation_type')
     .eq('id', profileId)
     .eq('owner_id', user.id)
+    .is('deleted_at', null)
     .maybeSingle<{ id: string; relation_type: RelationType }>();
 
   if (existingError)
@@ -154,6 +155,7 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
     .select('id, relation_type')
     .eq('id', profileId)
     .eq('owner_id', user.id)
+    .is('deleted_at', null)
     .maybeSingle<{ id: string; relation_type: RelationType }>();
 
   if (existingError)

@@ -197,7 +197,8 @@ export default async function AdminPage({
     admin
       .from('saju_profiles')
       .select('owner_id', { count: 'exact', head: true })
-      .eq('relation_type', 'self'),
+      .eq('relation_type', 'self')
+      .is('deleted_at', null),
     admin
       .from('interpretations')
       .select('id', { count: 'exact', head: true }),
