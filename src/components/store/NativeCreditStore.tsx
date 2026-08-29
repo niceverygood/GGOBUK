@@ -22,8 +22,10 @@ import {
 } from '@/lib/iap/purchases';
 import type { IapPackageId } from '@/lib/iap/products';
 import { track } from '@/lib/analytics/track';
+import { isNativeIOS } from '@/lib/utils/platform';
 
 export function NativeCreditStore({ onPurchased }: { onPurchased: () => void }) {
+  const storeName = isNativeIOS() ? 'App Store' : 'Google Play';
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<IapPackageId | null>(null);
   const [error, setError] = useState('');
@@ -129,7 +131,7 @@ export function NativeCreditStore({ onPurchased }: { onPurchased: () => void }) 
       )}
 
       <p className="mt-1 text-center text-[11px] font-bold leading-relaxed text-muted">
-        결제는 App Store / Google Play를 통해 안전하게 처리돼요.
+        결제는 {storeName}를 통해 안전하게 처리돼요.
         <br />
         충전한 {CREDIT_UNIT}은 결제 직후 잠시 뒤 계정에 반영돼요.
       </p>
